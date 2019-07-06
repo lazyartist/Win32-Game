@@ -160,6 +160,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		g_hMemDC = CreateCompatibleDC(hdc);
 		SelectObject(g_hMemDC, hBitmap);
 		BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
+		TransparentBlt(hdc, 0, 0, g_bitmapHeader.bmWidth * 2, g_bitmapHeader.bmHeight * 2,
+			g_hMemDC, 0, 0, g_bitmapHeader.bmWidth*2, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
 
 		DeleteObject(hBitmap);
 		DeleteDC(hdc);
