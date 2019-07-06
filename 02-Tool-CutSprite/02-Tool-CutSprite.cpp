@@ -3,6 +3,7 @@
 #include <windowsx.h> // GET_X_LPARAM
 #include <commdlg.h> // GetOpenFileName()
 #include <iostream> // sprintf_s()
+#include "common.h"
 
 #define MAX_LOADSTRING 100
 
@@ -164,7 +165,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		DeleteDC(hdc);
 		//DeleteDC(hMemDC);
 
-		InvalidateRect(hWnd, nullptr, true);
+		//InvalidateRect(hWnd, nullptr, true);
 	}
 	break;
 	case WM_COMMAND:
@@ -236,6 +237,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_MOUSEMOVE:
 	{
 		if (g_bIsDrag) {
+			g_rectDrag.right = GET_X_LPARAM(lParam);
+			g_rectDrag.bottom = GET_Y_LPARAM(lParam);
 			InvalidateRect(hWnd, nullptr, true);
 		}
 	}
@@ -251,9 +254,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		g_rectDrag.top = GET_Y_LPARAM(lParam);
 		g_rectDrag.right = g_rectDrag.left;
 		g_rectDrag.bottom = g_rectDrag.top;
-
-
-		InvalidateRect(hWnd, nullptr, true);
 	}
 	break;
 	case WM_LBUTTONUP:
@@ -284,6 +284,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		//DeleteObject(SelectObject(hdc, hOldPen));
 
 		EndPaint(hWnd, &ps);
+
+		log("WM_PAINT");
 	}
 	break;
 	case WM_MOVE:
