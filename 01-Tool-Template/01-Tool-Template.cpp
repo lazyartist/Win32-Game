@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "01-Tool.h"
+#include "01-Tool-Template.h"
 #include <commdlg.h> // GetOpenFileName
 #include <iostream> // sprintf_s
 
