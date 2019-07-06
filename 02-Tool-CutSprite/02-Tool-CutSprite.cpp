@@ -1,7 +1,9 @@
 ﻿#include "stdafx.h"
 #include "02-Tool-CutSprite.h"
+#include <windowsx.h> // GET_X_LPARAM
 #include <commdlg.h> // GetOpenFileName()
 #include <iostream> // sprintf_s()
+#include "common.h"
 
 #define MAX_LOADSTRING 100
 
@@ -11,6 +13,11 @@ POINT g_whRightWndSize = { 0, 0 }; // 리소스에 의해 결정
 
 // 전역 변수:
 HINSTANCE g_hInst;                                // 현재 인스턴스입니다.
+
+HDC g_hMemDC;
+BITMAP g_bitmapHeader;
+bool g_bIsDrag = false;
+RECT g_rectDrag = { 10, 10, 100, 100 };
 
 HWND g_hMainWnd;                                  // 메인 윈도우
 HWND g_hRightWnd;                                 // 오른쪽 윈도우
@@ -143,6 +150,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 	{
+		// load bitmap
+		HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+
+		GetObject(hBitmap, sizeof(BITMAP), &g_bitmapHeader);
+
+		HDC hdc = GetDC(hWnd);
+
+		g_hMemDC = CreateCompatibleDC(hdc);
+		SelectObject(g_hMemDC, hBitmap);
+		BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
+
+		DeleteObject(hBitmap);
+		DeleteDC(hdc);
+		//DeleteDC(hMemDC);
+
+		//InvalidateRect(hWnd, nullptr, true);
 	}
 	break;
 	case WM_COMMAND:
@@ -211,12 +234,58 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	}
 	break;
+	case WM_MOUSEMOVE:
+	{
+		if (g_bIsDrag) {
+			g_rectDrag.right = GET_X_LPARAM(lParam);
+			g_rectDrag.bottom = GET_Y_LPARAM(lParam);
+			InvalidateRect(hWnd, nullptr, true);
+		}
+	}
+	break;
+	case WM_LBUTTONDOWN:
+	{
+		g_bIsDrag = true;
+
+		// 멀티 모니터에서 부정확한 좌표를 반환하기 때문에 GET_X_LPARAM, GET_Y_LPARAM를 사용
+		//rect.left = LOWORD(lParam);
+		//rect.top = HIWORD(lParam);
+		g_rectDrag.left = GET_X_LPARAM(lParam);
+		g_rectDrag.top = GET_Y_LPARAM(lParam);
+		g_rectDrag.right = g_rectDrag.left;
+		g_rectDrag.bottom = g_rectDrag.top;
+	}
+	break;
+	case WM_LBUTTONUP:
+	{
+		g_bIsDrag = false;
+
+		g_rectDrag.right = GET_X_LPARAM(lParam);
+		g_rectDrag.bottom = GET_Y_LPARAM(lParam);
+
+		InvalidateRect(hWnd, nullptr, true);
+	}
+	break;
 	case WM_PAINT:
 	{
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
-		// TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+
+		// bitmap
+		BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
+
+		// draw rect
+		SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
+		//HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+		//HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
+		Rectangle(hdc, g_rectDrag.left, g_rectDrag.top, g_rectDrag.right, g_rectDrag.bottom);
+
+		// clear
+		//DeleteObject(SelectObject(hdc, hOldPen));
+
 		EndPaint(hWnd, &ps);
+
+		log("WM_PAINT");
 	}
 	break;
 	case WM_MOVE:
