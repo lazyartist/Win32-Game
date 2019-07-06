@@ -1,33 +1,34 @@
-﻿// 01-Tool.cpp : 응용 프로그램에 대한 진입점을 정의합니다.
-//
-
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "01-Tool-Template.h"
-#include <commdlg.h> // GetOpenFileName
-#include <iostream> // sprintf_s
+#include <commdlg.h> // GetOpenFileName()
+#include <iostream> // sprintf_s()
 
 #define MAX_LOADSTRING 100
 
 POINT g_whMainWndSize = { 800, 600 };
-POINT g_whRightWndSize = { 0, 0 };
 POINT g_whBottomWndSize = { 800, 300 };
+POINT g_whRightWndSize = { 0, 0 }; // 리소스에 의해 결정
 
 // 전역 변수:
 HINSTANCE g_hInst;                                // 현재 인스턴스입니다.
-HWND g_hMainWnd;                                // 메인 윈도우
-HWND g_hRightWnd;                                // 오른쪽 윈도우
+
+HWND g_hMainWnd;                                  // 메인 윈도우
+HWND g_hRightWnd;                                 // 오른쪽 윈도우
 HWND g_hBottomWnd;                                // 하단 윈도우
 
-WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
-WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
+WCHAR g_szMainWndTitle[] = L"Main";               // 제목 표시줄 텍스트
+WCHAR g_szBottomWndTitle[] = L"Bottom";           // 제목 표시줄 텍스트
 
-// 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
+WCHAR g_szMainWndClass[] = L"MainWnd";            // 메인창 클래스 이름
+WCHAR g_szBottomWndClass[] = L"BottomWnd";        // 하단창 클래스 이름
+
+UINT g_nRightDlgId = IDD_DIALOG1;                 // 우측 다이얼로그 리소스 아이디
+
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
+
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    BottomWndProc(HWND, UINT, WPARAM, LPARAM);
-
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    RightWndProc(HWND, UINT, WPARAM, LPARAM);
 
 void UpdateSubWndPosition();
@@ -41,11 +42,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	// TODO: 여기에 코드를 입력합니다.
-
-	// 전역 문자열을 초기화합니다.
-	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-	LoadStringW(hInstance, IDC_MY01TOOL, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
 	// 응용 프로그램 초기화를 수행합니다:
@@ -78,6 +74,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
 
+	// 메인 윈도우 등록
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
 	wcex.lpfnWndProc = WndProc;
 	wcex.cbClsExtra = 0;
@@ -87,15 +84,14 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MY01TOOL);
-	wcex.lpszClassName = szWindowClass;
+	wcex.lpszClassName = g_szMainWndClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
 	RegisterClassExW(&wcex);
 
+	// 하단 윈도우 등록
 	wcex.lpfnWndProc = BottomWndProc;
 	wcex.lpszMenuName = nullptr;
-	wcex.lpszClassName = L"BottomWnd";
-
+	wcex.lpszClassName = g_szBottomWndClass;
 	return RegisterClassExW(&wcex);
 }
 
@@ -107,7 +103,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	RECT clientRect = { 0, 0, g_whMainWndSize.x - 1, g_whMainWndSize.y - 1 };
 	AdjustWindowRect(&clientRect, WS_OVERLAPPEDWINDOW, true);
 
-	HWND hWnd = CreateWindowW(szWindowClass, szTitle, (WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
+	HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
 		CW_USEDEFAULT, 0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, nullptr, nullptr, hInstance, nullptr);
 
 	g_hMainWnd = hWnd;
@@ -119,14 +115,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	clientRect = { 0, 0, g_whBottomWndSize.x - 1, g_whBottomWndSize.y - 1 };
 	AdjustWindowRect(&clientRect, WS_OVERLAPPEDWINDOW, true);
 
-	g_hBottomWnd = CreateWindowW(L"BottomWnd", L"Bottom", (WS_POPUP|WS_CAPTION|WS_THICKFRAME|WS_VISIBLE),
+	g_hBottomWnd = CreateWindowW(g_szBottomWndClass, g_szBottomWndTitle, (WS_POPUP|WS_CAPTION|WS_THICKFRAME|WS_VISIBLE),
 		0, 0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, hWnd, nullptr, hInstance, nullptr);
 
 	ShowWindow(g_hBottomWnd, nCmdShow);
 	UpdateWindow(g_hBottomWnd);
 
 	// 우측 다이얼로그
-	g_hRightWnd = CreateDialog(g_hInst, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, RightWndProc);
+	g_hRightWnd = CreateDialog(g_hInst, MAKEINTRESOURCE(g_nRightDlgId), hWnd, RightWndProc);
 
 	if (!hWnd)
 	{
@@ -144,7 +140,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_CREATE:
 	{
-		
 	}
 	break;
 	case WM_COMMAND:
@@ -153,10 +148,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// 메뉴 선택을 구문 분석합니다:
 		switch (wmId)
 		{
-		case IDM_ABOUT:
-			DialogBox(g_hInst, MAKEINTRESOURCE(IDD_DIALOG2), hWnd, About);
-			break;
-
 		case ID_32771: // 메뉴 - 열기
 		{
 			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
@@ -302,25 +293,6 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
-}
-
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
-	case WM_INITDIALOG:
-		return (INT_PTR)TRUE;
-
-	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
-			EndDialog(hDlg, LOWORD(wParam));
-			return (INT_PTR)TRUE;
-		}
-		break;
-	}
-	return (INT_PTR)FALSE;
 }
 
 INT_PTR CALLBACK RightWndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)

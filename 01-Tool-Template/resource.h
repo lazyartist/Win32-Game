@@ -12,7 +12,6 @@
 #define IDC_MY01TOOL                    109
 #define IDR_MAINFRAME                   128
 #define IDD_DIALOG1                     129
-#define IDD_DIALOG2                     130
 #define ID_32771                        32771
 #define ID_32772                        32772
 #define IDC_STATIC                      -1

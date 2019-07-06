@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Test", "Test\Test.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "01-Tool-Template", "01-Tool-Template\01-Tool-Template.vcxproj", "{99C5ADEA-3739-444A-ABE1-376CC421F562}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "02-Tool-CutSprite", "02-Tool-CutSprite\02-Tool-CutSprite.vcxproj", "{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{99C5ADEA-3739-444A-ABE1-376CC421F562}.Release|x64.Build.0 = Release|x64
 		{99C5ADEA-3739-444A-ABE1-376CC421F562}.Release|x86.ActiveCfg = Release|Win32
 		{99C5ADEA-3739-444A-ABE1-376CC421F562}.Release|x86.Build.0 = Release|Win32
+		{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}.Debug|x64.ActiveCfg = Debug|x64
+		{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}.Debug|x64.Build.0 = Debug|x64
+		{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}.Debug|x86.ActiveCfg = Debug|Win32
+		{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}.Debug|x86.Build.0 = Debug|Win32
+		{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}.Release|x64.ActiveCfg = Release|x64
+		{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}.Release|x64.Build.0 = Release|x64
+		{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}.Release|x86.ActiveCfg = Release|Win32
+		{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
