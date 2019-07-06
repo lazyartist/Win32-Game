@@ -22,7 +22,12 @@ WCHAR g_szBottomWndTitle[] = L"Bottom";           // 제목 표시줄 텍스트
 WCHAR g_szMainWndClass[] = L"MainWnd";            // 메인창 클래스 이름
 WCHAR g_szBottomWndClass[] = L"BottomWnd";        // 하단창 클래스 이름
 
-UINT g_nRightDlgId = IDD_DIALOG1;                 // 우측 다이얼로그 리소스 아이디
+const UINT g_nRightDlgId = IDD_DIALOG1;           // 우측 다이얼로그 리소스 ID
+const UINT g_nMenuId = IDC_MY01TOOL;			  // 메뉴 ID
+const UINT g_nIconId = IDI_MY01TOOL;			  // 아이콘 ID
+const UINT g_nSmallIconId = IDI_SMALL;			  // 작은 아이콘 ID
+const UINT g_nMenuId_OpenFile = ID_32771;		  // 파일 열기 메뉴 ID
+const UINT g_nMenuId_SaveFile = ID_32772;		  // 파일 저장 메뉴 ID
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -50,14 +55,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY01TOOL));
-
 	MSG msg;
 
 	// 기본 메시지 루프입니다:
 	while (GetMessage(&msg, nullptr, 0, 0))
 	{
-		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+		if (!TranslateAccelerator(msg.hwnd, nullptr, &msg))
 		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
@@ -80,12 +83,12 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
-	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY01TOOL));
+	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(g_nIconId));
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MY01TOOL);
+	wcex.lpszMenuName = MAKEINTRESOURCEW(g_nMenuId);
 	wcex.lpszClassName = g_szMainWndClass;
-	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(g_nSmallIconId));
 	RegisterClassExW(&wcex);
 
 	// 하단 윈도우 등록
@@ -148,7 +151,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// 메뉴 선택을 구문 분석합니다:
 		switch (wmId)
 		{
-		case ID_32771: // 메뉴 - 열기
+		case g_nMenuId_OpenFile: // 메뉴 - 열기
 		{
 			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
 			static char lpstrFile[MAX_PATH];
@@ -174,7 +177,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
-		case ID_32772: // 메뉴 - 저장
+		case g_nMenuId_SaveFile: // 메뉴 - 저장
 		{
 			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
 			static char lpstrFile[MAX_PATH];
