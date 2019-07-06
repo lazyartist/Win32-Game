@@ -5,8 +5,8 @@
 
 #define MAX_LOADSTRING 100
 
-POINT g_whMainWndSize = { 800, 600 };
-POINT g_whBottomWndSize = { 800, 300 };
+POINT g_whMainWndSize = { 800, 500 };
+POINT g_whBottomWndSize = { 800, 250 };
 POINT g_whRightWndSize = { 0, 0 }; // 리소스에 의해 결정
 
 // 전역 변수:
