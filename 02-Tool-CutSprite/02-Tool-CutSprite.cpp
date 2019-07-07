@@ -36,12 +36,18 @@ const UINT g_nSmallIconId = IDI_SMALL;			  // 작은 아이콘 ID
 const UINT g_nMenuId_OpenFile = ID_32771;		  // 파일 열기 메뉴 ID
 const UINT g_nMenuId_SaveFile = ID_32772;		  // 파일 저장 메뉴 ID
 
+BitmapViewInfo g_BitmapViewInfo;
+
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 
 LRESULT CALLBACK    MainWndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    BottomWndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    RightWndProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    RightDlgProc(HWND, UINT, WPARAM, LPARAM);
+
+//void callback_RightWnd();
+
+//RightWnd g_RightWnd;
 
 void UpdateSubWndPosition();
 void SetWindowPositionToCenter(HWND hWnd);
@@ -133,7 +139,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	UpdateWindow(g_hBottomWnd);
 
 	// 우측 다이얼로그
-	g_hRightWnd = CreateDialog(g_hInst, MAKEINTRESOURCE(g_nRightDlgId), hWnd, RightWndProc);
+	g_hRightWnd = CreateDialog(g_hInst, MAKEINTRESOURCE(g_nRightDlgId), hWnd, RightDlgProc);
 
 	if (!hWnd)
 	{
@@ -160,9 +166,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		g_hMemDC = CreateCompatibleDC(hdc);
 		SelectObject(g_hMemDC, hBitmap);
-		BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
-		TransparentBlt(hdc, 0, 0, g_bitmapHeader.bmWidth * 2, g_bitmapHeader.bmHeight * 2,
-			g_hMemDC, 0, 0, g_bitmapHeader.bmWidth*2, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
+		//BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
 
 		DeleteObject(hBitmap);
 		DeleteDC(hdc);
@@ -171,6 +175,16 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		//InvalidateRect(hWnd, nullptr, true);
 	}
 	break;
+
+	case WM_SETCURSOR:
+		if (g_BitmapViewInfo.IsTransparentColorPickMode) {
+			SetCursor(LoadCursor(nullptr, IDC_HAND));
+		}
+		else {
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+		break;
+
 	case WM_COMMAND:
 	{
 		int wmId = LOWORD(wParam);
@@ -248,25 +262,43 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	break;
 	case WM_LBUTTONDOWN:
 	{
-		g_bIsDrag = true;
+		if (g_BitmapViewInfo.IsTransparentColorPickMode) {
+			int x = GET_X_LPARAM(lParam);
+			int y = GET_Y_LPARAM(lParam);
 
-		// 멀티 모니터에서 부정확한 좌표를 반환하기 때문에 GET_X_LPARAM, GET_Y_LPARAM를 사용
-		//rect.left = LOWORD(lParam);
-		//rect.top = HIWORD(lParam);
-		g_rectDrag.left = GET_X_LPARAM(lParam);
-		g_rectDrag.top = GET_Y_LPARAM(lParam);
-		g_rectDrag.right = g_rectDrag.left;
-		g_rectDrag.bottom = g_rectDrag.top;
+			HDC hdc = GetDC(hWnd);
+			COLORREF color = GetPixel(hdc, x, y);
+			g_BitmapViewInfo.TransparentColor = color;
+			DeleteDC(hdc);
+
+			InvalidateRect(g_hRightWnd, nullptr, true);
+		}
+		else {
+			g_bIsDrag = true;
+
+			// 멀티 모니터에서 부정확한 좌표를 반환하기 때문에 GET_X_LPARAM, GET_Y_LPARAM를 사용
+			//rect.left = LOWORD(lParam);
+			//rect.top = HIWORD(lParam);
+			g_rectDrag.left = GET_X_LPARAM(lParam);
+			g_rectDrag.top = GET_Y_LPARAM(lParam);
+			g_rectDrag.right = g_rectDrag.left;
+			g_rectDrag.bottom = g_rectDrag.top;
+		}
 	}
 	break;
 	case WM_LBUTTONUP:
 	{
-		g_bIsDrag = false;
+		if (g_BitmapViewInfo.IsTransparentColorPickMode) {
+			g_BitmapViewInfo.IsTransparentColorPickMode = false;
+		}
+		else {
+			g_bIsDrag = false;
 
-		g_rectDrag.right = GET_X_LPARAM(lParam);
-		g_rectDrag.bottom = GET_Y_LPARAM(lParam);
+			g_rectDrag.right = GET_X_LPARAM(lParam);
+			g_rectDrag.bottom = GET_Y_LPARAM(lParam);
 
-		InvalidateRect(hWnd, nullptr, true);
+			InvalidateRect(hWnd, nullptr, true);
+		}
 	}
 	break;
 	case WM_PAINT:
@@ -275,7 +307,13 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		HDC hdc = BeginPaint(hWnd, &ps);
 
 		// bitmap
-		BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
+		// 단순 복사
+		//BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
+		// 확대/축소 복사
+		//StretchBlt(hdc, 0, 0, g_bitmapHeader.bmWidth * 2, g_bitmapHeader.bmHeight * 2, g_hMemDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, SRCCOPY);
+		// 확대/축소, 지정색 제거 복사
+		TransparentBlt(hdc, 0, 0, g_bitmapHeader.bmWidth * g_BitmapViewInfo.Magnification, g_bitmapHeader.bmHeight * g_BitmapViewInfo.Magnification,
+			g_hMemDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
 
 		// draw rect
 		SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
@@ -370,7 +408,7 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 	return 0;
 }
 
-INT_PTR CALLBACK RightWndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	UNREFERENCED_PARAMETER(lParam);
 	switch (message)
@@ -389,7 +427,56 @@ INT_PTR CALLBACK RightWndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 	}
 	return (INT_PTR)TRUE;
 
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hDlg, &ps);
+
+		HBRUSH hBrush = CreateSolidBrush(g_BitmapViewInfo.TransparentColor);
+		HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
+
+		RECT rectColorPickButton;
+		GetWindowRect(GetDlgItem(hDlg, IDC_BUTTON3), &rectColorPickButton); // 컨트롤의 스크린 좌표 얻기
+		POINT ptColorPickButton = { rectColorPickButton.left, rectColorPickButton.top };
+		ScreenToClient(hDlg, &ptColorPickButton); // 컨트롤의 스크린 좌표를 클라이언트 좌표로 변경
+		Rectangle(hdc, ptColorPickButton.x + 100, ptColorPickButton.y, ptColorPickButton.x + 150, ptColorPickButton.y + 25);
+
+		EndPaint(hDlg, &ps);
+	}
+
+	case WM_SETCURSOR:
+		if (g_BitmapViewInfo.IsTransparentColorPickMode) {
+			SetCursor(LoadCursor(nullptr, IDC_HAND));
+			return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
+		}
+		break;
+
 	case WM_COMMAND:
+		switch (LOWORD(wParam))
+		{
+		case IDC_BUTTON1: // 확대
+		{
+			g_BitmapViewInfo.Magnification += 1.0f;
+			InvalidateRect(g_hMainWnd, nullptr, true);
+		}
+		break;
+		case IDC_BUTTON2: // 축소
+		{
+			g_BitmapViewInfo.Magnification -= 1.0f;
+			InvalidateRect(g_hMainWnd, nullptr, true);
+		}
+		break;
+		case IDC_BUTTON3: // 컬러 선택
+		{
+			g_BitmapViewInfo.IsTransparentColorPickMode = true;
+
+			SetCursor(LoadCursor(nullptr, IDC_HAND));
+			return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
+		}
+		break;
+		default:
+			break;
+		}
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
 		{
 			EndDialog(hDlg, LOWORD(wParam));
@@ -397,8 +484,14 @@ INT_PTR CALLBACK RightWndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		}
 		break;
 	}
+
 	return (INT_PTR)FALSE;
 }
+
+//void callback_RightWnd()
+//{
+//	log("callback_RightWnd");
+//}
 
 // 윈도우의 위치를 스크린 가운데로 옮김
 void SetWindowPositionToCenter(HWND hWnd) {

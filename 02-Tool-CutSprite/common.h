@@ -6,6 +6,11 @@
 
 using namespace std;
 
+// 함수 포인터
+typedef LRESULT (CALLBACK *WndProc)(HWND, UINT, WPARAM, LPARAM); // 윈도우 프로시저
+typedef INT_PTR (CALLBACK *DlgProc)(HWND, UINT, WPARAM, LPARAM); // 다이얼로그 프로시저
+
+typedef void (*CallbackFunc)(); // 이벤트 콜백
 
 // ===== define =====
 //#define Max_Account_Text 10 + 1
@@ -33,6 +38,11 @@ using namespace std;
 
 
 // ===== struct =====
+typedef struct _BitmapViewInfo {
+	float Magnification = 1.0;
+	bool IsTransparentColorPickMode;
+	COLORREF TransparentColor;
+} BitmapViewInfo;
 //typedef struct _Student {
 //	char Id[Max_Student_Id];
 //	char Name[Max_Student_Name];

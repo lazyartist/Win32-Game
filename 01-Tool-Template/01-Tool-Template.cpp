@@ -34,7 +34,7 @@ BOOL                InitInstance(HINSTANCE, int);
 
 LRESULT CALLBACK    MainWndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    BottomWndProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    RightWndProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    RightDlgProc(HWND, UINT, WPARAM, LPARAM);
 
 void UpdateSubWndPosition();
 void SetWindowPositionToCenter(HWND hWnd);
@@ -125,7 +125,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	UpdateWindow(g_hBottomWnd);
 
 	// 우측 다이얼로그
-	g_hRightWnd = CreateDialog(g_hInst, MAKEINTRESOURCE(g_nRightDlgId), hWnd, RightWndProc);
+	g_hRightWnd = CreateDialog(g_hInst, MAKEINTRESOURCE(g_nRightDlgId), hWnd, RightDlgProc);
 
 	if (!hWnd)
 	{
@@ -298,7 +298,7 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 	return 0;
 }
 
-INT_PTR CALLBACK RightWndProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	UNREFERENCED_PARAMETER(lParam);
 	switch (message)
