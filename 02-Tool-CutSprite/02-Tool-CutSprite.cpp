@@ -39,7 +39,7 @@ const UINT g_nMenuId_SaveFile = ID_32772;		  // 파일 저장 메뉴 ID
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 
-LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK    MainWndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    BottomWndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    RightWndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -86,7 +86,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 	// 메인 윈도우 등록
 	wcex.style = CS_HREDRAW | CS_VREDRAW;
-	wcex.lpfnWndProc = WndProc;
+	wcex.lpfnWndProc = MainWndProc;
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
@@ -113,7 +113,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	RECT clientRect = { 0, 0, g_whMainWndSize.x - 1, g_whMainWndSize.y - 1 };
 	AdjustWindowRect(&clientRect, WS_OVERLAPPEDWINDOW, true);
 
-	HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
+	//HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
+	HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_VSCROLL | WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
 		CW_USEDEFAULT, 0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, nullptr, nullptr, hInstance, nullptr);
 
 	g_hMainWnd = hWnd;
@@ -144,7 +145,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	return TRUE;
 }
 
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
