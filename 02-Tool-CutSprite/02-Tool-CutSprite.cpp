@@ -4,6 +4,7 @@
 #include <commdlg.h> // GetOpenFileName()
 #include <iostream> // sprintf_s()
 #include "common.h"
+#include "CutImage.h"
 
 #define MAX_LOADSTRING 100
 
@@ -37,6 +38,7 @@ const UINT g_nMenuId_OpenFile = ID_32771;		  // 파일 열기 메뉴 ID
 const UINT g_nMenuId_SaveFile = ID_32772;		  // 파일 저장 메뉴 ID
 
 BitmapViewInfo g_BitmapViewInfo;
+CutImage g_CutImage;
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -168,6 +170,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		SelectObject(g_hMemDC, hBitmap);
 		//BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
 
+		g_CutImage.Init(g_hMemDC, g_bitmapHeader);
+
 		DeleteObject(hBitmap);
 		DeleteDC(hdc);
 		//DeleteDC(hMemDC);
@@ -296,6 +300,11 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			g_rectDrag.right = GET_X_LPARAM(lParam);
 			g_rectDrag.bottom = GET_Y_LPARAM(lParam);
+
+			//POINT pt = { g_rectDrag.left, g_rectDrag.top };
+
+			g_rectDrag = g_CutImage.FitToImage(g_rectDrag, g_BitmapViewInfo.TransparentColor);
+			//g_rectDrag.top = g_CutImage.ScanTop(g_hMemDC, pt);
 
 			InvalidateRect(hWnd, nullptr, true);
 		}
