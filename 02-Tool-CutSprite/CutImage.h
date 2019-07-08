@@ -14,6 +14,12 @@ public:
 private:
 	RECT ScanTop(RECT rect);
 
+	RECT ScanBottom(RECT rect);
+
+	RECT ScanLeft(RECT rect);
+
+	RECT ScanRight(RECT rect);
+
 	HDC _hdc;
 	COLORREF _transparentColor;
 	BITMAP _bitmapHeader;

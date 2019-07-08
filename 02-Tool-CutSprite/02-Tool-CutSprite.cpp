@@ -3,6 +3,7 @@
 #include <windowsx.h> // GET_X_LPARAM
 #include <commdlg.h> // GetOpenFileName()
 #include <iostream> // sprintf_s()
+//#include <math.h> // ceil()
 #include "common.h"
 #include "CutImage.h"
 
@@ -160,7 +161,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CREATE:
 	{
 		// load bitmap
-		HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100_red.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
 		GetObject(hBitmap, sizeof(BITMAP), &g_bitmapHeader);
 
@@ -174,9 +178,9 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		DeleteObject(hBitmap);
 		DeleteDC(hdc);
-		//DeleteDC(hMemDC);
 
-		//InvalidateRect(hWnd, nullptr, true);
+		// transparent color
+		g_BitmapViewInfo.TransparentColor = GetPixel(g_hMemDC, 0, 0);
 	}
 	break;
 
@@ -258,10 +262,14 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_MOUSEMOVE:
 	{
 		if (g_bIsDrag) {
-			g_rectDrag.right = GET_X_LPARAM(lParam);
-			g_rectDrag.bottom = GET_Y_LPARAM(lParam);
+			float fMagnification = g_BitmapViewInfo.Magnification;
+
+			g_rectDrag.right = round(GET_X_LPARAM(lParam) / fMagnification);
+			g_rectDrag.bottom = round(GET_Y_LPARAM(lParam) / fMagnification);
 			InvalidateRect(hWnd, nullptr, true);
+			dlog(g_rectDrag);
 		}
+		dlog(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 	}
 	break;
 	case WM_LBUTTONDOWN:
@@ -283,10 +291,22 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			// 멀티 모니터에서 부정확한 좌표를 반환하기 때문에 GET_X_LPARAM, GET_Y_LPARAM를 사용
 			//rect.left = LOWORD(lParam);
 			//rect.top = HIWORD(lParam);
-			g_rectDrag.left = GET_X_LPARAM(lParam);
-			g_rectDrag.top = GET_Y_LPARAM(lParam);
+
+			//float fMagnification = g_BitmapViewInfo.Magnification;
+
+			/*g_rectDrag.left = GET_X_LPARAM(lParam) / fMagnification;
+			g_rectDrag.top = GET_Y_LPARAM(lParam) / fMagnification;
+			g_rectDrag.right = g_rectDrag.left / fMagnification;
+			g_rectDrag.bottom = g_rectDrag.top / fMagnification;*/
+
+			g_rectDrag.left = round(GET_X_LPARAM(lParam));
+			g_rectDrag.top = round(GET_Y_LPARAM(lParam));
 			g_rectDrag.right = g_rectDrag.left;
 			g_rectDrag.bottom = g_rectDrag.top;
+
+			//log(g_rectDrag.left, g_rectDrag.top);
+
+			g_rectDrag = DivideMagnificationTo(g_rectDrag, g_BitmapViewInfo.Magnification);
 		}
 	}
 	break;
@@ -298,13 +318,31 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		else {
 			g_bIsDrag = false;
 
-			g_rectDrag.right = GET_X_LPARAM(lParam);
-			g_rectDrag.bottom = GET_Y_LPARAM(lParam);
+			float fMagnification = g_BitmapViewInfo.Magnification;
 
-			//POINT pt = { g_rectDrag.left, g_rectDrag.top };
+			auto x = GET_X_LPARAM(lParam);
+			auto y = GET_Y_LPARAM(lParam);
+			dlog("up x,y = ", x, y);
+
+			g_rectDrag.right = round(GET_X_LPARAM(lParam) / fMagnification);
+			g_rectDrag.bottom = round(GET_Y_LPARAM(lParam) / fMagnification);
+
+			// top과 left가 bottom과 right보다 항상 작도록 수정
+			if (g_rectDrag.right < g_rectDrag.left) {
+				LONG temp = g_rectDrag.left;
+				g_rectDrag.left = g_rectDrag.right;
+				g_rectDrag.right = temp;
+			}
+			if (g_rectDrag.bottom < g_rectDrag.top) {
+				LONG temp = g_rectDrag.top;
+				g_rectDrag.top = g_rectDrag.bottom;
+				g_rectDrag.bottom = temp;
+			}
+
+			dlog("up rect. = ", x, y);
+
 
 			g_rectDrag = g_CutImage.FitToImage(g_rectDrag, g_BitmapViewInfo.TransparentColor);
-			//g_rectDrag.top = g_CutImage.ScanTop(g_hMemDC, pt);
 
 			InvalidateRect(hWnd, nullptr, true);
 		}
@@ -315,27 +353,38 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 
+		float fMagnification = g_BitmapViewInfo.Magnification;
 		// bitmap
 		// 단순 복사
 		//BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
 		// 확대/축소 복사
 		//StretchBlt(hdc, 0, 0, g_bitmapHeader.bmWidth * 2, g_bitmapHeader.bmHeight * 2, g_hMemDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, SRCCOPY);
 		// 확대/축소, 지정색 제거 복사
-		TransparentBlt(hdc, 0, 0, g_bitmapHeader.bmWidth * g_BitmapViewInfo.Magnification, g_bitmapHeader.bmHeight * g_BitmapViewInfo.Magnification,
+		TransparentBlt(hdc, 0, 0, g_bitmapHeader.bmWidth * fMagnification, g_bitmapHeader.bmHeight * fMagnification,
 			g_hMemDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
 
 		// draw rect
-		SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
-		//HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
-		//HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
-		Rectangle(hdc, g_rectDrag.left, g_rectDrag.top, g_rectDrag.right, g_rectDrag.bottom);
+		//SetROP2(hdc, R2_BLACK); // 외곽은 검은색, 내부는 비어있는 사각형
+		//SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
+		SetROP2(hdc, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
+
+		// Rectangle 고려사항
+		// 1. Rectangle은 left, top좌표에 해당하는 픽셀에 라인을 그리지만 right, bottom은 해당하는 픽셀 - 1 위치에 라인을 그린다.
+		// 따라서 right, bottom에 +1 한다.
+		// 2. 확대 시 픽셀이 1x1 -> 2x2 -> 3x3 으로 확대되기 때문에 드래그 영역을 배수곱만 하면 확대된 픽셀의 첫번째 픽셀에 그려진다.
+		// 따라서 확대된 픽셀의 바깥쪽에 라인을 그리려면 배수를 더해주는데 2배이상부터 보정해야하므로 배율에서 -1한 값을 더해준다.
+		UINT pixelOffset = fMagnification - 1;
+		Rectangle(hdc, g_rectDrag.left * fMagnification, g_rectDrag.top * fMagnification, g_rectDrag.right * fMagnification + 1 + pixelOffset, g_rectDrag.bottom * fMagnification + 1 + pixelOffset);
+
+		//dlog("rect", g_rectDrag);
+		//_dlog("rect m", 4, g_rectDrag.left * fMagnification, g_rectDrag.top * fMagnification, g_rectDrag.right * fMagnification, g_rectDrag.bottom * fMagnification);
 
 		// clear
 		//DeleteObject(SelectObject(hdc, hOldPen));
 
 		EndPaint(hWnd, &ps);
 
-		log("WM_PAINT");
+		dlog("WM_PAINT");
 	}
 	break;
 	case WM_MOVE:
@@ -450,6 +499,10 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		ScreenToClient(hDlg, &ptColorPickButton); // 컨트롤의 스크린 좌표를 클라이언트 좌표로 변경
 		Rectangle(hdc, ptColorPickButton.x + 100, ptColorPickButton.y, ptColorPickButton.x + 150, ptColorPickButton.y + 25);
 
+		char cMagnification[9];
+		_itoa_s(g_BitmapViewInfo.Magnification, cMagnification, 9, 10);
+		SetDlgItemText(hDlg, IDC_EDIT1, cMagnification);
+
 		EndPaint(hDlg, &ps);
 	}
 
@@ -467,12 +520,18 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		{
 			g_BitmapViewInfo.Magnification += 1.0f;
 			InvalidateRect(g_hMainWnd, nullptr, true);
+			InvalidateRect(hDlg, nullptr, true);
+
+			//char cMagnification[9];
+			//_itoa_s(g_BitmapViewInfo.Magnification, cMagnification, 9, 10);
+			//SetDlgItemText(hDlg, IDC_EDIT1, cMagnification);
 		}
 		break;
 		case IDC_BUTTON2: // 축소
 		{
 			g_BitmapViewInfo.Magnification -= 1.0f;
 			InvalidateRect(g_hMainWnd, nullptr, true);
+			InvalidateRect(hDlg, nullptr, true);
 		}
 		break;
 		case IDC_BUTTON3: // 컬러 선택
