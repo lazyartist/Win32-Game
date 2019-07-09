@@ -161,10 +161,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CREATE:
 	{
 		// load bitmap
-		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-		HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100_red.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100_red.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
 		GetObject(hBitmap, sizeof(BITMAP), &g_bitmapHeader);
 
