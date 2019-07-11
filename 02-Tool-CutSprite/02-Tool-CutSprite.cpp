@@ -123,7 +123,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	AdjustWindowRect(&clientRect, WS_OVERLAPPEDWINDOW, true);
 
 	//HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
-	HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_VSCROLL | WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
+	HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_VSCROLL | WS_HSCROLL | WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
 		CW_USEDEFAULT, 0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, nullptr, nullptr, hInstance, nullptr);
 
 	g_hMainWnd = hWnd;
@@ -181,6 +181,11 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		// transparent color
 		g_BitmapViewInfo.TransparentColor = GetPixel(g_hMemDC, 0, 0);
+
+		// 윈도우 스타일에서 WS_VSCROLL | WS_HSCROLL를 지정하지 않았어도 ShowScrollBar()로 스크롤 보이기 가능 
+		//ShowScrollBar(hWnd, SB_HORZ, true);
+		//ShowScrollBar(hWnd, SB_VERT, true);
+
 	}
 	break;
 
@@ -403,6 +408,39 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		MoveWindow(g_hMainWnd, rect.left, rect.top, g_whMainWndSize.x, g_whMainWndSize.y, true);
 	}
 	break;
+	case WM_HSCROLL:
+	{
+		int hScrollPos = 0;
+
+		switch (LOWORD(wParam))
+		{
+		case SB_LINELEFT:
+			break;
+		case SB_THUMBTRACK:
+		{
+			hScrollPos = HIWORD(wParam);
+			//SetScrollPos((HWND)lParam, SB_HORZ, hScrollPos, true);
+			//SetScrollPos((HWND)lParam, SB_HORZ, 50, true);
+			//SetScrollPos((HWND)lParam, SB_BOTH, hScrollPos, true);
+			dlog("WM_HSCROLL", LOWORD(wParam), hScrollPos);
+			//InvalidateRect(hWnd, nullptr, false);
+
+			SetScrollPos(hWnd, SB_HORZ, hScrollPos, true);
+
+			ScrollWindow(hWnd, -1, 0, nullptr, nullptr);
+			//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
+
+		}
+			break;
+		default:
+			break;
+		}
+
+		//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
+		//SetScrollPos(hWnd, SB_HORZ, hScrollPos, true);
+			//InvalidateRect(hWnd, nullptr, false);
+	}
+	break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -521,6 +559,9 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			g_BitmapViewInfo.Magnification += 1.0f;
 			InvalidateRect(g_hMainWnd, nullptr, true);
 			InvalidateRect(hDlg, nullptr, true);
+
+			SetScrollRange(g_hMainWnd, SB_HORZ, 0, 100, true);
+			//SetScrollPos(g_hMainWnd, SB_HORZ, 50, true);
 
 			//char cMagnification[9];
 			//_itoa_s(g_BitmapViewInfo.Magnification, cMagnification, 9, 10);
