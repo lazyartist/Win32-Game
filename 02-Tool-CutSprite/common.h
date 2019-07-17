@@ -45,7 +45,7 @@ typedef struct _WH {
 } WH;
 
 typedef struct _BitmapViewInfo {
-	float Magnification = 1.0;
+	float Magnification = 8.0;
 	//float Magnification = 60.0;
 	bool IsTransparentColorPickMode;
 	COLORREF TransparentColor;
@@ -75,16 +75,64 @@ inline WH ScreenRectToWH(RECT rect) {
 
 	return wh;
 }
+//
+//inline RECT DivideMagnificationTo(RECT rect, float magnification) {
+//	rect.top = rect.top / magnification;
+//	rect.left = rect.left / magnification;
+//	rect.right = rect.right / magnification;
+//	rect.bottom = ceil(rect.bottom / magnification);
+//
+//	return rect;
+//}
+// ===== function ===== end
 
-inline RECT DivideMagnificationTo(RECT rect, float magnification) {
-	rect.top = rect.top / magnification;
-	rect.left = rect.left / magnification;
-	rect.right = rect.right / magnification;
-	rect.bottom = ceil(rect.bottom / magnification);
+// ===== global operation overloading ===== 
+inline RECT operator*(RECT rect, float v) {
+	rect.top *= v;
+	rect.left *= v;
+	rect.right *= v;
+	rect.bottom *= v;
 
 	return rect;
 }
-// ===== function ===== end
+
+inline RECT operator/(RECT rect, float v) {
+	rect.top /= v;
+	rect.left /= v;
+	rect.right /= v;
+	rect.bottom /= v;
+
+	return rect;
+}
+
+inline RECT operator+(RECT rect, int v) {
+	rect.top += v;
+	rect.left += v;
+	rect.right += v;
+	rect.bottom += v;
+
+	return rect;
+}
+
+inline RECT operator+(RECT rect, POINT pnt) {
+	rect.top += pnt.y;
+	rect.left += pnt.x;
+	rect.right += pnt.x;
+	rect.bottom += pnt.y;
+
+	return rect;
+}
+
+inline RECT operator-(RECT rect, POINT pnt) {
+	rect.top -= pnt.y;
+	rect.left -= pnt.x;
+	rect.right -= pnt.x;
+	rect.bottom -= pnt.y;
+
+	return rect;
+}
+// ===== operation overloading ===== end
+
 
 // ===== log =====
 // for string

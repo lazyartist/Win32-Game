@@ -16,10 +16,13 @@ POINT g_whRightWndSize = { 0, 0 }; // 리소스에 의해 결정
 // 전역 변수:
 HINSTANCE g_hInst;                                // 현재 인스턴스입니다.
 
+HDC g_hSrcDC;
 HDC g_hMemDC;
+HBITMAP g_hBitmap;
 BITMAP g_bitmapHeader;
 bool g_bIsDrag = false;
 RECT g_rectDrag = { 10, 10, 100, 100 };
+POINT g_pntScrollPos = {0, 0};
 
 HWND g_hMainWnd;                                  // 메인 윈도우
 HWND g_hRightWnd;                                 // 오른쪽 윈도우
@@ -52,6 +55,7 @@ INT_PTR CALLBACK    RightDlgProc(HWND, UINT, WPARAM, LPARAM);
 
 //RightWnd g_RightWnd;
 
+void UpdateMainWndScroll();
 void UpdateSubWndPosition();
 void SetWindowPositionToCenter(HWND hWnd);
 
@@ -122,11 +126,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	RECT clientRect = { 0, 0, g_whMainWndSize.x - 1, g_whMainWndSize.y - 1 };
 	AdjustWindowRect(&clientRect, WS_OVERLAPPEDWINDOW, true);
 
-	//HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
-	HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_VSCROLL | WS_HSCROLL | WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
+	HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
 		CW_USEDEFAULT, 0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, nullptr, nullptr, hInstance, nullptr);
 
 	g_hMainWnd = hWnd;
+
+	UpdateMainWndScroll();
 
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
@@ -161,31 +166,39 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CREATE:
 	{
 		// load bitmap
-		HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100_red.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
-		GetObject(hBitmap, sizeof(BITMAP), &g_bitmapHeader);
+		GetObject(g_hBitmap, sizeof(BITMAP), &g_bitmapHeader);
 
 		HDC hdc = GetDC(hWnd);
 
+		// 원본 DC
+		g_hSrcDC = CreateCompatibleDC(hdc);
+		SelectObject(g_hSrcDC, g_hBitmap);
+
+		// 버퍼 DC
 		g_hMemDC = CreateCompatibleDC(hdc);
-		SelectObject(g_hMemDC, hBitmap);
-		//BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
+		if (g_hMemDC == nullptr) {
+			DeleteDC(g_hMemDC);
+			delete g_hMemDC;
+		}
+		// 메모리 DC에는 기본적으로 아주 작은 크기의 비트맵만 있기 때문에 다른 DC를 복사하려면 비트맵을 만들어줘야한다.
+		// SetObject()로 비트맵을 지정할 경우는 안해도 된다.
+		HBITMAP hBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
+		SelectObject(g_hMemDC, hBitmap); 
 
-		g_CutImage.Init(g_hMemDC, g_bitmapHeader);
+		g_CutImage.Init(g_hSrcDC, g_bitmapHeader);
 
-		DeleteObject(hBitmap);
+		DeleteObject(g_hBitmap);
 		DeleteDC(hdc);
 
 		// transparent color
-		g_BitmapViewInfo.TransparentColor = GetPixel(g_hMemDC, 0, 0);
+		g_BitmapViewInfo.TransparentColor = GetPixel(g_hSrcDC, 0, 0);
 
-		// 윈도우 스타일에서 WS_VSCROLL | WS_HSCROLL를 지정하지 않았어도 ShowScrollBar()로 스크롤 보이기 가능 
-		//ShowScrollBar(hWnd, SB_HORZ, true);
-		//ShowScrollBar(hWnd, SB_VERT, true);
-
+		UpdateMainWndScroll();
 	}
 	break;
 
@@ -269,8 +282,9 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		if (g_bIsDrag) {
 			float fMagnification = g_BitmapViewInfo.Magnification;
 
-			g_rectDrag.right = round(GET_X_LPARAM(lParam) / fMagnification);
-			g_rectDrag.bottom = round(GET_Y_LPARAM(lParam) / fMagnification);
+			g_rectDrag.right = round((GET_X_LPARAM(lParam) + g_pntScrollPos.x) / fMagnification);
+			g_rectDrag.bottom = round((GET_Y_LPARAM(lParam) + g_pntScrollPos.y) / fMagnification);
+
 			InvalidateRect(hWnd, nullptr, true);
 			dlog(g_rectDrag);
 		}
@@ -297,13 +311,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			//rect.left = LOWORD(lParam);
 			//rect.top = HIWORD(lParam);
 
-			//float fMagnification = g_BitmapViewInfo.Magnification;
-
-			/*g_rectDrag.left = GET_X_LPARAM(lParam) / fMagnification;
-			g_rectDrag.top = GET_Y_LPARAM(lParam) / fMagnification;
-			g_rectDrag.right = g_rectDrag.left / fMagnification;
-			g_rectDrag.bottom = g_rectDrag.top / fMagnification;*/
-
 			g_rectDrag.left = round(GET_X_LPARAM(lParam));
 			g_rectDrag.top = round(GET_Y_LPARAM(lParam));
 			g_rectDrag.right = g_rectDrag.left;
@@ -311,7 +318,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			//log(g_rectDrag.left, g_rectDrag.top);
 
-			g_rectDrag = DivideMagnificationTo(g_rectDrag, g_BitmapViewInfo.Magnification);
+			// 클라이언트 영역에서 스크롤을 감안하여 드래그 위치를 계산하고 확대/축소 되지 않은 원본을 위해 배율로 나눠준다.
+			g_rectDrag = (g_rectDrag + g_pntScrollPos) / g_BitmapViewInfo.Magnification;
 		}
 	}
 	break;
@@ -329,8 +337,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			auto y = GET_Y_LPARAM(lParam);
 			dlog("up x,y = ", x, y);
 
-			g_rectDrag.right = round(GET_X_LPARAM(lParam) / fMagnification);
-			g_rectDrag.bottom = round(GET_Y_LPARAM(lParam) / fMagnification);
+			g_rectDrag.right = round((GET_X_LPARAM(lParam) + g_pntScrollPos.x) / fMagnification);
+			g_rectDrag.bottom = round((GET_Y_LPARAM(lParam) + g_pntScrollPos.y) / fMagnification);
 
 			// top과 left가 bottom과 right보다 항상 작도록 수정
 			if (g_rectDrag.right < g_rectDrag.left) {
@@ -359,18 +367,19 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		HDC hdc = BeginPaint(hWnd, &ps);
 
 		float fMagnification = g_BitmapViewInfo.Magnification;
+
+		// 버퍼 DC를 원본 비트맵 DC로 덮어쓴다.
+		BitBlt(g_hMemDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hSrcDC, 0, 0, SRCCOPY);
+
 		// bitmap
-		// 단순 복사
-		//BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hMemDC, 0, 0, SRCCOPY);
-		// 확대/축소 복사
-		//StretchBlt(hdc, 0, 0, g_bitmapHeader.bmWidth * 2, g_bitmapHeader.bmHeight * 2, g_hMemDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, SRCCOPY);
+		// 단순 복사(BitBlt), 확대/축소 복사(StretchBlt)
 		// 확대/축소, 지정색 제거 복사
-		TransparentBlt(hdc, 0, 0, g_bitmapHeader.bmWidth * fMagnification, g_bitmapHeader.bmHeight * fMagnification,
-			g_hMemDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
+		TransparentBlt(hdc, -g_pntScrollPos.x, -g_pntScrollPos.y, g_bitmapHeader.bmWidth * fMagnification, g_bitmapHeader.bmHeight * fMagnification, g_hMemDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
 
 		// draw rect
 		//SetROP2(hdc, R2_BLACK); // 외곽은 검은색, 내부는 비어있는 사각형
 		//SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
+		//SetROP2(hdc, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
 		SetROP2(hdc, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
 
 		// Rectangle 고려사항
@@ -379,17 +388,17 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		// 2. 확대 시 픽셀이 1x1 -> 2x2 -> 3x3 으로 확대되기 때문에 드래그 영역을 배수곱만 하면 확대된 픽셀의 첫번째 픽셀에 그려진다.
 		// 따라서 확대된 픽셀의 바깥쪽에 라인을 그리려면 배수를 더해주는데 2배이상부터 보정해야하므로 배율에서 -1한 값을 더해준다.
 		UINT pixelOffset = fMagnification - 1;
-		Rectangle(hdc, g_rectDrag.left * fMagnification, g_rectDrag.top * fMagnification, g_rectDrag.right * fMagnification + 1 + pixelOffset, g_rectDrag.bottom * fMagnification + 1 + pixelOffset);
+		RECT rectBox = g_rectDrag * fMagnification;
+		rectBox = rectBox - g_pntScrollPos;
+		Rectangle(hdc, rectBox.left, rectBox.top , rectBox.right + 1 + pixelOffset, rectBox.bottom + 1 + pixelOffset);
 
-		//dlog("rect", g_rectDrag);
-		//_dlog("rect m", 4, g_rectDrag.left * fMagnification, g_rectDrag.top * fMagnification, g_rectDrag.right * fMagnification, g_rectDrag.bottom * fMagnification);
 
 		// clear
 		//DeleteObject(SelectObject(hdc, hOldPen));
 
 		EndPaint(hWnd, &ps);
 
-		dlog("WM_PAINT");
+		dlog("WM_PAINT aa");
 	}
 	break;
 	case WM_MOVE:
@@ -406,6 +415,49 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		RECT rect;
 		GetWindowRect(g_hMainWnd, &rect);
 		MoveWindow(g_hMainWnd, rect.left, rect.top, g_whMainWndSize.x, g_whMainWndSize.y, true);
+	}
+	break;
+	case WM_VSCROLL:
+	{
+		int vScrollPos = 0;
+
+		switch (LOWORD(wParam))
+		{
+		case SB_LINELEFT:
+			break;
+		case SB_THUMBTRACK:
+		{
+			vScrollPos = HIWORD(wParam);
+			//SetScrollPos((HWND)lParam, SB_HORZ, hScrollPos, true);
+			//SetScrollPos((HWND)lParam, SB_HORZ, 50, true);
+			//SetScrollPos((HWND)lParam, SB_BOTH, hScrollPos, true);
+			dlog("WM_VSCROLL", LOWORD(wParam), vScrollPos);
+			//InvalidateRect(hWnd, nullptr, false);
+
+			SetScrollPos(hWnd, SB_VERT, vScrollPos, true);
+
+			int yAmount = g_pntScrollPos.y - vScrollPos;
+			yAmount *= g_BitmapViewInfo.Magnification;
+			g_pntScrollPos.y = vScrollPos;
+
+			// ScrollWindow 호출 시 클라이언트 리페인트 메시지가 자동으로 발생한다.
+			//ScrollWindow(hWnd, 0, yAmount, nullptr, nullptr);
+			//UpdateWindow(hWnd); // WM_PAINT 발생
+
+			// ScrollWindow를 호출하지 않을 경우 InvalidateRect를 호출해야한다.
+			InvalidateRect(hWnd, nullptr, true);
+
+			//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
+			return 0;
+		}
+			break;
+		default:
+			break;
+		}
+
+		//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
+		//SetScrollPos(hWnd, SB_HORZ, hScrollPos, true);
+			//InvalidateRect(hWnd, nullptr, false);
 	}
 	break;
 	case WM_HSCROLL:
@@ -427,9 +479,19 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			SetScrollPos(hWnd, SB_HORZ, hScrollPos, true);
 
-			ScrollWindow(hWnd, -1, 0, nullptr, nullptr);
-			//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
+			int xAmount = g_pntScrollPos.x - hScrollPos;
+			xAmount *= g_BitmapViewInfo.Magnification;
+			g_pntScrollPos.x = hScrollPos;
 
+			// ScrollWindow 호출 시 클라이언트 리페인트 메시지가 자동으로 발생한다.
+			//ScrollWindow(hWnd, xAmount, 0, nullptr, nullptr);
+			//UpdateWindow(hWnd); // WM_PAINT 발생
+
+			// ScrollWindow를 호출하지 않을 경우 InvalidateRect를 호출해야한다.
+			InvalidateRect(hWnd, nullptr, true);
+
+			//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
+			return 0;
 		}
 			break;
 		default:
@@ -560,7 +622,9 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			InvalidateRect(g_hMainWnd, nullptr, true);
 			InvalidateRect(hDlg, nullptr, true);
 
-			SetScrollRange(g_hMainWnd, SB_HORZ, 0, 100, true);
+			UpdateMainWndScroll();
+			//SetScrollRange(g_hMainWnd, SB_HORZ, 0, g_bitmapHeader.bmWidth * g_BitmapViewInfo.Magnification, true);
+			//SetScrollRange(g_hMainWnd, SB_HORZ, 0, 100, true);
 			//SetScrollPos(g_hMainWnd, SB_HORZ, 50, true);
 
 			//char cMagnification[9];
@@ -573,6 +637,8 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			g_BitmapViewInfo.Magnification -= 1.0f;
 			InvalidateRect(g_hMainWnd, nullptr, true);
 			InvalidateRect(hDlg, nullptr, true);
+
+			UpdateMainWndScroll();
 		}
 		break;
 		case IDC_BUTTON3: // 컬러 선택
@@ -622,6 +688,30 @@ void SetWindowPositionToCenter(HWND hWnd) {
 	MoveWindow(hWnd, (screenX / 2) - (clientW / 2), (screenY / 2) - (clientH / 2), clientW, clientH, false);
 
 	UpdateSubWndPosition();
+}
+
+void UpdateMainWndScroll() {
+	int wBItmap = g_bitmapHeader.bmWidth * g_BitmapViewInfo.Magnification;
+	int hBItmap = g_bitmapHeader.bmHeight * g_BitmapViewInfo.Magnification;
+	bool bHorzScroll = wBItmap > g_whMainWndSize.x;
+	bool bVertScroll = hBItmap > g_whMainWndSize.y;
+
+	ShowScrollBar(g_hMainWnd, SB_HORZ, bHorzScroll);
+	ShowScrollBar(g_hMainWnd, SB_VERT, bVertScroll);
+
+	if (bHorzScroll) {
+		SetScrollRange(g_hMainWnd, SB_HORZ, 0, wBItmap - g_whMainWndSize.x, true);
+	}
+	else {
+		SetScrollRange(g_hMainWnd, SB_HORZ, 0, 0, true);
+	}
+
+	if (bVertScroll) {
+		SetScrollRange(g_hMainWnd, SB_VERT, 0, hBItmap - g_whMainWndSize.y, true);
+	}
+	else {
+		SetScrollRange(g_hMainWnd, SB_VERT, 0, 0, true);
+	}
 }
 
 void UpdateSubWndPosition() {
