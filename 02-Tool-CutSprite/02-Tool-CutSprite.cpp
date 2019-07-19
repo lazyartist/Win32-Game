@@ -1,8 +1,9 @@
 ﻿#include "stdafx.h"
-#include "02-Tool-CutSprite.h"
 #include <windowsx.h> // GET_X_LPARAM
 #include <commdlg.h> // GetOpenFileName()
 #include <iostream> // sprintf_s()
+#include "Commctrl.h"
+#include "02-Tool-CutSprite.h"
 //#include <math.h> // ceil()
 #include "common.h"
 #include "CutImage.h"
@@ -20,9 +21,11 @@ HDC g_hSrcDC;
 HDC g_hMemDC;
 HBITMAP g_hBitmap;
 BITMAP g_bitmapHeader;
+HWND g_hBoxList = nullptr;
+
 bool g_bIsDrag = false;
 RECT g_rectDrag = { 10, 10, 100, 100 };
-POINT g_pntScrollPos = {0, 0};
+POINT g_pntScrollPos = { 0, 0 };
 
 HWND g_hMainWnd;                                  // 메인 윈도우
 HWND g_hRightWnd;                                 // 오른쪽 윈도우
@@ -58,6 +61,8 @@ INT_PTR CALLBACK    RightDlgProc(HWND, UINT, WPARAM, LPARAM);
 void UpdateMainWndScroll();
 void UpdateSubWndPosition();
 void SetWindowPositionToCenter(HWND hWnd);
+void AddBoxToList(RECT box);
+void AddMagnification(float v);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -188,7 +193,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		// 메모리 DC에는 기본적으로 아주 작은 크기의 비트맵만 있기 때문에 다른 DC를 복사하려면 비트맵을 만들어줘야한다.
 		// SetObject()로 비트맵을 지정할 경우는 안해도 된다.
 		HBITMAP hBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
-		SelectObject(g_hMemDC, hBitmap); 
+		SelectObject(g_hMemDC, hBitmap);
 
 		g_CutImage.Init(g_hSrcDC, g_bitmapHeader);
 
@@ -378,9 +383,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		// draw rect
 		//SetROP2(hdc, R2_BLACK); // 외곽은 검은색, 내부는 비어있는 사각형
-		//SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
-		//SetROP2(hdc, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
-		SetROP2(hdc, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
+		SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
 
 		// Rectangle 고려사항
 		// 1. Rectangle은 left, top좌표에 해당하는 픽셀에 라인을 그리지만 right, bottom은 해당하는 픽셀 - 1 위치에 라인을 그린다.
@@ -388,9 +391,55 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		// 2. 확대 시 픽셀이 1x1 -> 2x2 -> 3x3 으로 확대되기 때문에 드래그 영역을 배수곱만 하면 확대된 픽셀의 첫번째 픽셀에 그려진다.
 		// 따라서 확대된 픽셀의 바깥쪽에 라인을 그리려면 배수를 더해주는데 2배이상부터 보정해야하므로 배율에서 -1한 값을 더해준다.
 		UINT pixelOffset = fMagnification - 1;
-		RECT rectBox = g_rectDrag * fMagnification;
-		rectBox = rectBox - g_pntScrollPos;
-		Rectangle(hdc, rectBox.left, rectBox.top , rectBox.right + 1 + pixelOffset, rectBox.bottom + 1 + pixelOffset);
+		char szItem[szMax_Pos];
+		RECT rectBox;
+
+		HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
+		int itemCount = ListView_GetItemCount(hList);
+		int selectedListItemIndex = ListView_GetNextItem(
+			g_hBoxList, // 윈도우 핸들
+			-1, // 검색을 시작할 인덱스
+			LVNI_SELECTED // 검색 조건
+		);
+
+		HPEN hPen = CreatePen(PS_DASHDOT, 1, RGB(0, 255, 0));
+		HPEN hOldPen = nullptr;
+		for (size_t i = 0; i < itemCount; i++)
+		{
+			ListView_GetItemText(hList, i, 1, szItem, szMax_Pos);
+			rectBox.left = atoi(szItem);
+			ListView_GetItemText(hList, i, 2, szItem, szMax_Pos);
+			rectBox.top = atoi(szItem);
+			ListView_GetItemText(hList, i, 3, szItem, szMax_Pos);
+			rectBox.right = atoi(szItem);
+			ListView_GetItemText(hList, i, 4, szItem, szMax_Pos);
+			rectBox.bottom = atoi(szItem);
+
+
+			if (selectedListItemIndex == i) {
+				hOldPen = (HPEN)SelectObject(hdc, hPen);
+				//SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
+			}
+
+			rectBox = rectBox * fMagnification;
+			rectBox = rectBox - g_pntScrollPos;
+			Rectangle(hdc, rectBox.left, rectBox.top, rectBox.right + 1 + pixelOffset, rectBox.bottom + 1 + pixelOffset);
+
+			if (hOldPen != nullptr) {
+				(HPEN)SelectObject(hdc, hOldPen);
+				hOldPen = nullptr;
+			}
+		}
+		DeleteObject(hPen);
+
+		// 현재 드래그 영역
+		if (g_rectDrag.left != g_rectDrag.right) {
+			SetROP2(hdc, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
+			RECT rectDrag = g_rectDrag * fMagnification;
+			rectDrag = rectDrag - g_pntScrollPos;
+			Rectangle(hdc, rectDrag.left, rectDrag.top, rectDrag.right + 1 + pixelOffset, rectDrag.bottom + 1 + pixelOffset);
+		}
+		
 
 
 		// clear
@@ -450,7 +499,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
 			return 0;
 		}
-			break;
+		break;
 		default:
 			break;
 		}
@@ -460,6 +509,17 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			//InvalidateRect(hWnd, nullptr, false);
 	}
 	break;
+
+	case WM_MOUSEWHEEL:
+	{
+		if (LOWORD(wParam) == MK_CONTROL) {
+			int wheel = (SHORT)(HIWORD(wParam));
+			(wheel > 0) ? AddMagnification(1.0f) : AddMagnification(-1.0f);
+			dlog("WM_MOUSEWHEEL", wheel);
+		}
+	}
+	break;
+
 	case WM_HSCROLL:
 	{
 		int hScrollPos = 0;
@@ -493,7 +553,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
 			return 0;
 		}
-			break;
+		break;
 		default:
 			break;
 		}
@@ -582,6 +642,48 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		g_whRightWndSize.y = dlgWndRect.bottom - dlgWndRect.top;
 
 		MoveWindow(hDlg, mainWndRect.right, mainWndRect.top, g_whRightWndSize.x, g_whRightWndSize.y, true);
+
+		// Box list
+		g_hBoxList = GetDlgItem(hDlg, IDC_LIST1);
+
+		// ===== List에 컬럼 추가 =====
+		// List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.
+		char colText0[] = "No";
+		char colText1[] = "left";
+		char colText2[] = "top";
+		char colText3[] = "right";
+		char colText4[] = "bottom";
+
+		LVCOLUMN col = {};
+		col.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+		col.fmt = LVCFMT_LEFT;
+		col.cx = 50;
+		col.pszText = colText0;
+		ListView_InsertColumn(g_hBoxList, 0, &col); // 컬럼 추가0
+
+		col.pszText = colText1;
+		ListView_InsertColumn(g_hBoxList, 1, &col); // 컬럼 추가1
+
+		col.pszText = colText2;
+		ListView_InsertColumn(g_hBoxList, 2, &col); // 컬럼 추가2
+
+		col.pszText = colText3;
+		ListView_InsertColumn(g_hBoxList, 3, &col); // 컬럼 추가3
+
+		col.pszText = colText4;
+		ListView_InsertColumn(g_hBoxList, 3, &col); // 컬럼 추가4
+		// ===== List에 컬럼 추가 ===== end
+
+		AddBoxToList({0, 0, 10, 10});
+
+		// ===== List 뷰 설정 =====
+		// 기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨
+		ListView_SetExtendedListViewStyle(
+			g_hBoxList,
+			LVS_EX_FULLROWSELECT // 아이템 전체가 클릭되도록 한다.
+			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
+		);
+		// ===== List 뷰 설정 ===== end
 	}
 	return (INT_PTR)TRUE;
 
@@ -618,27 +720,12 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		{
 		case IDC_BUTTON1: // 확대
 		{
-			g_BitmapViewInfo.Magnification += 1.0f;
-			InvalidateRect(g_hMainWnd, nullptr, true);
-			InvalidateRect(hDlg, nullptr, true);
-
-			UpdateMainWndScroll();
-			//SetScrollRange(g_hMainWnd, SB_HORZ, 0, g_bitmapHeader.bmWidth * g_BitmapViewInfo.Magnification, true);
-			//SetScrollRange(g_hMainWnd, SB_HORZ, 0, 100, true);
-			//SetScrollPos(g_hMainWnd, SB_HORZ, 50, true);
-
-			//char cMagnification[9];
-			//_itoa_s(g_BitmapViewInfo.Magnification, cMagnification, 9, 10);
-			//SetDlgItemText(hDlg, IDC_EDIT1, cMagnification);
+			AddMagnification(1.0f);
 		}
 		break;
 		case IDC_BUTTON2: // 축소
 		{
-			g_BitmapViewInfo.Magnification -= 1.0f;
-			InvalidateRect(g_hMainWnd, nullptr, true);
-			InvalidateRect(hDlg, nullptr, true);
-
-			UpdateMainWndScroll();
+			AddMagnification(-1.0f);
 		}
 		break;
 		case IDC_BUTTON3: // 컬러 선택
@@ -646,7 +733,36 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			g_BitmapViewInfo.IsTransparentColorPickMode = true;
 
 			SetCursor(LoadCursor(nullptr, IDC_HAND));
-			return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
+			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
+		}
+		break;
+		case IDC_BUTTON4: // 등록
+		{
+			//g_BitmapViewInfo.IsTransparentColorPickMode = true;
+			AddBoxToList(g_rectDrag);
+
+			//SetCursor(LoadCursor(nullptr, IDC_HAND));
+			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
+		}
+		break;
+		case IDC_BUTTON5: // 삭제
+		{
+			int selectedIndex = ListView_GetNextItem(
+				g_hBoxList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
+
+			if (selectedIndex < 0) break;
+
+			ListView_DeleteItem(g_hBoxList, selectedIndex);
+
+			InvalidateRect(g_hMainWnd, nullptr, true);
+			//g_BitmapViewInfo.IsTransparentColorPickMode = true;
+			//AddBoxToList(g_rectDrag);
+
+			//SetCursor(LoadCursor(nullptr, IDC_HAND));
+			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
 		}
 		break;
 		default:
@@ -658,7 +774,67 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			return (INT_PTR)TRUE;
 		}
 		break;
+
+		// 공통 컨트롤의 통지 메시지는 WM_NOTIFY로 받는다.
+	case WM_NOTIFY:
+	{
+		// ListView의 통지 메시지 받기
+		if (wParam == IDC_LIST1) {
+			NMHDR *pnmhdr = nullptr;
+
+			// NMHDR을 얻는 방법1.
+			NMTTDISPINFO *nmttdispinfo = (NMTTDISPINFO*)lParam;
+			pnmhdr = &(nmttdispinfo->hdr);
+
+			// NMHDR을 얻는 방법2.
+			// NMTTDISPINFO는 NMHDR을 확장하는 구조체로서
+			// 첫 멤버변수로 NMHDR을 가지고 있기 때문에 NMHDR 형으로도 캐스팅이 가능하다.
+			pnmhdr = (NMHDR*)lParam;
+
+			pnmhdr->hwndFrom; // 윈도우 핸들
+			pnmhdr->idFrom; // 컨트롤 아이디
+			pnmhdr->code; // 통지 코드
+
+			if (pnmhdr->code == NM_CLICK) {
+				// 클릭된 아이템 인덱스 알아내기
+				UINT itemIndex = ListView_GetNextItem(
+					pnmhdr->hwndFrom, // 윈도우 핸들
+					-1, // 검색을 시작할 인덱스
+					LVNI_SELECTED // 검색 조건
+				);
+
+				//if (itemIndex == -1) {
+				//	// 선택 없음
+				//}
+				//else {
+				//	// 서브아이템의 텍스트 가져오기
+				//	char result[nMax_Char] = {};
+				//	char subItem0[nMax_Char] = {};
+				//	char subItem1[nMax_Char] = {};
+				//	ListView_GetItemText(pnmhdr->hwndFrom, itemIndex, 0, subItem0, nMax_Char);
+				//	ListView_GetItemText(pnmhdr->hwndFrom, itemIndex, 1, subItem1, nMax_Char);
+				//	sprintf_s(result, "%s, %s", subItem0, subItem1);
+
+				//	// 출력
+				//	SetDlgItemText(hWnd, IDC_EDIT1, result);
+				//}
+			}
+			else if (pnmhdr->code == LVN_ITEMCHANGED) {
+				InvalidateRect(g_hMainWnd, nullptr, true);
+				//UINT itemIndex = ListView_GetNextItem(
+				//	pnmhdr->hwndFrom, // 윈도우 핸들
+				//	-1, // 검색을 시작할 인덱스
+				//	LVNI_SELECTED // 검색 조건
+				//);
+				//if (itemIndex == -1) {
+				//	SetDlgItemText(hWnd, IDC_EDIT1, "");
+				//}
+			}
+		}
 	}
+	}
+
+
 
 	return (INT_PTR)FALSE;
 }
@@ -719,4 +895,59 @@ void UpdateSubWndPosition() {
 	GetWindowRect(g_hMainWnd, &rect);
 	MoveWindow(g_hRightWnd, rect.right + 2, rect.top, g_whRightWndSize.x, g_whRightWndSize.y, true);
 	MoveWindow(g_hBottomWnd, rect.left, rect.bottom + 2, g_whBottomWndSize.x, g_whBottomWndSize.y, true);
+}
+
+void AddBoxToList(RECT box) {
+	int itemCount = ListView_GetItemCount(g_hBoxList);
+
+	// ===== List에 아이템 추가 =====
+	char itemText0[szMax_Pos] = {};
+	char itemText1[szMax_Pos] = {};
+	char itemText2[szMax_Pos] = {};
+	char itemText3[szMax_Pos] = {};
+	char itemText4[szMax_Pos] = {};
+
+	_itoa_s(itemCount, itemText0, szMax_Pos, 10);
+	_itoa_s(g_rectDrag.left, itemText1, szMax_Pos, 10);
+	_itoa_s(g_rectDrag.top, itemText2, szMax_Pos, 10);
+	_itoa_s(g_rectDrag.right, itemText3, szMax_Pos, 10);
+	_itoa_s(g_rectDrag.bottom, itemText4, szMax_Pos, 10);
+
+	//char itemText1[] = "item1";
+	LVITEM item = {};
+	item.mask = LVIF_TEXT;
+	item.iItem = 0;
+	item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
+	item.state;
+	item.stateMask;
+
+	// 아이템 추가
+	item.pszText = itemText0;
+	ListView_InsertItem(g_hBoxList, &item); // 아이템 추가0
+	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 1/*subitem idx*/, itemText1); // 서브아이템 추가0
+	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 2/*subitem idx*/, itemText2); // 서브아이템 추가0
+	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 3/*subitem idx*/, itemText3); // 서브아이템 추가0
+	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 4/*subitem idx*/, itemText4); // 서브아이템 추가0
+
+	////int itemCount = ListView_GetItemCount(g_hBoxList);
+	//item.iItem = itemCount;
+	//item.pszText = itemText1;
+	//ListView_InsertItem(g_hBoxList, &item); // 아이템 추가1
+	// ===== List에 아이템 추가 ===== end
+
+	// ===== List에 서브아이템 추가 =====
+	//char suhbitemText0[] = "subitem0";
+	//char suhbitemText1[] = "subitem1";
+	//ListView_SetItemText(g_hBoxList, 0/*item idx*/, 1/*subitem idx*/, suhbitemText0); // 서브아이템 추가0
+	//ListView_SetItemText(g_hBoxList, 1, 1, suhbitemText1); // 서브아이템 추가1(컬럼이 없다면 화면에 보이지 않는다)
+	// ===== List에 서브아이템 추가 ===== end
+}
+
+void AddMagnification(float v){
+	g_BitmapViewInfo.Magnification += v;
+
+	InvalidateRect(g_hMainWnd, nullptr, true);
+	InvalidateRect(g_hRightWnd, nullptr, true);
+
+	UpdateMainWndScroll();
 }

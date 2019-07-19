@@ -14,7 +14,7 @@ typedef INT_PTR(CALLBACK *DlgProc)(HWND, UINT, WPARAM, LPARAM); // 다이얼로그 프
 typedef void(*CallbackFunc)(); // 이벤트 콜백
 
 // ===== define =====
-//#define Max_Account_Text 10 + 1
+#define szMax_Pos 6
 //
 //#define Max_Student_Id 6 + 1
 //#define Max_Student_Name 10 + 1
@@ -45,7 +45,7 @@ typedef struct _WH {
 } WH;
 
 typedef struct _BitmapViewInfo {
-	float Magnification = 8.0;
+	float Magnification = 4.0;
 	//float Magnification = 60.0;
 	bool IsTransparentColorPickMode;
 	COLORREF TransparentColor;
