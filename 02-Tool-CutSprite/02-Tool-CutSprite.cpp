@@ -4,7 +4,6 @@
 #include <iostream> // sprintf_s()
 #include "Commctrl.h"
 #include "02-Tool-CutSprite.h"
-//#include <math.h> // ceil()
 #include "common.h"
 #include "CutImage.h"
 
@@ -24,7 +23,7 @@ BITMAP g_bitmapHeader;
 HWND g_hBoxList = nullptr;
 
 bool g_bIsDrag = false;
-RECT g_rectDrag = { 10, 10, 100, 100 };
+RECT g_rectDrag = { 0, 0, 0, 0 };
 POINT g_pntScrollPos = { 0, 0 };
 
 HWND g_hMainWnd;                                  // 메인 윈도우
@@ -54,15 +53,13 @@ LRESULT CALLBACK    MainWndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK    BottomWndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    RightDlgProc(HWND, UINT, WPARAM, LPARAM);
 
-//void callback_RightWnd();
-
-//RightWnd g_RightWnd;
-
 void UpdateMainWndScroll();
 void UpdateSubWndPosition();
 void SetWindowPositionToCenter(HWND hWnd);
 void AddBoxToList(RECT box);
 void AddMagnification(float v);
+void SaveBoxListToFile();
+void LoadBoxListFromFile();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -419,6 +416,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			if (selectedListItemIndex == i) {
 				hOldPen = (HPEN)SelectObject(hdc, hPen);
 				//SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
+				SetROP2(hdc, R2_MERGENOTPEN); // 외곽은 핑크, 내부는 비어있는 사각형
+			}
+			else {
+				SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
 			}
 
 			rectBox = rectBox * fMagnification;
@@ -439,8 +440,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			rectDrag = rectDrag - g_pntScrollPos;
 			Rectangle(hdc, rectDrag.left, rectDrag.top, rectDrag.right + 1 + pixelOffset, rectDrag.bottom + 1 + pixelOffset);
 		}
-		
-
 
 		// clear
 		//DeleteObject(SelectObject(hdc, hOldPen));
@@ -477,21 +476,13 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		case SB_THUMBTRACK:
 		{
 			vScrollPos = HIWORD(wParam);
-			//SetScrollPos((HWND)lParam, SB_HORZ, hScrollPos, true);
-			//SetScrollPos((HWND)lParam, SB_HORZ, 50, true);
-			//SetScrollPos((HWND)lParam, SB_BOTH, hScrollPos, true);
-			dlog("WM_VSCROLL", LOWORD(wParam), vScrollPos);
-			//InvalidateRect(hWnd, nullptr, false);
+			//dlog("WM_VSCROLL", LOWORD(wParam), vScrollPos);
 
 			SetScrollPos(hWnd, SB_VERT, vScrollPos, true);
 
 			int yAmount = g_pntScrollPos.y - vScrollPos;
 			yAmount *= g_BitmapViewInfo.Magnification;
 			g_pntScrollPos.y = vScrollPos;
-
-			// ScrollWindow 호출 시 클라이언트 리페인트 메시지가 자동으로 발생한다.
-			//ScrollWindow(hWnd, 0, yAmount, nullptr, nullptr);
-			//UpdateWindow(hWnd); // WM_PAINT 발생
 
 			// ScrollWindow를 호출하지 않을 경우 InvalidateRect를 호출해야한다.
 			InvalidateRect(hWnd, nullptr, true);
@@ -503,10 +494,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		default:
 			break;
 		}
-
-		//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
-		//SetScrollPos(hWnd, SB_HORZ, hScrollPos, true);
-			//InvalidateRect(hWnd, nullptr, false);
 	}
 	break;
 
@@ -531,11 +518,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		case SB_THUMBTRACK:
 		{
 			hScrollPos = HIWORD(wParam);
-			//SetScrollPos((HWND)lParam, SB_HORZ, hScrollPos, true);
-			//SetScrollPos((HWND)lParam, SB_HORZ, 50, true);
-			//SetScrollPos((HWND)lParam, SB_BOTH, hScrollPos, true);
-			dlog("WM_HSCROLL", LOWORD(wParam), hScrollPos);
-			//InvalidateRect(hWnd, nullptr, false);
+			//dlog("WM_HSCROLL", LOWORD(wParam), hScrollPos);
 
 			SetScrollPos(hWnd, SB_HORZ, hScrollPos, true);
 
@@ -544,23 +527,17 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			g_pntScrollPos.x = hScrollPos;
 
 			// ScrollWindow 호출 시 클라이언트 리페인트 메시지가 자동으로 발생한다.
-			//ScrollWindow(hWnd, xAmount, 0, nullptr, nullptr);
-			//UpdateWindow(hWnd); // WM_PAINT 발생
+			// ScrollWindow(hWnd, xAmount, 0, nullptr, nullptr);
+			// UpdateWindow(hWnd); // WM_PAINT 발생
 
 			// ScrollWindow를 호출하지 않을 경우 InvalidateRect를 호출해야한다.
 			InvalidateRect(hWnd, nullptr, true);
-
-			//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
 			return 0;
 		}
 		break;
 		default:
 			break;
 		}
-
-		//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
-		//SetScrollPos(hWnd, SB_HORZ, hScrollPos, true);
-			//InvalidateRect(hWnd, nullptr, false);
 	}
 	break;
 	case WM_DESTROY:
@@ -674,7 +651,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		ListView_InsertColumn(g_hBoxList, 3, &col); // 컬럼 추가4
 		// ===== List에 컬럼 추가 ===== end
 
-		AddBoxToList({0, 0, 10, 10});
+		LoadBoxListFromFile();
 
 		// ===== List 뷰 설정 =====
 		// 기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨
@@ -738,10 +715,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		break;
 		case IDC_BUTTON4: // 등록
 		{
-			//g_BitmapViewInfo.IsTransparentColorPickMode = true;
 			AddBoxToList(g_rectDrag);
-
-			//SetCursor(LoadCursor(nullptr, IDC_HAND));
 			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
 		}
 		break;
@@ -758,11 +732,12 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			ListView_DeleteItem(g_hBoxList, selectedIndex);
 
 			InvalidateRect(g_hMainWnd, nullptr, true);
-			//g_BitmapViewInfo.IsTransparentColorPickMode = true;
-			//AddBoxToList(g_rectDrag);
-
-			//SetCursor(LoadCursor(nullptr, IDC_HAND));
 			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
+		}
+		break;
+		case IDC_BUTTON6: // 파일 저장
+		{
+			SaveBoxListToFile();
 		}
 		break;
 		default:
@@ -802,47 +777,19 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 					-1, // 검색을 시작할 인덱스
 					LVNI_SELECTED // 검색 조건
 				);
-
-				//if (itemIndex == -1) {
-				//	// 선택 없음
-				//}
-				//else {
-				//	// 서브아이템의 텍스트 가져오기
-				//	char result[nMax_Char] = {};
-				//	char subItem0[nMax_Char] = {};
-				//	char subItem1[nMax_Char] = {};
-				//	ListView_GetItemText(pnmhdr->hwndFrom, itemIndex, 0, subItem0, nMax_Char);
-				//	ListView_GetItemText(pnmhdr->hwndFrom, itemIndex, 1, subItem1, nMax_Char);
-				//	sprintf_s(result, "%s, %s", subItem0, subItem1);
-
-				//	// 출력
-				//	SetDlgItemText(hWnd, IDC_EDIT1, result);
-				//}
 			}
 			else if (pnmhdr->code == LVN_ITEMCHANGED) {
 				InvalidateRect(g_hMainWnd, nullptr, true);
-				//UINT itemIndex = ListView_GetNextItem(
-				//	pnmhdr->hwndFrom, // 윈도우 핸들
-				//	-1, // 검색을 시작할 인덱스
-				//	LVNI_SELECTED // 검색 조건
-				//);
-				//if (itemIndex == -1) {
-				//	SetDlgItemText(hWnd, IDC_EDIT1, "");
-				//}
 			}
 		}
 	}
+	break;
 	}
 
 
 
 	return (INT_PTR)FALSE;
 }
-
-//void callback_RightWnd()
-//{
-//	log("callback_RightWnd");
-//}
 
 // 윈도우의 위치를 스크린 가운데로 옮김
 void SetWindowPositionToCenter(HWND hWnd) {
@@ -928,26 +875,111 @@ void AddBoxToList(RECT box) {
 	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 2/*subitem idx*/, itemText2); // 서브아이템 추가0
 	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 3/*subitem idx*/, itemText3); // 서브아이템 추가0
 	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 4/*subitem idx*/, itemText4); // 서브아이템 추가0
-
-	////int itemCount = ListView_GetItemCount(g_hBoxList);
-	//item.iItem = itemCount;
-	//item.pszText = itemText1;
-	//ListView_InsertItem(g_hBoxList, &item); // 아이템 추가1
-	// ===== List에 아이템 추가 ===== end
-
-	// ===== List에 서브아이템 추가 =====
-	//char suhbitemText0[] = "subitem0";
-	//char suhbitemText1[] = "subitem1";
-	//ListView_SetItemText(g_hBoxList, 0/*item idx*/, 1/*subitem idx*/, suhbitemText0); // 서브아이템 추가0
-	//ListView_SetItemText(g_hBoxList, 1, 1, suhbitemText1); // 서브아이템 추가1(컬럼이 없다면 화면에 보이지 않는다)
-	// ===== List에 서브아이템 추가 ===== end
 }
 
-void AddMagnification(float v){
+void AddMagnification(float v) {
 	g_BitmapViewInfo.Magnification += v;
 
 	InvalidateRect(g_hMainWnd, nullptr, true);
 	InvalidateRect(g_hRightWnd, nullptr, true);
 
 	UpdateMainWndScroll();
+}
+
+void LoadBoxListFromFile() {
+	FILE *file = nullptr;
+	file = _fsopen("boxesList.txt", "rt", _SH_DENYNO);
+
+	if (file == nullptr) return;
+
+	HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
+
+	char szItemCount[szMax_Boxes] = {};
+	fgets(szItemCount, szMax_Boxes, file);
+
+	// item count
+	int itemCount = atoi(szItemCount);
+
+	// ===== List에 아이템 추가 =====
+	char itemLine[szMax_PosLine] = {};
+	char itemText0[szMax_Pos] = {};
+	char itemText1[szMax_Pos] = {};
+	char itemText2[szMax_Pos] = {};
+	char itemText3[szMax_Pos] = {};
+	char itemText4[szMax_Pos] = {};
+
+	char *token;
+	char *nextToken;
+
+	for (size_t i = 0; i < itemCount; i++)
+	{
+		_itoa_s(i, itemText0, 10);
+
+		memset(itemLine, 0, szMax_PosLine);
+		fgets(itemLine, szMax_PosLine, file);
+
+		// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
+		itemLine[strcspn(itemLine, "\n")] = 0; // strcspn()으로 "\n"의 위치를 찾고 그 위치에 0을 넣어준다.
+
+		if (strnlen_s(itemLine, szMax_PosLine) == 0) continue;
+
+		token = strtok_s(itemLine, "\t", &nextToken);
+		strcpy_s(itemText1, token);
+		token = strtok_s(NULL, "\t", &nextToken);
+		strcpy_s(itemText2, token);
+		token = strtok_s(NULL, "\t", &nextToken);
+		strcpy_s(itemText3, token);
+		token = strtok_s(NULL, "\t", &nextToken);
+		strcpy_s(itemText4, token);
+
+		//char itemText1[] = "item1";
+		LVITEM item = {};
+		item.mask = LVIF_TEXT;
+		item.iItem = i;
+		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
+		item.state;
+		item.stateMask;
+
+		// 아이템 추가
+		item.pszText = itemText0;
+		ListView_InsertItem(g_hBoxList, &item); // 아이템 추가0
+		ListView_SetItemText(g_hBoxList, i/*item idx*/, 1/*subitem idx*/, itemText1); // 서브아이템 추가0
+		ListView_SetItemText(g_hBoxList, i/*item idx*/, 2/*subitem idx*/, itemText2); // 서브아이템 추가0
+		ListView_SetItemText(g_hBoxList, i/*item idx*/, 3/*subitem idx*/, itemText3); // 서브아이템 추가0
+		ListView_SetItemText(g_hBoxList, i/*item idx*/, 4/*subitem idx*/, itemText4); // 서브아이템 추가0
+	}
+
+	fclose(file);
+}
+
+void SaveBoxListToFile() {
+	FILE *file = nullptr;
+	file = _fsopen("boxesList.txt", "wt", _SH_DENYNO);
+
+	if (file == nullptr) return;
+
+	HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
+
+	// item count
+	int itemCount = ListView_GetItemCount(hList);
+	char szItemCount[szMax_Pos] = {};
+	sprintf_s<szMax_Pos>(szItemCount, "%d\n", itemCount);
+	fputs(szItemCount, file);
+
+	// items
+	char szLeft[szMax_Pos];
+	char szTop[szMax_Pos];
+	char szRight[szMax_Pos];
+	char szBottom[szMax_Pos];
+	for (size_t i = 0; i < itemCount; i++)
+	{
+		ListView_GetItemText(hList, i, 1, szLeft, szMax_Pos);
+		ListView_GetItemText(hList, i, 2, szTop, szMax_Pos);
+		ListView_GetItemText(hList, i, 3, szRight, szMax_Pos);
+		ListView_GetItemText(hList, i, 4, szBottom, szMax_Pos);
+
+		fprintf_s(file, "%s\t%s\t%s\t%s\n", szLeft, szTop, szRight, szBottom);
+	}
+
+	fclose(file);
 }
