@@ -31,6 +31,8 @@ bool g_bIsRBDrag = false;
 RECT g_rectRBDrag = { 0, 0, 0, 0 };
 POINT g_pntScrollPosWhenRButtonDown = { 0, 0 };
 
+SpriteInfo g_SpriteInfo;
+
 HWND g_hMainWnd;                                  // 메인 윈도우
 HWND g_hRightWnd;                                 // 오른쪽 윈도우
 HWND g_hBottomWnd;                                // 하단 윈도우
@@ -65,6 +67,7 @@ void AddBoxToList(RECT box);
 void AddMagnification(float v);
 void SaveBoxListToFile();
 void LoadBoxListFromFile();
+SpriteInfo GetSpriteInfo(int index);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -481,15 +484,18 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		HPEN hOldPen = nullptr;
 		for (size_t i = 0; i < itemCount; i++)
 		{
-			ListView_GetItemText(hList, i, 1, szItem, szMax_Pos);
-			rectBox.left = atoi(szItem);
-			ListView_GetItemText(hList, i, 2, szItem, szMax_Pos);
-			rectBox.top = atoi(szItem);
-			ListView_GetItemText(hList, i, 3, szItem, szMax_Pos);
-			rectBox.right = atoi(szItem);
-			ListView_GetItemText(hList, i, 4, szItem, szMax_Pos);
-			rectBox.bottom = atoi(szItem);
+			//ListView_GetItemText(hList, i, 1, szItem, szMax_Pos);
+			//rectBox.left = atoi(szItem);
+			//ListView_GetItemText(hList, i, 2, szItem, szMax_Pos);
+			//rectBox.top = atoi(szItem);
+			//ListView_GetItemText(hList, i, 3, szItem, szMax_Pos);
+			//rectBox.right = atoi(szItem);
+			//ListView_GetItemText(hList, i, 4, szItem, szMax_Pos);
+			//rectBox.bottom = atoi(szItem);
 
+			SpriteInfo SpriteInfo = GetSpriteInfo(i);
+
+			rectBox = SpriteInfo.Rect;
 
 			if (selectedListItemIndex == i) {
 				hOldPen = (HPEN)SelectObject(g_hBufferMemDC, hPen);
@@ -878,6 +884,12 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			}
 			else if (pnmhdr->code == LVN_ITEMCHANGED) {
 				//InvalidateRect(g_hMainWnd, nullptr, true);
+				UINT itemIndex = ListView_GetNextItem(
+					pnmhdr->hwndFrom, // 윈도우 핸들
+					-1, // 검색을 시작할 인덱스
+					LVNI_SELECTED // 검색 조건
+				);
+				g_SpriteInfo = GetSpriteInfo(itemIndex);
 			}
 		}
 	}
@@ -1080,4 +1092,29 @@ void SaveBoxListToFile() {
 	}
 
 	fclose(file);
+}
+
+SpriteInfo GetSpriteInfo(int index) {
+	HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
+	//int itemCount = ListView_GetItemCount(hList);
+	//int selectedListItemIndex = ListView_GetNextItem(
+	//	g_hBoxList, // 윈도우 핸들
+	//	-1, // 검색을 시작할 인덱스
+	//	LVNI_SELECTED // 검색 조건
+	//);
+
+	SpriteInfo SpriteInfo;
+
+	char szItem[szMax_Pos];
+
+	ListView_GetItemText(hList, index, 1, szItem, szMax_Pos);
+	SpriteInfo.Rect.left = atoi(szItem);
+	ListView_GetItemText(hList, index, 2, szItem, szMax_Pos);
+	SpriteInfo.Rect.top = atoi(szItem);
+	ListView_GetItemText(hList, index, 3, szItem, szMax_Pos);
+	SpriteInfo.Rect.right = atoi(szItem);
+	ListView_GetItemText(hList, index, 4, szItem, szMax_Pos);
+	SpriteInfo.Rect.bottom = atoi(szItem);
+
+	return SpriteInfo;
 }

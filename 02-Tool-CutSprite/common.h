@@ -43,6 +43,11 @@ typedef void(*CallbackFunc)(); // 이벤트 콜백
 
 
 // ===== struct =====
+typedef struct _XY {
+	INT x;
+	INT y;
+} XY;
+
 typedef struct _WH {
 	UINT w;
 	UINT h;
@@ -55,6 +60,13 @@ typedef struct _BitmapViewInfo {
 	bool IsMoveMode;
 	COLORREF TransparentColor;
 } BitmapViewInfo;
+
+typedef struct _SpriteInfo {
+	RECT Rect;
+	XY Pivot;
+	RECT *Collisions;
+	UINT CollisionCount;
+} SpriteInfo;
 //typedef struct _Student {
 //	char Id[Max_Student_Id];
 //	char Name[Max_Student_Name];
