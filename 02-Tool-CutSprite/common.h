@@ -18,6 +18,7 @@ typedef void(*CallbackFunc)(); // 이벤트 콜백
 #define szMax_Boxes 4
 #define szMax_Pos 6
 #define szMax_PosLine 99
+#define nFrameRate 60
 //
 //#define Max_Student_Id 6 + 1
 //#define Max_Student_Name 10 + 1

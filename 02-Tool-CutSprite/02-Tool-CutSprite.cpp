@@ -19,7 +19,8 @@ HINSTANCE g_hInst;                                // 현재 인스턴스입니�
 
 HDC g_hBitmapSrcDC;
 HDC g_hBufferMemDC;
-HBITMAP g_hBitmap;
+HBITMAP g_hBufferBitmap;
+//HBITMAP g_hBitmap;
 BITMAP g_bitmapHeader;
 HWND g_hBoxList = nullptr;
 
@@ -175,7 +176,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CREATE:
 	{
 		// load bitmap
-		g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		HBITMAP g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100_red.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
@@ -193,8 +194,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		g_hBufferMemDC = CreateCompatibleDC(hdc);
 		// 메모리 DC에는 기본적으로 아주 작은 크기의 비트맵만 있기 때문에 다른 DC를 복사하려면 비트맵을 만들어줘야한다.
 		// SetObject()로 비트맵을 지정할 경우는 안해도 된다.(SetObject()가 뭐지?)
-		HBITMAP hBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
-		SelectObject(g_hBufferMemDC, hBitmap);
+		g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
+		SelectObject(g_hBufferMemDC, g_hBufferBitmap);
 
 		g_CutImage.Init(g_hBitmapSrcDC, g_bitmapHeader);
 
@@ -205,6 +206,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		g_BitmapViewInfo.TransparentColor = GetPixel(g_hBitmapSrcDC, 0, 0);
 
 		UpdateMainWndScroll();
+
+		SetTimer(hWnd, 1, 1000 / nFrameRate, nullptr);
 	}
 	break;
 
@@ -297,7 +300,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				g_rectLBDrag.right = round((GET_X_LPARAM(lParam) + g_pntScrollPos.x) / fMagnification);
 				g_rectLBDrag.bottom = round((GET_Y_LPARAM(lParam) + g_pntScrollPos.y) / fMagnification);
 
-				InvalidateRect(hWnd, nullptr, true);
+				//InvalidateRect(hWnd, nullptr, true);
 				dlog(g_rectLBDrag);
 			}
 		}
@@ -336,7 +339,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 				dlog("rbtn", g_pntScrollPos.x, g_pntScrollPos.y);
 
-				InvalidateRect(hWnd, nullptr, true);
+				//InvalidateRect(hWnd, nullptr, true);
 				dlog(g_rectLBDrag);
 			}
 		}
@@ -355,7 +358,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			g_BitmapViewInfo.TransparentColor = color;
 			DeleteDC(hdc);
 
-			InvalidateRect(g_hRightWnd, nullptr, true);
+			//InvalidateRect(g_hRightWnd, nullptr, true);
 		}
 		else {
 			g_bIsLBDrag = true;
@@ -380,6 +383,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	{
 		if (g_BitmapViewInfo.IsTransparentColorPickMode) {
 			g_BitmapViewInfo.IsTransparentColorPickMode = false;
+			InvalidateRect(g_hRightWnd, nullptr, false);
 		}
 		else {
 			g_bIsLBDrag = false;
@@ -410,7 +414,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			g_rectLBDrag = g_CutImage.FitToImage(g_rectLBDrag, g_BitmapViewInfo.TransparentColor);
 
-			InvalidateRect(hWnd, nullptr, true);
+			//InvalidateRect(hWnd, nullptr, true);
 		}
 	}
 	break;
@@ -432,11 +436,9 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		SetCursor(LoadCursor(nullptr, IDC_SIZEALL));
 	}
 	break;
-	case WM_PAINT:
-	{
-		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hWnd, &ps);
 
+	case WM_TIMER:
+	{
 		float fMagnification = g_BitmapViewInfo.Magnification;
 
 		// bitmap
@@ -508,6 +510,17 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			Rectangle(g_hBufferMemDC, rectDrag.left, rectDrag.top, rectDrag.right + 1 + pixelOffset, rectDrag.bottom + 1 + pixelOffset);
 		}
 
+		// 버퍼 DC를 그려준 뒤 WM_PAINT 메시지 발생을 위해 InvalidateRect()호출한다.
+		// 이때 버퍼DC 전체를 복사하므로 화면을 지울 필요가 없기 때문에 세번째 인자는 false를 전달한다.
+		InvalidateRect(hWnd, nullptr, false);
+	}
+	break;
+
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		HDC hdc = BeginPaint(hWnd, &ps);
+
 		BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hBufferMemDC, 0, 0, SRCCOPY);
 
 		// clear
@@ -554,7 +567,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			g_pntScrollPos.y = vScrollPos;
 
 			// ScrollWindow를 호출하지 않을 경우 InvalidateRect를 호출해야한다.
-			InvalidateRect(hWnd, nullptr, true);
+			//InvalidateRect(hWnd, nullptr, true);
 
 			//ScrollWindow(hWnd, -hScrollPos, 0, nullptr, nullptr);
 			return 0;
@@ -600,7 +613,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			// UpdateWindow(hWnd); // WM_PAINT 발생
 
 			// ScrollWindow를 호출하지 않을 경우 InvalidateRect를 호출해야한다.
-			InvalidateRect(hWnd, nullptr, true);
+			//InvalidateRect(hWnd, nullptr, true);
 			return 0;
 		}
 		break;
@@ -800,7 +813,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 			ListView_DeleteItem(g_hBoxList, selectedIndex);
 
-			InvalidateRect(g_hMainWnd, nullptr, true);
+			//InvalidateRect(g_hMainWnd, nullptr, true);
 			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
 		}
 		break;
@@ -848,7 +861,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				);
 			}
 			else if (pnmhdr->code == LVN_ITEMCHANGED) {
-				InvalidateRect(g_hMainWnd, nullptr, true);
+				//InvalidateRect(g_hMainWnd, nullptr, true);
 			}
 		}
 	}
@@ -949,7 +962,7 @@ void AddBoxToList(RECT box) {
 void AddMagnification(float v) {
 	g_BitmapViewInfo.Magnification += v;
 
-	InvalidateRect(g_hMainWnd, nullptr, true);
+	//InvalidateRect(g_hMainWnd, nullptr, true);
 	InvalidateRect(g_hRightWnd, nullptr, true);
 
 	UpdateMainWndScroll();
