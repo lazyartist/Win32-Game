@@ -9,7 +9,8 @@
 
 #define MAX_LOADSTRING 100
 
-POINT g_whMainWndSize = { 800, 500 };
+int g_nScrollbarWidth;
+POINT g_whMainWndSize = { 1000, 800 };
 POINT g_whBottomWndSize = { 800, 250 };
 POINT g_whRightWndSize = { 0, 0 }; // 리소스에 의해 결정
 
@@ -22,9 +23,12 @@ HBITMAP g_hBitmap;
 BITMAP g_bitmapHeader;
 HWND g_hBoxList = nullptr;
 
-bool g_bIsDrag = false;
-RECT g_rectDrag = { 0, 0, 0, 0 };
+bool g_bIsLBDrag = false;
+RECT g_rectLBDrag = { 0, 0, 0, 0 };
 POINT g_pntScrollPos = { 0, 0 };
+bool g_bIsRBDrag = false;
+RECT g_rectRBDrag = { 0, 0, 0, 0 };
+POINT g_pntScrollPosWhenRButtonDown = { 0, 0 };
 
 HWND g_hMainWnd;                                  // 메인 윈도우
 HWND g_hRightWnd;                                 // 오른쪽 윈도우
@@ -124,12 +128,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	g_hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
+	// 스크롤 넓이를 구해서 클라이언트 영역에서 빼주면 스크롤 영역이 딱 맞지가 않는다. 일단 대충 *4해서 맞춘다.
+	g_nScrollbarWidth = GetSystemMetrics(SM_CXVSCROLL) * 4;
+
 	// 메인 윈도우
 	RECT clientRect = { 0, 0, g_whMainWndSize.x - 1, g_whMainWndSize.y - 1 };
 	AdjustWindowRect(&clientRect, WS_OVERLAPPEDWINDOW, true);
 
 	HWND hWnd = CreateWindowW(g_szMainWndClass, g_szMainWndTitle, (WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX/*최대화 버튼 비활성화*/),
-		CW_USEDEFAULT, 0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, nullptr, nullptr, hInstance, nullptr);
+		0, 0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, nullptr, nullptr, hInstance, nullptr);
 
 	g_hMainWnd = hWnd;
 
@@ -168,10 +175,11 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CREATE:
 	{
 		// load bitmap
-		g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		//g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		//g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100_red.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100_red.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
 		GetObject(g_hBitmap, sizeof(BITMAP), &g_bitmapHeader);
 
@@ -205,7 +213,12 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	break;
 
 	case WM_SETCURSOR:
-		if (g_BitmapViewInfo.IsTransparentColorPickMode) {
+		dlog("WM_SETCURSOR", g_bIsRBDrag);
+		if (g_bIsRBDrag) {
+			SetCursor(LoadCursor(nullptr, IDC_SIZEALL));
+			return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
+		}
+		else if (g_BitmapViewInfo.IsTransparentColorPickMode) {
 			SetCursor(LoadCursor(nullptr, IDC_HAND));
 		}
 		else {
@@ -281,16 +294,58 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	break;
 	case WM_MOUSEMOVE:
 	{
-		if (g_bIsDrag) {
-			float fMagnification = g_BitmapViewInfo.Magnification;
+		if (wParam == MK_LBUTTON) {
+			if (g_bIsLBDrag) {
+				float fMagnification = g_BitmapViewInfo.Magnification;
 
-			g_rectDrag.right = round((GET_X_LPARAM(lParam) + g_pntScrollPos.x) / fMagnification);
-			g_rectDrag.bottom = round((GET_Y_LPARAM(lParam) + g_pntScrollPos.y) / fMagnification);
+				g_rectLBDrag.right = round((GET_X_LPARAM(lParam) + g_pntScrollPos.x) / fMagnification);
+				g_rectLBDrag.bottom = round((GET_Y_LPARAM(lParam) + g_pntScrollPos.y) / fMagnification);
 
-			InvalidateRect(hWnd, nullptr, true);
-			dlog(g_rectDrag);
+				InvalidateRect(hWnd, nullptr, true);
+				dlog(g_rectLBDrag);
+			}
+		}
+		else if (wParam == MK_RBUTTON) {
+			if (g_bIsRBDrag) {
+				float fMagnification = g_BitmapViewInfo.Magnification;
+
+				g_rectRBDrag.right = GET_X_LPARAM(lParam);
+				g_rectRBDrag.bottom = GET_Y_LPARAM(lParam);
+
+				g_pntScrollPos.x = g_pntScrollPosWhenRButtonDown.x - (g_rectRBDrag.right - g_rectRBDrag.left);
+				g_pntScrollPos.y = g_pntScrollPosWhenRButtonDown.y - (g_rectRBDrag.bottom - g_rectRBDrag.top);
+
+				// 스크롤이 이미지의 좌상단보다 더 좌상단으로 이동하지 못하게 0보다 작을 경우 0으로 조정한다.
+				// TranslationBlt() 호출 시 g_pntScrollPos.x, g_pntScrollPos.y의 부호를 바꿔서 전달하기 때문에 
+				// 음수이면 양수로 전달되고 양수로 전달됐다는 건 dc의 양수좌표부터 이미지 복사를 시작한다는 뜻이기 때문에 
+				// 이미지가 우하단으로 이동하게 되고 이미지의 좌상단을 보게된다.
+				// 0, 0 이하의 좌표는 볼 필요가 없으므로 음수일경우 0으로 조정한다.
+				if (g_pntScrollPos.x < 0) g_pntScrollPos.x = 0;
+				if (g_pntScrollPos.y < 0) g_pntScrollPos.y = 0;
+
+				// 이미지가 클라이언트 영역보다 클 경우 이동할 수 있는 최대 스크롤 범위
+				int nMaxScrollX = (g_bitmapHeader.bmWidth * g_BitmapViewInfo.Magnification - g_whMainWndSize.x) + g_nScrollbarWidth;
+				int nMaxScrollY = (g_bitmapHeader.bmHeight * g_BitmapViewInfo.Magnification - g_whMainWndSize.y) + g_nScrollbarWidth;
+
+				// 최대 스크롤 범위가 음수라는 건 클라이언트 영역보다 이미지가 작다는 뜻이므로 
+				// 스크롤 되지 않게 최대 스크롤 범위를 0으로 설정한다.
+				nMaxScrollX = max(nMaxScrollX, 0);
+				nMaxScrollY = max(nMaxScrollY, 0);
+
+				if (g_pntScrollPos.x > nMaxScrollX) g_pntScrollPos.x = nMaxScrollX;
+				if (g_pntScrollPos.y > nMaxScrollY) g_pntScrollPos.y = nMaxScrollY;
+
+				SetScrollPos(hWnd, SB_HORZ, g_pntScrollPos.x, true);
+				SetScrollPos(hWnd, SB_VERT, g_pntScrollPos.y, true);
+
+				dlog("rbtn", g_pntScrollPos.x, g_pntScrollPos.y);
+
+				InvalidateRect(hWnd, nullptr, true);
+				dlog(g_rectLBDrag);
+			}
 		}
 		dlog(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+
 	}
 	break;
 	case WM_LBUTTONDOWN:
@@ -307,21 +362,21 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			InvalidateRect(g_hRightWnd, nullptr, true);
 		}
 		else {
-			g_bIsDrag = true;
+			g_bIsLBDrag = true;
 
 			// 멀티 모니터에서 부정확한 좌표를 반환하기 때문에 GET_X_LPARAM, GET_Y_LPARAM를 사용
 			//rect.left = LOWORD(lParam);
 			//rect.top = HIWORD(lParam);
 
-			g_rectDrag.left = round(GET_X_LPARAM(lParam));
-			g_rectDrag.top = round(GET_Y_LPARAM(lParam));
-			g_rectDrag.right = g_rectDrag.left;
-			g_rectDrag.bottom = g_rectDrag.top;
+			g_rectLBDrag.left = round(GET_X_LPARAM(lParam));
+			g_rectLBDrag.top = round(GET_Y_LPARAM(lParam));
+			g_rectLBDrag.right = g_rectLBDrag.left;
+			g_rectLBDrag.bottom = g_rectLBDrag.top;
 
 			//log(g_rectDrag.left, g_rectDrag.top);
 
 			// 클라이언트 영역에서 스크롤을 감안하여 드래그 위치를 계산하고 확대/축소 되지 않은 원본을 위해 배율로 나눠준다.
-			g_rectDrag = (g_rectDrag + g_pntScrollPos) / g_BitmapViewInfo.Magnification;
+			g_rectLBDrag = (g_rectLBDrag + g_pntScrollPos) / g_BitmapViewInfo.Magnification;
 		}
 	}
 	break;
@@ -331,7 +386,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			g_BitmapViewInfo.IsTransparentColorPickMode = false;
 		}
 		else {
-			g_bIsDrag = false;
+			g_bIsLBDrag = false;
 
 			float fMagnification = g_BitmapViewInfo.Magnification;
 
@@ -339,28 +394,46 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			auto y = GET_Y_LPARAM(lParam);
 			dlog("up x,y = ", x, y);
 
-			g_rectDrag.right = round((GET_X_LPARAM(lParam) + g_pntScrollPos.x) / fMagnification);
-			g_rectDrag.bottom = round((GET_Y_LPARAM(lParam) + g_pntScrollPos.y) / fMagnification);
+			g_rectLBDrag.right = round((GET_X_LPARAM(lParam) + g_pntScrollPos.x) / fMagnification);
+			g_rectLBDrag.bottom = round((GET_Y_LPARAM(lParam) + g_pntScrollPos.y) / fMagnification);
 
 			// top과 left가 bottom과 right보다 항상 작도록 수정
-			if (g_rectDrag.right < g_rectDrag.left) {
-				LONG temp = g_rectDrag.left;
-				g_rectDrag.left = g_rectDrag.right;
-				g_rectDrag.right = temp;
+			if (g_rectLBDrag.right < g_rectLBDrag.left) {
+				LONG temp = g_rectLBDrag.left;
+				g_rectLBDrag.left = g_rectLBDrag.right;
+				g_rectLBDrag.right = temp;
 			}
-			if (g_rectDrag.bottom < g_rectDrag.top) {
-				LONG temp = g_rectDrag.top;
-				g_rectDrag.top = g_rectDrag.bottom;
-				g_rectDrag.bottom = temp;
+			if (g_rectLBDrag.bottom < g_rectLBDrag.top) {
+				LONG temp = g_rectLBDrag.top;
+				g_rectLBDrag.top = g_rectLBDrag.bottom;
+				g_rectLBDrag.bottom = temp;
 			}
 
 			dlog("up rect. = ", x, y);
 
 
-			g_rectDrag = g_CutImage.FitToImage(g_rectDrag, g_BitmapViewInfo.TransparentColor);
+			g_rectLBDrag = g_CutImage.FitToImage(g_rectLBDrag, g_BitmapViewInfo.TransparentColor);
 
 			InvalidateRect(hWnd, nullptr, true);
 		}
+	}
+	break;
+	case WM_RBUTTONDOWN:
+	{
+		g_bIsRBDrag = true;
+		g_pntScrollPosWhenRButtonDown = g_pntScrollPos;
+
+		auto x = GET_X_LPARAM(lParam);
+		auto y = GET_Y_LPARAM(lParam);
+		dlog("r d x,y = ", x, y);
+		g_rectRBDrag = { x, y, x, y };
+		SetCursor(LoadCursor(nullptr, IDC_SIZEALL));
+	}
+	break;
+	case WM_RBUTTONUP:
+	{
+		g_bIsRBDrag = false;
+		SetCursor(LoadCursor(nullptr, IDC_SIZEALL));
 	}
 	break;
 	case WM_PAINT:
@@ -434,9 +507,9 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		DeleteObject(hPen);
 
 		// 현재 드래그 영역
-		if (g_rectDrag.left != g_rectDrag.right) {
+		if (g_rectLBDrag.left != g_rectLBDrag.right) {
 			SetROP2(hdc, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
-			RECT rectDrag = g_rectDrag * fMagnification;
+			RECT rectDrag = g_rectLBDrag * fMagnification;
 			rectDrag = rectDrag - g_pntScrollPos;
 			Rectangle(hdc, rectDrag.left, rectDrag.top, rectDrag.right + 1 + pixelOffset, rectDrag.bottom + 1 + pixelOffset);
 		}
@@ -476,7 +549,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		case SB_THUMBTRACK:
 		{
 			vScrollPos = HIWORD(wParam);
-			//dlog("WM_VSCROLL", LOWORD(wParam), vScrollPos);
+			dlog("WM_VSCROLL", LOWORD(wParam), vScrollPos);
 
 			SetScrollPos(hWnd, SB_VERT, vScrollPos, true);
 
@@ -518,7 +591,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		case SB_THUMBTRACK:
 		{
 			hScrollPos = HIWORD(wParam);
-			//dlog("WM_HSCROLL", LOWORD(wParam), hScrollPos);
+			dlog("WM_HSCROLL", LOWORD(wParam), hScrollPos);
 
 			SetScrollPos(hWnd, SB_HORZ, hScrollPos, true);
 
@@ -715,7 +788,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		break;
 		case IDC_BUTTON4: // 등록
 		{
-			AddBoxToList(g_rectDrag);
+			AddBoxToList(g_rectLBDrag);
 			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
 		}
 		break;
@@ -814,23 +887,23 @@ void SetWindowPositionToCenter(HWND hWnd) {
 }
 
 void UpdateMainWndScroll() {
-	int wBItmap = g_bitmapHeader.bmWidth * g_BitmapViewInfo.Magnification;
-	int hBItmap = g_bitmapHeader.bmHeight * g_BitmapViewInfo.Magnification;
-	bool bHorzScroll = wBItmap > g_whMainWndSize.x;
-	bool bVertScroll = hBItmap > g_whMainWndSize.y;
+	int wBitmap = g_bitmapHeader.bmWidth * g_BitmapViewInfo.Magnification;
+	int hBitmap = g_bitmapHeader.bmHeight * g_BitmapViewInfo.Magnification;
+	bool bHorzScroll = wBitmap > (g_whMainWndSize.x - g_nScrollbarWidth);
+	bool bVertScroll = hBitmap > (g_whMainWndSize.y - g_nScrollbarWidth);
 
 	ShowScrollBar(g_hMainWnd, SB_HORZ, bHorzScroll);
 	ShowScrollBar(g_hMainWnd, SB_VERT, bVertScroll);
 
 	if (bHorzScroll) {
-		SetScrollRange(g_hMainWnd, SB_HORZ, 0, wBItmap - g_whMainWndSize.x, true);
+		SetScrollRange(g_hMainWnd, SB_HORZ, 0, wBitmap - (g_whMainWndSize.x - g_nScrollbarWidth), true);
 	}
 	else {
 		SetScrollRange(g_hMainWnd, SB_HORZ, 0, 0, true);
 	}
 
 	if (bVertScroll) {
-		SetScrollRange(g_hMainWnd, SB_VERT, 0, hBItmap - g_whMainWndSize.y, true);
+		SetScrollRange(g_hMainWnd, SB_VERT, 0, hBitmap - (g_whMainWndSize.y - g_nScrollbarWidth), true);
 	}
 	else {
 		SetScrollRange(g_hMainWnd, SB_VERT, 0, 0, true);
@@ -855,10 +928,10 @@ void AddBoxToList(RECT box) {
 	char itemText4[szMax_Pos] = {};
 
 	_itoa_s(itemCount, itemText0, szMax_Pos, 10);
-	_itoa_s(g_rectDrag.left, itemText1, szMax_Pos, 10);
-	_itoa_s(g_rectDrag.top, itemText2, szMax_Pos, 10);
-	_itoa_s(g_rectDrag.right, itemText3, szMax_Pos, 10);
-	_itoa_s(g_rectDrag.bottom, itemText4, szMax_Pos, 10);
+	_itoa_s(g_rectLBDrag.left, itemText1, szMax_Pos, 10);
+	_itoa_s(g_rectLBDrag.top, itemText2, szMax_Pos, 10);
+	_itoa_s(g_rectLBDrag.right, itemText3, szMax_Pos, 10);
+	_itoa_s(g_rectLBDrag.bottom, itemText4, szMax_Pos, 10);
 
 	//char itemText1[] = "item1";
 	LVITEM item = {};
@@ -888,7 +961,7 @@ void AddMagnification(float v) {
 
 void LoadBoxListFromFile() {
 	FILE *file = nullptr;
-	file = _fsopen("boxesList.txt", "rt", _SH_DENYNO);
+	file = _fsopen("spritesList.cut", "rt", _SH_DENYNO);
 
 	if (file == nullptr) return;
 
@@ -954,7 +1027,7 @@ void LoadBoxListFromFile() {
 
 void SaveBoxListToFile() {
 	FILE *file = nullptr;
-	file = _fsopen("boxesList.txt", "wt", _SH_DENYNO);
+	file = _fsopen("spritesList.cut", "wt", _SH_DENYNO);
 
 	if (file == nullptr) return;
 

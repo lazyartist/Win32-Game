@@ -48,9 +48,10 @@ typedef struct _WH {
 } WH;
 
 typedef struct _BitmapViewInfo {
-	float Magnification = 4.0;
+	float Magnification = 1.0;
 	//float Magnification = 60.0;
 	bool IsTransparentColorPickMode;
+	bool IsMoveMode;
 	COLORREF TransparentColor;
 } BitmapViewInfo;
 //typedef struct _Student {
