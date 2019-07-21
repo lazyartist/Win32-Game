@@ -17,8 +17,8 @@ POINT g_whRightWndSize = { 0, 0 }; // 리소스에 의해 결정
 // 전역 변수:
 HINSTANCE g_hInst;                                // 현재 인스턴스입니다.
 
-HDC g_hSrcDC;
-HDC g_hMemDC;
+HDC g_hBitmapSrcDC;
+HDC g_hBufferMemDC;
 HBITMAP g_hBitmap;
 BITMAP g_bitmapHeader;
 HWND g_hBoxList = nullptr;
@@ -185,28 +185,24 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		HDC hdc = GetDC(hWnd);
 
-		// 원본 DC
-		g_hSrcDC = CreateCompatibleDC(hdc);
-		SelectObject(g_hSrcDC, g_hBitmap);
-
+		// 원본 Bitmap DC
+		g_hBitmapSrcDC = CreateCompatibleDC(hdc);
+		SelectObject(g_hBitmapSrcDC, g_hBitmap);
+		
 		// 버퍼 DC
-		g_hMemDC = CreateCompatibleDC(hdc);
-		if (g_hMemDC == nullptr) {
-			DeleteDC(g_hMemDC);
-			delete g_hMemDC;
-		}
+		g_hBufferMemDC = CreateCompatibleDC(hdc);
 		// 메모리 DC에는 기본적으로 아주 작은 크기의 비트맵만 있기 때문에 다른 DC를 복사하려면 비트맵을 만들어줘야한다.
-		// SetObject()로 비트맵을 지정할 경우는 안해도 된다.
+		// SetObject()로 비트맵을 지정할 경우는 안해도 된다.(SetObject()가 뭐지?)
 		HBITMAP hBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
-		SelectObject(g_hMemDC, hBitmap);
+		SelectObject(g_hBufferMemDC, hBitmap);
 
-		g_CutImage.Init(g_hSrcDC, g_bitmapHeader);
+		g_CutImage.Init(g_hBitmapSrcDC, g_bitmapHeader);
 
 		DeleteObject(g_hBitmap);
 		DeleteDC(hdc);
 
 		// transparent color
-		g_BitmapViewInfo.TransparentColor = GetPixel(g_hSrcDC, 0, 0);
+		g_BitmapViewInfo.TransparentColor = GetPixel(g_hBitmapSrcDC, 0, 0);
 
 		UpdateMainWndScroll();
 	}
@@ -443,17 +439,15 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		float fMagnification = g_BitmapViewInfo.Magnification;
 
-		// 버퍼 DC를 원본 비트맵 DC로 덮어쓴다.
-		BitBlt(g_hMemDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hSrcDC, 0, 0, SRCCOPY);
-
 		// bitmap
+		// 버퍼 DC를 원본 비트맵 DC로 덮어쓰며 확대/축소한다.
 		// 단순 복사(BitBlt), 확대/축소 복사(StretchBlt)
 		// 확대/축소, 지정색 제거 복사
-		TransparentBlt(hdc, -g_pntScrollPos.x, -g_pntScrollPos.y, g_bitmapHeader.bmWidth * fMagnification, g_bitmapHeader.bmHeight * fMagnification, g_hMemDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
+		TransparentBlt(g_hBufferMemDC, -g_pntScrollPos.x, -g_pntScrollPos.y, g_bitmapHeader.bmWidth * fMagnification, g_bitmapHeader.bmHeight * fMagnification, g_hBitmapSrcDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
 
 		// draw rect
 		//SetROP2(hdc, R2_BLACK); // 외곽은 검은색, 내부는 비어있는 사각형
-		SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
+		SetROP2(g_hBufferMemDC, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
 
 		// Rectangle 고려사항
 		// 1. Rectangle은 left, top좌표에 해당하는 픽셀에 라인을 그리지만 right, bottom은 해당하는 픽셀 - 1 위치에 라인을 그린다.
@@ -487,20 +481,20 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 
 			if (selectedListItemIndex == i) {
-				hOldPen = (HPEN)SelectObject(hdc, hPen);
+				hOldPen = (HPEN)SelectObject(g_hBufferMemDC, hPen);
 				//SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
-				SetROP2(hdc, R2_MERGENOTPEN); // 외곽은 핑크, 내부는 비어있는 사각형
+				SetROP2(g_hBufferMemDC, R2_MERGENOTPEN); // 외곽은 핑크, 내부는 비어있는 사각형
 			}
 			else {
-				SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
+				SetROP2(g_hBufferMemDC, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
 			}
 
 			rectBox = rectBox * fMagnification;
 			rectBox = rectBox - g_pntScrollPos;
-			Rectangle(hdc, rectBox.left, rectBox.top, rectBox.right + 1 + pixelOffset, rectBox.bottom + 1 + pixelOffset);
+			Rectangle(g_hBufferMemDC, rectBox.left, rectBox.top, rectBox.right + 1 + pixelOffset, rectBox.bottom + 1 + pixelOffset);
 
 			if (hOldPen != nullptr) {
-				(HPEN)SelectObject(hdc, hOldPen);
+				(HPEN)SelectObject(g_hBufferMemDC, hOldPen);
 				hOldPen = nullptr;
 			}
 		}
@@ -508,11 +502,13 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		// 현재 드래그 영역
 		if (g_rectLBDrag.left != g_rectLBDrag.right) {
-			SetROP2(hdc, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
+			SetROP2(g_hBufferMemDC, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
 			RECT rectDrag = g_rectLBDrag * fMagnification;
 			rectDrag = rectDrag - g_pntScrollPos;
-			Rectangle(hdc, rectDrag.left, rectDrag.top, rectDrag.right + 1 + pixelOffset, rectDrag.bottom + 1 + pixelOffset);
+			Rectangle(g_hBufferMemDC, rectDrag.left, rectDrag.top, rectDrag.right + 1 + pixelOffset, rectDrag.bottom + 1 + pixelOffset);
 		}
+
+		BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hBufferMemDC, 0, 0, SRCCOPY);
 
 		// clear
 		//DeleteObject(SelectObject(hdc, hOldPen));
