@@ -19,8 +19,8 @@ HINSTANCE g_hInst;                                // 현재 인스턴스입니�
 
 HDC g_hBitmapSrcDC;
 HDC g_hBufferMemDC;
+HBITMAP g_hBitmapSrc;
 HBITMAP g_hBufferBitmap;
-//HBITMAP g_hBitmap;
 BITMAP g_bitmapHeader;
 HWND g_hBoxList = nullptr;
 
@@ -176,30 +176,24 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	case WM_CREATE:
 	{
 		// load bitmap
-		HBITMAP g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		g_hBitmapSrc = (HBITMAP)LoadImage(nullptr, "sprites/castlevania.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100_red.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-		//HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
-		GetObject(g_hBitmap, sizeof(BITMAP), &g_bitmapHeader);
+		GetObject(g_hBitmapSrc, sizeof(BITMAP), &g_bitmapHeader);
 
 		HDC hdc = GetDC(hWnd);
 
 		// 원본 Bitmap DC
 		g_hBitmapSrcDC = CreateCompatibleDC(hdc);
-		SelectObject(g_hBitmapSrcDC, g_hBitmap);
+		SelectObject(g_hBitmapSrcDC, g_hBitmapSrc);
 		
-		// 버퍼 DC
-		g_hBufferMemDC = CreateCompatibleDC(hdc);
-		// 메모리 DC에는 기본적으로 아주 작은 크기의 비트맵만 있기 때문에 다른 DC를 복사하려면 비트맵을 만들어줘야한다.
-		// SetObject()로 비트맵을 지정할 경우는 안해도 된다.(SetObject()가 뭐지?)
+		// 버퍼 비트맵 생성
 		g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
-		SelectObject(g_hBufferMemDC, g_hBufferBitmap);
 
 		g_CutImage.Init(g_hBitmapSrcDC, g_bitmapHeader);
 
-		DeleteObject(g_hBitmap);
+		DeleteObject(g_hBitmapSrc);
 		DeleteDC(hdc);
 
 		// transparent color
@@ -441,6 +435,21 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	{
 		float fMagnification = g_BitmapViewInfo.Magnification;
 
+		HDC hdc = GetDC(hWnd);
+
+
+		//if (g_hBufferMemDC) {
+		//	DeleteDC(g_hBufferMemDC);
+		//}
+		g_hBufferMemDC = CreateCompatibleDC(hdc);
+		// 메모리 DC에는 기본적으로 아주 작은 크기의 비트맵만 있기 때문에 다른 DC를 복사하겨나 그리기를 하려면 비트맵을 만들어줘야한다.
+		// SelectObject()로 비트맵을 지정할 경우는 안해도 된다.
+		HBITMAP hOldBitmap = (HBITMAP)SelectObject(g_hBufferMemDC, g_hBufferBitmap);
+
+		RECT crt;
+		GetClientRect(hWnd, &crt);
+		FillRect(g_hBufferMemDC, &crt, GetSysColorBrush(COLOR_WINDOW));
+
 		// bitmap
 		// 버퍼 DC를 원본 비트맵 DC로 덮어쓰며 확대/축소한다.
 		// 단순 복사(BitBlt), 확대/축소 복사(StretchBlt)
@@ -510,6 +519,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			Rectangle(g_hBufferMemDC, rectDrag.left, rectDrag.top, rectDrag.right + 1 + pixelOffset, rectDrag.bottom + 1 + pixelOffset);
 		}
 
+		SelectObject(g_hBufferMemDC, hOldBitmap);
+		DeleteDC(g_hBufferMemDC);
+		ReleaseDC(hWnd, hdc);
+
 		// 버퍼 DC를 그려준 뒤 WM_PAINT 메시지 발생을 위해 InvalidateRect()호출한다.
 		// 이때 버퍼DC 전체를 복사하므로 화면을 지울 필요가 없기 때문에 세번째 인자는 false를 전달한다.
 		InvalidateRect(hWnd, nullptr, false);
@@ -521,10 +534,16 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 
+		// MemoryDC가 해제되지 않은 상태에서 CreateCompatibleDC()로 다시 할당하면 화면에 보이지 않는다.(왜인지는 모르겠다.)
+		if (g_hBufferMemDC) {
+			DeleteDC(g_hBufferMemDC);
+		}
+		g_hBufferMemDC = CreateCompatibleDC(hdc);
+		SelectObject(g_hBufferMemDC, g_hBufferBitmap);
 		BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hBufferMemDC, 0, 0, SRCCOPY);
 
 		// clear
-		//DeleteObject(SelectObject(hdc, hOldPen));
+		DeleteDC(g_hBufferMemDC);
 
 		EndPaint(hWnd, &ps);
 
@@ -611,9 +630,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			// ScrollWindow 호출 시 클라이언트 리페인트 메시지가 자동으로 발생한다.
 			// ScrollWindow(hWnd, xAmount, 0, nullptr, nullptr);
 			// UpdateWindow(hWnd); // WM_PAINT 발생
-
-			// ScrollWindow를 호출하지 않을 경우 InvalidateRect를 호출해야한다.
-			//InvalidateRect(hWnd, nullptr, true);
 			return 0;
 		}
 		break;
