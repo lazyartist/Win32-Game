@@ -134,7 +134,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	g_hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
 	// 스크롤 넓이를 구해서 클라이언트 영역에서 빼주면 스크롤 영역이 딱 맞지가 않는다. 일단 대충 *4해서 맞춘다.
-	g_nScrollbarWidth = GetSystemMetrics(SM_CXVSCROLL) * 4;
+	g_nScrollbarWidth = GetSystemMetrics(SM_CXVSCROLL) * 6;
+	//g_nScrollbarWidth = 0;
 
 	// 메인 윈도우
 	RECT clientRect = { 0, 0, g_whMainWndSize.x - 1, g_whMainWndSize.y - 1 };
@@ -189,8 +190,17 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		HDC hdc = GetDC(hWnd);
 
 		// 원본 Bitmap DC
+		// 추후 TransparentBlt() 등으로 복사 할 때 비트맵 영역을 벗어나면 화면이 그려지지 않기 때문에 원본 비트맵 보다 더 큰 비트맵을 만들어 복사한다.
 		g_hBitmapSrcDC = CreateCompatibleDC(hdc);
-		SelectObject(g_hBitmapSrcDC, g_hBitmapSrc);
+		HBITMAP hBitmapExpand = g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth*2, g_bitmapHeader.bmHeight*2);
+		SelectObject(g_hBitmapSrcDC, hBitmapExpand);
+
+		// 임시 원본 Bitmap DC
+		HDC hBitmapSrcDCTemp = CreateCompatibleDC(hdc);
+		SelectObject(hBitmapSrcDCTemp, g_hBitmapSrc);
+
+		// 원본 Bitmap DC에 임시 원본 Bitmap DC 복사
+		BitBlt(g_hBitmapSrcDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, hBitmapSrcDCTemp, 0, 0, SRCCOPY);
 
 		// 버퍼 비트맵 생성
 		g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
@@ -220,6 +230,11 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		}
 		else if (g_MouseModeType == MouseModeType::Pivot) {
 			SetCursor(LoadCursor(nullptr, IDC_CROSS));
+		}
+		else if (g_MouseModeType == MouseModeType::Collision) {
+			HCURSOR hCursor;
+			hCursor = LoadCursor(g_hInst, MAKEINTRESOURCE(IDC_CURSOR1));
+			SetCursor(hCursor);
 		}
 		else {
 			return DefWindowProc(hWnd, message, wParam, lParam);
@@ -436,8 +451,13 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			dlog("up rect. = ", x, y);
 
-
 			g_rectLBDrag = g_CutImage.FitToImage(g_rectLBDrag, g_BitmapViewInfo.TransparentColor);
+
+			// 드래그 영역을 자동으로 리스트에 추가
+			UINT isAutoAddBoxToList = IsDlgButtonChecked(g_hRightWnd, IDC_CHECK1); // 버튼 컨트롤러 체크 상태 가져옴
+			if (isAutoAddBoxToList && g_rectLBDrag.left != g_rectLBDrag.right) {
+				AddBoxToList(g_rectLBDrag);
+			}
 
 			//InvalidateRect(hWnd, nullptr, true);
 		}
@@ -485,7 +505,24 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		// 버퍼 DC를 원본 비트맵 DC로 덮어쓰며 확대/축소한다.
 		// 단순 복사(BitBlt), 확대/축소 복사(StretchBlt)
 		// 확대/축소, 지정색 제거 복사
-		TransparentBlt(g_hBufferMemDC, -g_pntScrollPos.x, -g_pntScrollPos.y, g_bitmapHeader.bmWidth * fMagnification, g_bitmapHeader.bmHeight * fMagnification, g_hBitmapSrcDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
+		//TransparentBlt(g_hBufferMemDC, -g_pntScrollPos.x, -g_pntScrollPos.y, g_bitmapHeader.bmWidth * fMagnification, g_bitmapHeader.bmHeight * fMagnification, g_hBitmapSrcDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
+
+		// 화면에 보이는 비트맵만 복사해서 속도를 높이려 했는데 원본 비트맵 영역을 벗어나면 흰화면이 나온다. 추후 개선
+		TransparentBlt(g_hBufferMemDC, 0, 0,
+			//min(g_bitmapHeader.bmWidth - g_pntScrollPos.x / fMagnification, g_bitmapHeader.bmWidth),
+			//min(g_bitmapHeader.bmHeight - g_pntScrollPos.y / fMagnification, g_bitmapHeader.bmHeight),
+			g_bitmapHeader.bmWidth,
+			g_bitmapHeader.bmHeight,
+
+			g_hBitmapSrcDC,
+			g_pntScrollPos.x / fMagnification,
+			g_pntScrollPos.y / fMagnification,
+			(g_bitmapHeader.bmWidth / fMagnification),
+			(g_bitmapHeader.bmHeight / fMagnification),
+			//min(g_bitmapHeader.bmWidth - g_pntScrollPos.x / fMagnification, (g_bitmapHeader.bmWidth / fMagnification)),
+			//min(g_bitmapHeader.bmHeight - g_pntScrollPos.y / fMagnification, (g_bitmapHeader.bmHeight / fMagnification)),
+
+			RGB(255, 0, 0));
 
 		// draw rect
 		//SetROP2(hdc, R2_BLACK); // 외곽은 검은색, 내부는 비어있는 사각형
@@ -957,7 +994,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 					char szX[szMax_Pos];
 					char szY[szMax_Pos];
 					_itoa_s(g_SpriteInfo.Pivot.x, szX, szMax_Pos, 10);
-					_itoa_s(g_SpriteInfo.Pivot.x, szY, szMax_Pos, 10);
+					_itoa_s(g_SpriteInfo.Pivot.y, szY, szMax_Pos, 10);
 
 					SetDlgItemText(hDlg, IDC_EDIT2, szX);
 					SetDlgItemText(hDlg, IDC_EDIT3, szY);
