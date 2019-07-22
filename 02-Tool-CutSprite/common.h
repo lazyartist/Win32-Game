@@ -19,6 +19,7 @@ typedef void(*CallbackFunc)(); // 이벤트 콜백
 #define szMax_Pos 6
 #define szMax_PosLine 99
 #define nFrameRate 60
+#define nPivotHalfSize 5
 //
 //#define Max_Student_Id 6 + 1
 //#define Max_Student_Name 10 + 1
@@ -35,10 +36,10 @@ typedef void(*CallbackFunc)(); // 이벤트 콜백
 
 
 // ===== enum =====
-//enum LoginResultType
-//{
-//	Success, Fail
-//};
+enum MouseModeType
+{
+	Sprite, TransparentColor, Pivot, Collision
+};
 // ===== enum =====  end
 
 
@@ -54,14 +55,15 @@ typedef struct _WH {
 } WH;
 
 typedef struct _BitmapViewInfo {
-	float Magnification = 1.0;
+	float Magnification = 2.0;
 	//float Magnification = 60.0;
-	bool IsTransparentColorPickMode;
+	//bool IsTransparentColorPickMode;
 	bool IsMoveMode;
 	COLORREF TransparentColor;
 } BitmapViewInfo;
 
 typedef struct _SpriteInfo {
+	INT Index;
 	RECT Rect;
 	XY Pivot;
 	RECT *Collisions;
@@ -147,6 +149,20 @@ inline RECT operator-(RECT rect, POINT pnt) {
 	rect.bottom -= pnt.y;
 
 	return rect;
+}
+
+inline XY operator-(XY xy, POINT pnt) {
+	xy.x -= pnt.x;
+	xy.y -= pnt.y;
+
+	return xy;
+}
+
+inline XY operator*(XY xy, float v) {
+	xy.x *= v;
+	xy.y *= v;
+
+	return xy;
 }
 // ===== operation overloading ===== end
 

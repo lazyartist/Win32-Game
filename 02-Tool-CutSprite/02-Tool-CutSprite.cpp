@@ -50,6 +50,7 @@ const UINT g_nSmallIconId = IDI_SMALL;			  // 작은 아이콘 ID
 const UINT g_nMenuId_OpenFile = ID_32771;		  // 파일 열기 메뉴 ID
 const UINT g_nMenuId_SaveFile = ID_32772;		  // 파일 저장 메뉴 ID
 
+MouseModeType g_MouseModeType = MouseModeType::Sprite;
 BitmapViewInfo g_BitmapViewInfo;
 CutImage g_CutImage;
 
@@ -190,7 +191,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		// 원본 Bitmap DC
 		g_hBitmapSrcDC = CreateCompatibleDC(hdc);
 		SelectObject(g_hBitmapSrcDC, g_hBitmapSrc);
-		
+
 		// 버퍼 비트맵 생성
 		g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
 
@@ -214,8 +215,11 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			SetCursor(LoadCursor(nullptr, IDC_SIZEALL));
 			return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
 		}
-		else if (g_BitmapViewInfo.IsTransparentColorPickMode) {
+		else if (g_MouseModeType == MouseModeType::TransparentColor) {
 			SetCursor(LoadCursor(nullptr, IDC_HAND));
+		}
+		else if (g_MouseModeType == MouseModeType::Pivot) {
+			SetCursor(LoadCursor(nullptr, IDC_CROSS));
 		}
 		else {
 			return DefWindowProc(hWnd, message, wParam, lParam);
@@ -346,7 +350,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	break;
 	case WM_LBUTTONDOWN:
 	{
-		if (g_BitmapViewInfo.IsTransparentColorPickMode) {
+		if (g_MouseModeType == MouseModeType::TransparentColor) {
 			int x = GET_X_LPARAM(lParam);
 			int y = GET_Y_LPARAM(lParam);
 
@@ -354,8 +358,28 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			COLORREF color = GetPixel(hdc, x, y);
 			g_BitmapViewInfo.TransparentColor = color;
 			DeleteDC(hdc);
+		}
+		else if (g_MouseModeType == MouseModeType::Pivot) {
+			// 확대된 상태의 좌표이기 때문에(g_pntScrollPos도 확대된 좌표) 배율로 나눠준다.
+			int x = (GET_X_LPARAM(lParam) + g_pntScrollPos.x) / g_BitmapViewInfo.Magnification;
+			int y = (GET_Y_LPARAM(lParam) + g_pntScrollPos.y) / g_BitmapViewInfo.Magnification;
 
-			//InvalidateRect(g_hRightWnd, nullptr, true);
+			// set pivot
+			x -= g_SpriteInfo.Rect.left;
+			y -= g_SpriteInfo.Rect.top;
+
+			g_SpriteInfo.Pivot.x = x;
+			g_SpriteInfo.Pivot.y = y;
+
+			char szX[szMax_Pos];
+			char szY[szMax_Pos];
+			_itoa_s(x, szX, szMax_Pos, 10);
+			_itoa_s(y, szY, szMax_Pos, 10);
+			HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
+			ListView_SetItemText(hList, g_SpriteInfo.Index, 5, szX);
+			ListView_SetItemText(hList, g_SpriteInfo.Index, 6, szY);
+
+			InvalidateRect(g_hRightWnd, nullptr, true);
 		}
 		else {
 			g_bIsLBDrag = true;
@@ -378,8 +402,12 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	break;
 	case WM_LBUTTONUP:
 	{
-		if (g_BitmapViewInfo.IsTransparentColorPickMode) {
-			g_BitmapViewInfo.IsTransparentColorPickMode = false;
+		if (g_MouseModeType == MouseModeType::TransparentColor) {
+			g_MouseModeType = MouseModeType::Sprite;
+			InvalidateRect(g_hRightWnd, nullptr, false);
+		}
+		else if (g_MouseModeType == MouseModeType::Pivot) {
+			g_MouseModeType = MouseModeType::Sprite;
 			InvalidateRect(g_hRightWnd, nullptr, false);
 		}
 		else {
@@ -471,6 +499,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		UINT pixelOffset = fMagnification - 1;
 		char szItem[szMax_Pos];
 		RECT rectBox;
+		SpriteInfo SpriteInfo;
 
 		HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
 		int itemCount = ListView_GetItemCount(hList);
@@ -493,8 +522,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			//ListView_GetItemText(hList, i, 4, szItem, szMax_Pos);
 			//rectBox.bottom = atoi(szItem);
 
-			SpriteInfo SpriteInfo = GetSpriteInfo(i);
-
+			SpriteInfo = GetSpriteInfo(i);
 			rectBox = SpriteInfo.Rect;
 
 			if (selectedListItemIndex == i) {
@@ -506,9 +534,20 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				SetROP2(g_hBufferMemDC, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
 			}
 
+			// sprite rect
 			rectBox = rectBox * fMagnification;
 			rectBox = rectBox - g_pntScrollPos;
 			Rectangle(g_hBufferMemDC, rectBox.left, rectBox.top, rectBox.right + 1 + pixelOffset, rectBox.bottom + 1 + pixelOffset);
+
+			// sprite pivot
+			SetROP2(g_hBufferMemDC, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
+			XY xyPivot = { SpriteInfo.Rect.left + SpriteInfo.Pivot.x, SpriteInfo.Rect.top + SpriteInfo.Pivot.y };
+			xyPivot = xyPivot * fMagnification;
+			xyPivot = xyPivot - g_pntScrollPos;
+			MoveToEx(g_hBufferMemDC, xyPivot.x - nPivotHalfSize, xyPivot.y, nullptr);
+			LineTo(g_hBufferMemDC, xyPivot.x + nPivotHalfSize, xyPivot.y);
+			MoveToEx(g_hBufferMemDC, xyPivot.x, xyPivot.y - nPivotHalfSize, nullptr);
+			LineTo(g_hBufferMemDC, xyPivot.x, xyPivot.y + nPivotHalfSize);
 
 			if (hOldPen != nullptr) {
 				(HPEN)SelectObject(g_hBufferMemDC, hOldPen);
@@ -734,6 +773,8 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		char colText2[] = "top";
 		char colText3[] = "right";
 		char colText4[] = "bottom";
+		char colText5[] = "pivot x";
+		char colText6[] = "pivot y";
 
 		LVCOLUMN col = {};
 		col.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
@@ -752,7 +793,13 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		ListView_InsertColumn(g_hBoxList, 3, &col); // 컬럼 추가3
 
 		col.pszText = colText4;
-		ListView_InsertColumn(g_hBoxList, 3, &col); // 컬럼 추가4
+		ListView_InsertColumn(g_hBoxList, 4, &col); // 컬럼 추가4
+
+		col.pszText = colText5;
+		ListView_InsertColumn(g_hBoxList, 5, &col); // 컬럼 추가5
+
+		col.pszText = colText6;
+		ListView_InsertColumn(g_hBoxList, 6, &col); // 컬럼 추가6
 		// ===== List에 컬럼 추가 ===== end
 
 		LoadBoxListFromFile();
@@ -790,7 +837,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 	}
 
 	case WM_SETCURSOR:
-		if (g_BitmapViewInfo.IsTransparentColorPickMode) {
+		if (g_MouseModeType == MouseModeType::TransparentColor) {
 			SetCursor(LoadCursor(nullptr, IDC_HAND));
 			return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
 		}
@@ -811,7 +858,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		break;
 		case IDC_BUTTON3: // 컬러 선택
 		{
-			g_BitmapViewInfo.IsTransparentColorPickMode = true;
+			g_MouseModeType = MouseModeType::TransparentColor;
 
 			SetCursor(LoadCursor(nullptr, IDC_HAND));
 			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
@@ -844,6 +891,14 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			SaveBoxListToFile();
 		}
 		break;
+
+		case IDC_BUTTON7: // 피봇 모드
+		{
+			g_MouseModeType = MouseModeType::Pivot;
+			SetCursor(LoadCursor(nullptr, IDC_CROSS));
+		}
+		break;
+
 		default:
 			break;
 		}
@@ -889,7 +944,24 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 					-1, // 검색을 시작할 인덱스
 					LVNI_SELECTED // 검색 조건
 				);
-				g_SpriteInfo = GetSpriteInfo(itemIndex);
+
+				if (itemIndex == -1) {
+					g_SpriteInfo.Index = itemIndex;
+				}
+				else {
+					g_SpriteInfo = GetSpriteInfo(itemIndex);
+
+					HWND hEditX = GetDlgItem(hDlg, IDC_EDIT2);
+					HWND hEditY = GetDlgItem(hDlg, IDC_EDIT3);
+
+					char szX[szMax_Pos];
+					char szY[szMax_Pos];
+					_itoa_s(g_SpriteInfo.Pivot.x, szX, szMax_Pos, 10);
+					_itoa_s(g_SpriteInfo.Pivot.x, szY, szMax_Pos, 10);
+
+					SetDlgItemText(hDlg, IDC_EDIT2, szX);
+					SetDlgItemText(hDlg, IDC_EDIT3, szY);
+				}
 			}
 		}
 	}
@@ -963,12 +1035,16 @@ void AddBoxToList(RECT box) {
 	char itemText2[szMax_Pos] = {};
 	char itemText3[szMax_Pos] = {};
 	char itemText4[szMax_Pos] = {};
+	char itemText5[szMax_Pos] = {};
+	char itemText6[szMax_Pos] = {};
 
 	_itoa_s(itemCount, itemText0, szMax_Pos, 10);
 	_itoa_s(g_rectLBDrag.left, itemText1, szMax_Pos, 10);
 	_itoa_s(g_rectLBDrag.top, itemText2, szMax_Pos, 10);
 	_itoa_s(g_rectLBDrag.right, itemText3, szMax_Pos, 10);
 	_itoa_s(g_rectLBDrag.bottom, itemText4, szMax_Pos, 10);
+	_itoa_s(0, itemText5, szMax_Pos, 10);
+	_itoa_s(0, itemText6, szMax_Pos, 10);
 
 	//char itemText1[] = "item1";
 	LVITEM item = {};
@@ -982,9 +1058,11 @@ void AddBoxToList(RECT box) {
 	item.pszText = itemText0;
 	ListView_InsertItem(g_hBoxList, &item); // 아이템 추가0
 	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 1/*subitem idx*/, itemText1); // 서브아이템 추가0
-	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 2/*subitem idx*/, itemText2); // 서브아이템 추가0
-	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 3/*subitem idx*/, itemText3); // 서브아이템 추가0
-	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 4/*subitem idx*/, itemText4); // 서브아이템 추가0
+	ListView_SetItemText(g_hBoxList, 0, 2, itemText2);
+	ListView_SetItemText(g_hBoxList, 0, 3, itemText3);
+	ListView_SetItemText(g_hBoxList, 0, 4, itemText4);
+	ListView_SetItemText(g_hBoxList, 0, 5, itemText5);
+	ListView_SetItemText(g_hBoxList, 0, 6, itemText6);
 }
 
 void AddMagnification(float v) {
@@ -1017,6 +1095,8 @@ void LoadBoxListFromFile() {
 	char itemText2[szMax_Pos] = {};
 	char itemText3[szMax_Pos] = {};
 	char itemText4[szMax_Pos] = {};
+	char itemText5[szMax_Pos] = {};
+	char itemText6[szMax_Pos] = {};
 
 	char *token;
 	char *nextToken;
@@ -1041,6 +1121,10 @@ void LoadBoxListFromFile() {
 		strcpy_s(itemText3, token);
 		token = strtok_s(NULL, "\t", &nextToken);
 		strcpy_s(itemText4, token);
+		token = strtok_s(NULL, "\t", &nextToken);
+		strcpy_s(itemText5, token);
+		token = strtok_s(NULL, "\t", &nextToken);
+		strcpy_s(itemText6, token);
 
 		//char itemText1[] = "item1";
 		LVITEM item = {};
@@ -1054,9 +1138,11 @@ void LoadBoxListFromFile() {
 		item.pszText = itemText0;
 		ListView_InsertItem(g_hBoxList, &item); // 아이템 추가0
 		ListView_SetItemText(g_hBoxList, i/*item idx*/, 1/*subitem idx*/, itemText1); // 서브아이템 추가0
-		ListView_SetItemText(g_hBoxList, i/*item idx*/, 2/*subitem idx*/, itemText2); // 서브아이템 추가0
-		ListView_SetItemText(g_hBoxList, i/*item idx*/, 3/*subitem idx*/, itemText3); // 서브아이템 추가0
-		ListView_SetItemText(g_hBoxList, i/*item idx*/, 4/*subitem idx*/, itemText4); // 서브아이템 추가0
+		ListView_SetItemText(g_hBoxList, i, 2, itemText2);
+		ListView_SetItemText(g_hBoxList, i, 3, itemText3);
+		ListView_SetItemText(g_hBoxList, i, 4, itemText4);
+		ListView_SetItemText(g_hBoxList, i, 5, itemText5);
+		ListView_SetItemText(g_hBoxList, i, 6, itemText6);
 	}
 
 	fclose(file);
@@ -1081,14 +1167,18 @@ void SaveBoxListToFile() {
 	char szTop[szMax_Pos];
 	char szRight[szMax_Pos];
 	char szBottom[szMax_Pos];
+	char szPivotX[szMax_Pos];
+	char szPivotY[szMax_Pos];
 	for (size_t i = 0; i < itemCount; i++)
 	{
 		ListView_GetItemText(hList, i, 1, szLeft, szMax_Pos);
 		ListView_GetItemText(hList, i, 2, szTop, szMax_Pos);
 		ListView_GetItemText(hList, i, 3, szRight, szMax_Pos);
 		ListView_GetItemText(hList, i, 4, szBottom, szMax_Pos);
+		ListView_GetItemText(hList, i, 5, szPivotX, szMax_Pos);
+		ListView_GetItemText(hList, i, 6, szPivotY, szMax_Pos);
 
-		fprintf_s(file, "%s\t%s\t%s\t%s\n", szLeft, szTop, szRight, szBottom);
+		fprintf_s(file, "%s\t%s\t%s\t%s\t%s\t%s\n", szLeft, szTop, szRight, szBottom, szPivotX, szPivotY);
 	}
 
 	fclose(file);
@@ -1103,7 +1193,8 @@ SpriteInfo GetSpriteInfo(int index) {
 	//	LVNI_SELECTED // 검색 조건
 	//);
 
-	SpriteInfo SpriteInfo;
+	SpriteInfo SpriteInfo = {};
+	SpriteInfo.Index = index;
 
 	char szItem[szMax_Pos];
 
@@ -1115,6 +1206,10 @@ SpriteInfo GetSpriteInfo(int index) {
 	SpriteInfo.Rect.right = atoi(szItem);
 	ListView_GetItemText(hList, index, 4, szItem, szMax_Pos);
 	SpriteInfo.Rect.bottom = atoi(szItem);
+	ListView_GetItemText(hList, index, 5, szItem, szMax_Pos);
+	SpriteInfo.Pivot.x = atoi(szItem);
+	ListView_GetItemText(hList, index, 6, szItem, szMax_Pos);
+	SpriteInfo.Pivot.y = atoi(szItem);
 
 	return SpriteInfo;
 }
