@@ -15,7 +15,7 @@ typedef void(*CallbackFunc)(); // 이벤트 콜백
 
 // ===== define =====
 #define nMax_Boxes 999
-#define szMax_Boxes 4
+#define szMax_SpriteCount 4
 #define szMax_Pos 6
 #define szMax_PosLine 99
 #define nFrameRate 60

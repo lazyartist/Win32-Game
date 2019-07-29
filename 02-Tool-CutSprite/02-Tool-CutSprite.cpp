@@ -23,7 +23,7 @@ HDC g_hBufferMemDC;
 HBITMAP g_hBitmapSrc;
 HBITMAP g_hBufferBitmap;
 BITMAP g_bitmapHeader;
-HWND g_hBoxList = nullptr;
+HWND g_hSpriteList = nullptr;
 HWND g_hCollisionList = nullptr;
 
 bool g_bIsLBDrag = false;
@@ -68,7 +68,7 @@ INT_PTR CALLBACK    RightDlgProc(HWND, UINT, WPARAM, LPARAM);
 void UpdateMainWndScroll();
 void UpdateSubWndPosition();
 void SetWindowPositionToCenter(HWND hWnd);
-void AddBoxToList(RECT box);
+void AddRectToSpriteList(RECT rect);
 void AddMagnification(float v);
 void SaveSpriteListToFile();
 void LoadSpriteListFromFile();
@@ -195,7 +195,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		str.append("\t");
 		str.append("a");
 		str.append("\n");
-		
+
 
 		// load bitmap
 		g_hBitmapSrc = (HBITMAP)LoadImage(nullptr, "sprites/castlevania.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
@@ -209,7 +209,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		// 원본 Bitmap DC
 		// 추후 TransparentBlt() 등으로 복사 할 때 비트맵 영역을 벗어나면 화면이 그려지지 않기 때문에 원본 비트맵 보다 더 큰 비트맵을 만들어 복사한다.
 		g_hBitmapSrcDC = CreateCompatibleDC(hdc);
-		HBITMAP hBitmapExpand = g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth*2, g_bitmapHeader.bmHeight*2);
+		HBITMAP hBitmapExpand = g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth * 2, g_bitmapHeader.bmHeight * 2);
 		SelectObject(g_hBitmapSrcDC, hBitmapExpand);
 
 		// 임시 원본 Bitmap DC
@@ -471,9 +471,9 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			g_rectLBDrag = g_CutImage.FitToImage(g_rectLBDrag, g_BitmapViewInfo.TransparentColor);
 
 			// 드래그 영역을 자동으로 리스트에 추가
-			UINT isAutoAddBoxToList = IsDlgButtonChecked(g_hRightWnd, IDC_CHECK1); // 버튼 컨트롤러 체크 상태 가져옴
-			if (isAutoAddBoxToList && g_rectLBDrag.left != g_rectLBDrag.right) {
-				AddBoxToList(g_rectLBDrag);
+			UINT isAutoAddDragRectToList = IsDlgButtonChecked(g_hRightWnd, IDC_CHECK1); // 버튼 컨트롤러 체크 상태 가져옴
+			if (isAutoAddDragRectToList && g_rectLBDrag.left != g_rectLBDrag.right) {
+				AddRectToSpriteList(g_rectLBDrag);
 			}
 
 			//InvalidateRect(hWnd, nullptr, true);
@@ -552,13 +552,13 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		// 따라서 확대된 픽셀의 바깥쪽에 라인을 그리려면 배수를 더해주는데 2배이상부터 보정해야하므로 배율에서 -1한 값을 더해준다.
 		UINT pixelOffset = fMagnification - 1;
 		char szItem[szMax_Pos];
-		RECT rectBox;
+		RECT spriteRect;
 		SpriteInfo SpriteInfo;
 
 		HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
 		int itemCount = g_vSpriteInfos.size();
 		int selectedListItemIndex = ListView_GetNextItem(
-			g_hBoxList, // 윈도우 핸들
+			g_hSpriteList, // 윈도우 핸들
 			-1, // 검색을 시작할 인덱스
 			LVNI_SELECTED // 검색 조건
 		);
@@ -568,7 +568,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		for (size_t i = 0; i < itemCount; i++)
 		{
 			SpriteInfo = GetSpriteInfo(i);
-			rectBox = SpriteInfo.Rect;
+			spriteRect = SpriteInfo.Rect;
 
 			if (selectedListItemIndex == i) {
 				hOldPen = (HPEN)SelectObject(g_hBufferMemDC, hPen);
@@ -580,9 +580,9 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			}
 
 			// sprite rect
-			rectBox = rectBox * fMagnification;
-			rectBox = rectBox - g_pntScrollPos;
-			Rectangle(g_hBufferMemDC, rectBox.left, rectBox.top, rectBox.right + 1 + pixelOffset, rectBox.bottom + 1 + pixelOffset);
+			spriteRect = spriteRect * fMagnification;
+			spriteRect = spriteRect - g_pntScrollPos;
+			Rectangle(g_hBufferMemDC, spriteRect.left, spriteRect.top, spriteRect.right + 1 + pixelOffset, spriteRect.bottom + 1 + pixelOffset);
 
 			// sprite pivot
 			SetROP2(g_hBufferMemDC, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
@@ -809,7 +809,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		MoveWindow(hDlg, mainWndRect.right, mainWndRect.top, g_whRightWndSize.x, g_whRightWndSize.y, true);
 
 		// Sprite list
-		g_hBoxList = GetDlgItem(hDlg, IDC_LIST1);
+		g_hSpriteList = GetDlgItem(hDlg, IDC_LIST1);
 
 		// ===== List에 컬럼 추가 =====
 		// List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.
@@ -826,22 +826,22 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		col.cx = 50;
 
 		col.pszText = colText1;
-		ListView_InsertColumn(g_hBoxList, 1, &col); // 컬럼 추가1
+		ListView_InsertColumn(g_hSpriteList, 1, &col); // 컬럼 추가1
 
 		col.pszText = colText2;
-		ListView_InsertColumn(g_hBoxList, 2, &col); // 컬럼 추가2
+		ListView_InsertColumn(g_hSpriteList, 2, &col); // 컬럼 추가2
 
 		col.pszText = colText3;
-		ListView_InsertColumn(g_hBoxList, 3, &col); // 컬럼 추가3
+		ListView_InsertColumn(g_hSpriteList, 3, &col); // 컬럼 추가3
 
 		col.pszText = colText4;
-		ListView_InsertColumn(g_hBoxList, 4, &col); // 컬럼 추가4
+		ListView_InsertColumn(g_hSpriteList, 4, &col); // 컬럼 추가4
 
 		col.pszText = colText5;
-		ListView_InsertColumn(g_hBoxList, 5, &col); // 컬럼 추가5
+		ListView_InsertColumn(g_hSpriteList, 5, &col); // 컬럼 추가5
 
 		col.pszText = colText6;
-		ListView_InsertColumn(g_hBoxList, 6, &col); // 컬럼 추가6
+		ListView_InsertColumn(g_hSpriteList, 6, &col); // 컬럼 추가6
 		// ===== List에 컬럼 추가 ===== end
 
 		LoadSpriteListFromFile();
@@ -849,7 +849,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		// ===== List 뷰 설정 =====
 		// 기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨
 		ListView_SetExtendedListViewStyle(
-			g_hBoxList,
+			g_hSpriteList,
 			LVS_EX_FULLROWSELECT // 아이템 전체가 클릭되도록 한다.
 			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
 		);
@@ -937,14 +937,14 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		break;
 		case IDC_BUTTON4: // 등록
 		{
-			AddBoxToList(g_rectLBDrag);
+			AddRectToSpriteList(g_rectLBDrag);
 			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
 		}
 		break;
 		case IDC_BUTTON5: // 삭제
 		{
 			int selectedIndex = ListView_GetNextItem(
-				g_hBoxList, // 윈도우 핸들
+				g_hSpriteList, // 윈도우 핸들
 				-1, // 검색을 시작할 인덱스
 				LVNI_SELECTED // 검색 조건
 			);
@@ -952,11 +952,11 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			if (selectedIndex < 0) break;
 
 			// 리스트에서 제거
-			ListView_DeleteItem(g_hBoxList, selectedIndex);
+			ListView_DeleteItem(g_hSpriteList, selectedIndex);
 
 			// vector에서 제거
 			auto iter = g_vSpriteInfos.begin();
-			g_vSpriteInfos.erase(iter+selectedIndex);
+			g_vSpriteInfos.erase(iter + selectedIndex);
 
 			//InvalidateRect(g_hMainWnd, nullptr, true);
 			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
@@ -1058,7 +1058,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				);
 
 				// update pivot
-				if(g_SpriteInfoIndex != -1) {
+				if (g_SpriteInfoIndex != -1) {
 					g_SpriteInfo = GetSpriteInfo(g_SpriteInfoIndex);
 
 					HWND hEditX = GetDlgItem(hDlg, IDC_EDIT2);
@@ -1168,11 +1168,11 @@ void UpdateSubWndPosition() {
 	MoveWindow(g_hBottomWnd, rect.left, rect.bottom + 2, g_whBottomWndSize.x, g_whBottomWndSize.y, true);
 }
 
-void AddBoxToList(RECT box) {
-	int itemCount = ListView_GetItemCount(g_hBoxList);
+void AddRectToSpriteList(RECT rect) {
+	int itemCount = ListView_GetItemCount(g_hSpriteList);
 
 	SpriteInfo spriteInfo;
-	INT coordinates[nMax_SpriteCoordinateCount] = { g_rectLBDrag.left,g_rectLBDrag.top,g_rectLBDrag.right,g_rectLBDrag.bottom, 0, };
+	INT coordinates[nMax_SpriteCoordinateCount] = { rect.left, rect.top, rect.right, rect.bottom, 0, };
 
 	// rect, pivot
 	spriteInfo.SetCoordinates(coordinates, nMax_SpriteCoordinateByteSize);
@@ -1204,8 +1204,8 @@ void LoadSpriteListFromFile() {
 
 	HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
 
-	char szItemCount[szMax_Boxes] = {};
-	fgets(szItemCount, szMax_Boxes, file);
+	char szItemCount[szMax_SpriteCount] = {};
+	fgets(szItemCount, szMax_SpriteCount, file);
 
 	// item count
 	int itemCount = atoi(szItemCount);
@@ -1255,10 +1255,10 @@ void LoadSpriteListFromFile() {
 					token = strtok_s(nullptr, "\t", &nextToken);
 					collisionPos[k] = atoi(token);
 				}
-				
+
 				spriteInfo.AddCollision(collisionPos, nMax_RectPos);
 			}
-		
+
 		}
 
 		AddSpriteInfo(i, &spriteInfo);
@@ -1280,12 +1280,12 @@ void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {
 
 	char itemText[szMax_Pos] = {};
 	item.pszText = itemText;
-	ListView_InsertItem(g_hBoxList, &item); // 아이템 추가
+	ListView_InsertItem(g_hSpriteList, &item); // 아이템 추가
 
 	for (size_t i = 0; i < nMax_SpriteCoordinateCount; i++)
 	{
 		_itoa_s(spriteInfo->Coordinates[i], itemText, 10);
-		ListView_SetItemText(g_hBoxList, index, i, itemText);
+		ListView_SetItemText(g_hSpriteList, index, i, itemText);
 	}
 }
 
