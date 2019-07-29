@@ -20,11 +20,13 @@ typedef void(*CallbackFunc)(); // 이벤트 콜백
 #define szMax_PosLine 99
 #define nFrameRate 60
 #define nPivotHalfSize 5
-#define nMax_SpriteCollision 1
+#define nMax_SpriteCollision 4
 #define nMax_SpriteCoordinateCount (4/*sprite*/ + 2/*pivot*/)
 //#define nMax_SpriteCoordinateCount (4/*sprite*/ + 2/*pivot*/ + (nMax_SpriteCollision * 4))
 #define nMax_SpriteCoordinateByteSize (sizeof(int) * nMax_SpriteCoordinateCount)
 #define nMax_RectPos 4
+#define NoSpriteSelect -1
+
 //
 //#define Max_Student_Id 6 + 1
 //#define Max_Student_Name 10 + 1
@@ -99,6 +101,10 @@ typedef struct _SpriteInfo {
 		CollisionCount = 0;
 	}
 	void AddCollision(int collisionPos[], int count) {
+		if (CollisionCount >= nMax_SpriteCollision) {
+			return;
+		}
+
 		RECT collision = { collisionPos[0] , collisionPos[1] , collisionPos[2] , collisionPos[3] };
 		Collisions[CollisionCount++] = collision;
 	}

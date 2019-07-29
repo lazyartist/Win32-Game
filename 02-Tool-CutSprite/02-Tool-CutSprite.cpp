@@ -69,11 +69,13 @@ void UpdateMainWndScroll();
 void UpdateSubWndPosition();
 void SetWindowPositionToCenter(HWND hWnd);
 void AddRectToSpriteList(RECT rect);
+void AddRectToCollisionList(RECT rect);
 void AddMagnification(float v);
 void SaveSpriteListToFile();
 void LoadSpriteListFromFile();
 SpriteInfo GetSpriteInfo(int index);
 void AddSpriteInfo(INT index, SpriteInfo *spriteInfo);
+void UpdateCollisionList();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -986,10 +988,10 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		case IDC_BUTTON9: // 컬리전 등록
 		{
-			HWND hList = GetDlgItem(hDlg, IDC_LIST1);
-			ListView_DeleteAllItems(hList);
+			if (g_SpriteInfoIndex != NoSpriteSelect) {
+				AddRectToCollisionList(g_rectLBDrag);
 
-			g_vSpriteInfos.clear();
+			}
 		}
 		break;
 
@@ -1043,14 +1045,6 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 			if (pnmhdr->code == NM_CLICK) {
 				// 클릭된 아이템 인덱스 알아내기
-				UINT itemIndex = ListView_GetNextItem(
-					pnmhdr->hwndFrom, // 윈도우 핸들
-					-1, // 검색을 시작할 인덱스
-					LVNI_SELECTED // 검색 조건
-				);
-			}
-			else if (pnmhdr->code == LVN_ITEMCHANGED) {
-				//InvalidateRect(g_hMainWnd, nullptr, true);
 				g_SpriteInfoIndex = ListView_GetNextItem(
 					pnmhdr->hwndFrom, // 윈도우 핸들
 					-1, // 검색을 시작할 인덱스
@@ -1074,36 +1068,15 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				}
 
 				// update collision
-				ListView_DeleteAllItems(g_hCollisionList);
-				if (g_SpriteInfoIndex != -1) {
-
-					RECT *pCollisionRect;
-
-					LVITEM item = {};
-					item.mask = LVIF_TEXT;
-					item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
-					item.state;
-					item.stateMask;
-					for (size_t i = 0; i < g_SpriteInfo.CollisionCount; i++)
-					{
-						item.iItem = i;
-
-						char itemText[szMax_Pos] = {};
-						item.pszText = itemText;
-						ListView_InsertItem(g_hCollisionList, &item); // 아이템 추가
-
-						pCollisionRect = &g_SpriteInfo.Collisions[i];
-
-						_itoa_s(pCollisionRect->left, itemText, 10);
-						ListView_SetItemText(g_hCollisionList, i, 0, itemText);
-						_itoa_s(pCollisionRect->top, itemText, 10);
-						ListView_SetItemText(g_hCollisionList, i, 1, itemText);
-						_itoa_s(pCollisionRect->right, itemText, 10);
-						ListView_SetItemText(g_hCollisionList, i, 2, itemText);
-						_itoa_s(pCollisionRect->bottom, itemText, 10);
-						ListView_SetItemText(g_hCollisionList, i, 3, itemText);
-					}
-				}
+				UpdateCollisionList();
+			}
+			else if (pnmhdr->code == LVN_ITEMCHANGED) {
+				//InvalidateRect(g_hMainWnd, nullptr, true);
+				g_SpriteInfoIndex = ListView_GetNextItem(
+					pnmhdr->hwndFrom, // 윈도우 핸들
+					-1, // 검색을 시작할 인덱스
+					LVNI_SELECTED // 검색 조건
+				);
 			}
 		}
 	}
@@ -1183,6 +1156,19 @@ void AddRectToSpriteList(RECT rect) {
 	spriteInfo.AddCollision(collision, nMax_RectPos);
 
 	AddSpriteInfo(itemCount, &spriteInfo);
+}
+
+void AddRectToCollisionList(RECT rect) {
+	//int itemCount = ListView_GetItemCount(g_hCollisionList);
+	SpriteInfo &spriteInfo = g_vSpriteInfos[g_SpriteInfoIndex];
+
+	// collision
+	int collision[nMax_RectPos] = { rect.left - g_SpriteInfo.Rect.left, rect.top - g_SpriteInfo.Rect.top, rect.right - rect.left, rect.bottom - rect.top };
+	spriteInfo.AddCollision(collision, nMax_RectPos);
+
+	g_SpriteInfo = spriteInfo;
+
+	UpdateCollisionList();
 }
 
 void AddMagnification(float v) {
@@ -1325,4 +1311,37 @@ void SaveSpriteListToFile() {
 
 SpriteInfo GetSpriteInfo(int index) {
 	return g_vSpriteInfos[index];
+}
+
+void UpdateCollisionList() {
+	ListView_DeleteAllItems(g_hCollisionList);
+	if (g_SpriteInfoIndex != -1) {
+
+		RECT *pCollisionRect;
+
+		LVITEM item = {};
+		item.mask = LVIF_TEXT;
+		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
+		item.state;
+		item.stateMask;
+		for (size_t i = 0; i < g_SpriteInfo.CollisionCount; i++)
+		{
+			item.iItem = i;
+
+			char itemText[szMax_Pos] = {};
+			item.pszText = itemText;
+			ListView_InsertItem(g_hCollisionList, &item); // 아이템 추가
+
+			pCollisionRect = &g_SpriteInfo.Collisions[i];
+
+			_itoa_s(pCollisionRect->left, itemText, 10);
+			ListView_SetItemText(g_hCollisionList, i, 0, itemText);
+			_itoa_s(pCollisionRect->top, itemText, 10);
+			ListView_SetItemText(g_hCollisionList, i, 1, itemText);
+			_itoa_s(pCollisionRect->right, itemText, 10);
+			ListView_SetItemText(g_hCollisionList, i, 2, itemText);
+			_itoa_s(pCollisionRect->bottom, itemText, 10);
+			ListView_SetItemText(g_hCollisionList, i, 3, itemText);
+		}
+	}
 }
