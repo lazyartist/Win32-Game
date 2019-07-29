@@ -24,6 +24,7 @@ HBITMAP g_hBitmapSrc;
 HBITMAP g_hBufferBitmap;
 BITMAP g_bitmapHeader;
 HWND g_hBoxList = nullptr;
+HWND g_hCollisionList = nullptr;
 
 bool g_bIsLBDrag = false;
 RECT g_rectLBDrag = { 0, 0, 0, 0 };
@@ -807,7 +808,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		MoveWindow(hDlg, mainWndRect.right, mainWndRect.top, g_whRightWndSize.x, g_whRightWndSize.y, true);
 
-		// Box list
+		// Sprite list
 		g_hBoxList = GetDlgItem(hDlg, IDC_LIST1);
 
 		// ===== List에 컬럼 추가 =====
@@ -853,6 +854,35 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
 		);
 		// ===== List 뷰 설정 ===== end
+
+
+		// Collision List
+		g_hCollisionList = GetDlgItem(hDlg, IDC_LIST2);
+
+		// ===== Collision List에 컬럼 추가 =====
+		col.pszText = colText1;
+		ListView_InsertColumn(g_hCollisionList, 1, &col); // 컬럼 추가1
+
+		col.pszText = colText2;
+		ListView_InsertColumn(g_hCollisionList, 2, &col); // 컬럼 추가2
+
+		col.pszText = colText3;
+		ListView_InsertColumn(g_hCollisionList, 3, &col); // 컬럼 추가3
+
+		col.pszText = colText4;
+		ListView_InsertColumn(g_hCollisionList, 4, &col); // 컬럼 추가4
+		// ===== Collision List에 컬럼 추가 ===== end
+
+		//LoadSpriteListFromFile();
+
+		// ===== Collision List 뷰 설정 =====
+		// 기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨
+		ListView_SetExtendedListViewStyle(
+			g_hCollisionList,
+			LVS_EX_FULLROWSELECT // 아이템 전체가 클릭되도록 한다.
+			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
+		);
+		// ===== Collision List 뷰 설정 ===== end
 	}
 	return (INT_PTR)TRUE;
 
@@ -954,6 +984,33 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		}
 		break;
 
+		case IDC_BUTTON9: // 컬리전 등록
+		{
+			HWND hList = GetDlgItem(hDlg, IDC_LIST1);
+			ListView_DeleteAllItems(hList);
+
+			g_vSpriteInfos.clear();
+		}
+		break;
+
+		case IDC_BUTTON10: // 컬리전 삭제
+		{
+			HWND hList = GetDlgItem(hDlg, IDC_LIST1);
+			ListView_DeleteAllItems(hList);
+
+			g_vSpriteInfos.clear();
+		}
+		break;
+
+		case IDC_BUTTON11: // 컬리전 모두 삭제
+		{
+			HWND hList = GetDlgItem(hDlg, IDC_LIST1);
+			ListView_DeleteAllItems(hList);
+
+			g_vSpriteInfos.clear();
+		}
+		break;
+
 		default:
 			break;
 		}
@@ -994,17 +1051,15 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			}
 			else if (pnmhdr->code == LVN_ITEMCHANGED) {
 				//InvalidateRect(g_hMainWnd, nullptr, true);
-				UINT itemIndex = ListView_GetNextItem(
+				g_SpriteInfoIndex = ListView_GetNextItem(
 					pnmhdr->hwndFrom, // 윈도우 핸들
 					-1, // 검색을 시작할 인덱스
 					LVNI_SELECTED // 검색 조건
 				);
 
-				if (itemIndex == -1) {
-					g_SpriteInfoIndex = itemIndex;
-				}
-				else {
-					g_SpriteInfo = GetSpriteInfo(itemIndex);
+				// update pivot
+				if(g_SpriteInfoIndex != -1) {
+					g_SpriteInfo = GetSpriteInfo(g_SpriteInfoIndex);
 
 					HWND hEditX = GetDlgItem(hDlg, IDC_EDIT2);
 					HWND hEditY = GetDlgItem(hDlg, IDC_EDIT3);
@@ -1016,6 +1071,38 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 					SetDlgItemText(hDlg, IDC_EDIT2, szX);
 					SetDlgItemText(hDlg, IDC_EDIT3, szY);
+				}
+
+				// update collision
+				ListView_DeleteAllItems(g_hCollisionList);
+				if (g_SpriteInfoIndex != -1) {
+
+					RECT *pCollisionRect;
+
+					LVITEM item = {};
+					item.mask = LVIF_TEXT;
+					item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
+					item.state;
+					item.stateMask;
+					for (size_t i = 0; i < g_SpriteInfo.CollisionCount; i++)
+					{
+						item.iItem = i;
+
+						char itemText[szMax_Pos] = {};
+						item.pszText = itemText;
+						ListView_InsertItem(g_hCollisionList, &item); // 아이템 추가
+
+						pCollisionRect = &g_SpriteInfo.Collisions[i];
+
+						_itoa_s(pCollisionRect->left, itemText, 10);
+						ListView_SetItemText(g_hCollisionList, i, 0, itemText);
+						_itoa_s(pCollisionRect->top, itemText, 10);
+						ListView_SetItemText(g_hCollisionList, i, 1, itemText);
+						_itoa_s(pCollisionRect->right, itemText, 10);
+						ListView_SetItemText(g_hCollisionList, i, 2, itemText);
+						_itoa_s(pCollisionRect->bottom, itemText, 10);
+						ListView_SetItemText(g_hCollisionList, i, 3, itemText);
+					}
 				}
 			}
 		}
