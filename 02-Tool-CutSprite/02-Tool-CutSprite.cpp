@@ -69,8 +69,8 @@ void UpdateSubWndPosition();
 void SetWindowPositionToCenter(HWND hWnd);
 void AddBoxToList(RECT box);
 void AddMagnification(float v);
-void SaveBoxListToFile();
-void LoadBoxListFromFile();
+void SaveSpriteListToFile();
+void LoadSpriteListFromFile();
 SpriteInfo GetSpriteInfo(int index);
 void AddSpriteInfo(INT index, SpriteInfo *spriteInfo);
 
@@ -843,7 +843,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		ListView_InsertColumn(g_hBoxList, 6, &col); // 컬럼 추가6
 		// ===== List에 컬럼 추가 ===== end
 
-		LoadBoxListFromFile();
+		LoadSpriteListFromFile();
 
 		// ===== List 뷰 설정 =====
 		// 기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨
@@ -934,7 +934,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		break;
 		case IDC_BUTTON6: // 파일 저장
 		{
-			SaveBoxListToFile();
+			SaveSpriteListToFile();
 		}
 		break;
 
@@ -949,6 +949,8 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		{
 			HWND hList = GetDlgItem(hDlg, IDC_LIST1);
 			ListView_DeleteAllItems(hList);
+
+			g_vSpriteInfos.clear();
 		}
 		break;
 
@@ -1085,7 +1087,14 @@ void AddBoxToList(RECT box) {
 	SpriteInfo spriteInfo;
 	INT coordinates[nMax_SpriteCoordinateCount] = { g_rectLBDrag.left,g_rectLBDrag.top,g_rectLBDrag.right,g_rectLBDrag.bottom, 0, };
 
+	// rect, pivot
 	spriteInfo.SetCoordinates(coordinates, nMax_SpriteCoordinateByteSize);
+	spriteInfo.ResetCollisionCount();
+
+	// collision
+	int collision[nMax_RectPos] = { 0, 0, spriteInfo.Rect.right - spriteInfo.Rect.left, spriteInfo.Rect.bottom - spriteInfo.Rect.top };
+	spriteInfo.AddCollision(collision, nMax_RectPos);
+
 	AddSpriteInfo(itemCount, &spriteInfo);
 }
 
@@ -1098,7 +1107,7 @@ void AddMagnification(float v) {
 	UpdateMainWndScroll();
 }
 
-void LoadBoxListFromFile() {
+void LoadSpriteListFromFile() {
 	g_vSpriteInfos.clear();
 
 	FILE *file = nullptr;
@@ -1138,13 +1147,31 @@ void LoadBoxListFromFile() {
 
 			int coordinates[nMax_SpriteCoordinateCount] = {  };
 
+			// rect, pivot
 			for (size_t j = 0; j < nMax_SpriteCoordinateCount; j++)
 			{
 				token = strtok_s(nullptr, "\t", &nextToken);
 				coordinates[j] = atoi(token);
 			}
-		
 			spriteInfo.SetCoordinates(coordinates, sizeof(INT) * nMax_SpriteCoordinateCount);
+
+			// collision
+			token = strtok_s(nullptr, "\t", &nextToken);
+			INT collisionCount = atoi(token);
+			spriteInfo.ResetCollisionCount();
+
+			for (size_t j = 0; j < collisionCount; j++)
+			{
+				int collisionPos[nMax_RectPos];
+				for (size_t k = 0; k < nMax_RectPos; k++)
+				{
+					token = strtok_s(nullptr, "\t", &nextToken);
+					collisionPos[k] = atoi(token);
+				}
+				
+				spriteInfo.AddCollision(collisionPos, nMax_RectPos);
+			}
+		
 		}
 
 		AddSpriteInfo(i, &spriteInfo);
@@ -1175,38 +1202,35 @@ void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {
 	}
 }
 
-void SaveBoxListToFile() {
+void SaveSpriteListToFile() {
 	FILE *file = nullptr;
 	file = _fsopen("spritesList.cut", "wt", _SH_DENYNO);
 
 	if (file == nullptr) return;
 
-	HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
-
 	// item count
-	int itemCount = ListView_GetItemCount(hList);
+	int itemCount = g_vSpriteInfos.size();
 	char szItemCount[szMax_Pos] = {};
 	sprintf_s<szMax_Pos>(szItemCount, "%d\n", itemCount);
 	fputs(szItemCount, file);
 
-	// items
-	char szLeft[szMax_Pos];
-	char szTop[szMax_Pos];
-	char szRight[szMax_Pos];
-	char szBottom[szMax_Pos];
-	char szPivotX[szMax_Pos];
-	char szPivotY[szMax_Pos];
-	for (size_t i = 0; i < itemCount; i++)
+	auto iter = g_vSpriteInfos.begin();
+	while (iter != g_vSpriteInfos.end())
 	{
-		ListView_GetItemText(hList, i, 1, szLeft, szMax_Pos);
-		ListView_GetItemText(hList, i, 2, szTop, szMax_Pos);
-		ListView_GetItemText(hList, i, 3, szRight, szMax_Pos);
-		ListView_GetItemText(hList, i, 4, szBottom, szMax_Pos);
 
-		ListView_GetItemText(hList, i, 5, szPivotX, szMax_Pos);
-		ListView_GetItemText(hList, i, 6, szPivotY, szMax_Pos);
+		// rect, pivot
+		fprintf_s(file, "%d\t%d\t%d\t%d\t%d\t%d", iter->Rect.left, iter->Rect.top, iter->Rect.right, iter->Rect.bottom, iter->Pivot.x, iter->Pivot.y);
 
-		fprintf_s(file, "%s\t%s\t%s\t%s\t%s\t%s\n", szLeft, szTop, szRight, szBottom, szPivotX, szPivotY);
+		// collision
+		fprintf_s(file, "\t%d", iter->CollisionCount);
+		for (size_t i = 0; i < iter->CollisionCount; i++)
+		{
+			RECT &collision = iter->Collisions[i];
+			fprintf_s(file, "\t%d\t%d\t%d\t%d", collision.left, collision.top, collision.right, collision.bottom);
+		}
+		fprintf_s(file, "\n");
+
+		++iter;
 	}
 
 	fclose(file);
