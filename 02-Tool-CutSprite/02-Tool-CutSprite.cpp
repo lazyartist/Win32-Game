@@ -2,6 +2,7 @@
 #include <windowsx.h> // GET_X_LPARAM
 #include <commdlg.h> // GetOpenFileName()
 #include <iostream> // sprintf_s()
+#include <vector>
 #include "Commctrl.h"
 #include "02-Tool-CutSprite.h"
 #include "common.h"
@@ -31,7 +32,9 @@ bool g_bIsRBDrag = false;
 RECT g_rectRBDrag = { 0, 0, 0, 0 };
 POINT g_pntScrollPosWhenRButtonDown = { 0, 0 };
 
+vector<SpriteInfo> g_vSpriteInfos;
 SpriteInfo g_SpriteInfo;
+INT g_SpriteInfoIndex = -1;
 
 HWND g_hMainWnd;                                  // 메인 윈도우
 HWND g_hRightWnd;                                 // 오른쪽 윈도우
@@ -69,6 +72,7 @@ void AddMagnification(float v);
 void SaveBoxListToFile();
 void LoadBoxListFromFile();
 SpriteInfo GetSpriteInfo(int index);
+void AddSpriteInfo(INT index, SpriteInfo *spriteInfo);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -180,6 +184,18 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	{
 	case WM_CREATE:
 	{
+		// test
+		string str;
+		//str.capacity = 10;
+		str.reserve(30);
+		str.append("a");
+		str.append("\t");
+		str.append("a");
+		str.append("\t");
+		str.append("a");
+		str.append("\n");
+		
+
 		// load bitmap
 		g_hBitmapSrc = (HBITMAP)LoadImage(nullptr, "sprites/castlevania.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		//g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
@@ -391,8 +407,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			_itoa_s(x, szX, szMax_Pos, 10);
 			_itoa_s(y, szY, szMax_Pos, 10);
 			HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
-			ListView_SetItemText(hList, g_SpriteInfo.Index, 5, szX);
-			ListView_SetItemText(hList, g_SpriteInfo.Index, 6, szY);
+			ListView_SetItemText(hList, g_SpriteInfoIndex, 5, szX);
+			ListView_SetItemText(hList, g_SpriteInfoIndex, 6, szY);
 
 			InvalidateRect(g_hRightWnd, nullptr, true);
 		}
@@ -539,7 +555,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		SpriteInfo SpriteInfo;
 
 		HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
-		int itemCount = ListView_GetItemCount(hList);
+		int itemCount = g_vSpriteInfos.size();
 		int selectedListItemIndex = ListView_GetNextItem(
 			g_hBoxList, // 윈도우 핸들
 			-1, // 검색을 시작할 인덱스
@@ -550,15 +566,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		HPEN hOldPen = nullptr;
 		for (size_t i = 0; i < itemCount; i++)
 		{
-			//ListView_GetItemText(hList, i, 1, szItem, szMax_Pos);
-			//rectBox.left = atoi(szItem);
-			//ListView_GetItemText(hList, i, 2, szItem, szMax_Pos);
-			//rectBox.top = atoi(szItem);
-			//ListView_GetItemText(hList, i, 3, szItem, szMax_Pos);
-			//rectBox.right = atoi(szItem);
-			//ListView_GetItemText(hList, i, 4, szItem, szMax_Pos);
-			//rectBox.bottom = atoi(szItem);
-
 			SpriteInfo = GetSpriteInfo(i);
 			rectBox = SpriteInfo.Rect;
 
@@ -629,7 +636,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		EndPaint(hWnd, &ps);
 
-		dlog("WM_PAINT aa");
+		//dlog("WM_PAINT aa");
 	}
 	break;
 	case WM_MOVE:
@@ -805,7 +812,6 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		// ===== List에 컬럼 추가 =====
 		// List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.
-		char colText0[] = "No";
 		char colText1[] = "left";
 		char colText2[] = "top";
 		char colText3[] = "right";
@@ -817,8 +823,6 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		col.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
 		col.fmt = LVCFMT_LEFT;
 		col.cx = 50;
-		col.pszText = colText0;
-		ListView_InsertColumn(g_hBoxList, 0, &col); // 컬럼 추가0
 
 		col.pszText = colText1;
 		ListView_InsertColumn(g_hBoxList, 1, &col); // 컬럼 추가1
@@ -917,7 +921,12 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 			if (selectedIndex < 0) break;
 
+			// 리스트에서 제거
 			ListView_DeleteItem(g_hBoxList, selectedIndex);
+
+			// vector에서 제거
+			auto iter = g_vSpriteInfos.begin();
+			g_vSpriteInfos.erase(iter+selectedIndex);
 
 			//InvalidateRect(g_hMainWnd, nullptr, true);
 			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
@@ -933,6 +942,13 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		{
 			g_MouseModeType = MouseModeType::Pivot;
 			SetCursor(LoadCursor(nullptr, IDC_CROSS));
+		}
+		break;
+
+		case IDC_BUTTON8: // 모두 삭제
+		{
+			HWND hList = GetDlgItem(hDlg, IDC_LIST1);
+			ListView_DeleteAllItems(hList);
 		}
 		break;
 
@@ -983,7 +999,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				);
 
 				if (itemIndex == -1) {
-					g_SpriteInfo.Index = itemIndex;
+					g_SpriteInfoIndex = itemIndex;
 				}
 				else {
 					g_SpriteInfo = GetSpriteInfo(itemIndex);
@@ -1066,40 +1082,11 @@ void UpdateSubWndPosition() {
 void AddBoxToList(RECT box) {
 	int itemCount = ListView_GetItemCount(g_hBoxList);
 
-	// ===== List에 아이템 추가 =====
-	char itemText0[szMax_Pos] = {};
-	char itemText1[szMax_Pos] = {};
-	char itemText2[szMax_Pos] = {};
-	char itemText3[szMax_Pos] = {};
-	char itemText4[szMax_Pos] = {};
-	char itemText5[szMax_Pos] = {};
-	char itemText6[szMax_Pos] = {};
+	SpriteInfo spriteInfo;
+	INT coordinates[nMax_SpriteCoordinateCount] = { g_rectLBDrag.left,g_rectLBDrag.top,g_rectLBDrag.right,g_rectLBDrag.bottom, 0, };
 
-	_itoa_s(itemCount, itemText0, szMax_Pos, 10);
-	_itoa_s(g_rectLBDrag.left, itemText1, szMax_Pos, 10);
-	_itoa_s(g_rectLBDrag.top, itemText2, szMax_Pos, 10);
-	_itoa_s(g_rectLBDrag.right, itemText3, szMax_Pos, 10);
-	_itoa_s(g_rectLBDrag.bottom, itemText4, szMax_Pos, 10);
-	_itoa_s(0, itemText5, szMax_Pos, 10);
-	_itoa_s(0, itemText6, szMax_Pos, 10);
-
-	//char itemText1[] = "item1";
-	LVITEM item = {};
-	item.mask = LVIF_TEXT;
-	item.iItem = 0;
-	item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
-	item.state;
-	item.stateMask;
-
-	// 아이템 추가
-	item.pszText = itemText0;
-	ListView_InsertItem(g_hBoxList, &item); // 아이템 추가0
-	ListView_SetItemText(g_hBoxList, 0/*item idx*/, 1/*subitem idx*/, itemText1); // 서브아이템 추가0
-	ListView_SetItemText(g_hBoxList, 0, 2, itemText2);
-	ListView_SetItemText(g_hBoxList, 0, 3, itemText3);
-	ListView_SetItemText(g_hBoxList, 0, 4, itemText4);
-	ListView_SetItemText(g_hBoxList, 0, 5, itemText5);
-	ListView_SetItemText(g_hBoxList, 0, 6, itemText6);
+	spriteInfo.SetCoordinates(coordinates, nMax_SpriteCoordinateByteSize);
+	AddSpriteInfo(itemCount, &spriteInfo);
 }
 
 void AddMagnification(float v) {
@@ -1112,6 +1099,8 @@ void AddMagnification(float v) {
 }
 
 void LoadBoxListFromFile() {
+	g_vSpriteInfos.clear();
+
 	FILE *file = nullptr;
 	file = _fsopen("spritesList.cut", "rt", _SH_DENYNO);
 
@@ -1125,23 +1114,16 @@ void LoadBoxListFromFile() {
 	// item count
 	int itemCount = atoi(szItemCount);
 
+	g_vSpriteInfos.reserve(itemCount);
+
 	// ===== List에 아이템 추가 =====
 	char itemLine[szMax_PosLine] = {};
-	char itemText0[szMax_Pos] = {};
-	char itemText1[szMax_Pos] = {};
-	char itemText2[szMax_Pos] = {};
-	char itemText3[szMax_Pos] = {};
-	char itemText4[szMax_Pos] = {};
-	char itemText5[szMax_Pos] = {};
-	char itemText6[szMax_Pos] = {};
-
 	char *token;
 	char *nextToken;
 
+	char itemText[szMax_Pos] = {};
 	for (size_t i = 0; i < itemCount; i++)
 	{
-		_itoa_s(i, itemText0, 10);
-
 		memset(itemLine, 0, szMax_PosLine);
 		fgets(itemLine, szMax_PosLine, file);
 
@@ -1150,39 +1132,47 @@ void LoadBoxListFromFile() {
 
 		if (strnlen_s(itemLine, szMax_PosLine) == 0) continue;
 
-		token = strtok_s(itemLine, "\t", &nextToken);
-		strcpy_s(itemText1, token);
-		token = strtok_s(NULL, "\t", &nextToken);
-		strcpy_s(itemText2, token);
-		token = strtok_s(NULL, "\t", &nextToken);
-		strcpy_s(itemText3, token);
-		token = strtok_s(NULL, "\t", &nextToken);
-		strcpy_s(itemText4, token);
-		token = strtok_s(NULL, "\t", &nextToken);
-		strcpy_s(itemText5, token);
-		token = strtok_s(NULL, "\t", &nextToken);
-		strcpy_s(itemText6, token);
+		SpriteInfo spriteInfo;
+		{
+			nextToken = itemLine;
 
-		//char itemText1[] = "item1";
-		LVITEM item = {};
-		item.mask = LVIF_TEXT;
-		item.iItem = i;
-		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
-		item.state;
-		item.stateMask;
+			int coordinates[nMax_SpriteCoordinateCount] = {  };
 
-		// 아이템 추가
-		item.pszText = itemText0;
-		ListView_InsertItem(g_hBoxList, &item); // 아이템 추가0
-		ListView_SetItemText(g_hBoxList, i/*item idx*/, 1/*subitem idx*/, itemText1); // 서브아이템 추가0
-		ListView_SetItemText(g_hBoxList, i, 2, itemText2);
-		ListView_SetItemText(g_hBoxList, i, 3, itemText3);
-		ListView_SetItemText(g_hBoxList, i, 4, itemText4);
-		ListView_SetItemText(g_hBoxList, i, 5, itemText5);
-		ListView_SetItemText(g_hBoxList, i, 6, itemText6);
+			for (size_t j = 0; j < nMax_SpriteCoordinateCount; j++)
+			{
+				token = strtok_s(nullptr, "\t", &nextToken);
+				coordinates[j] = atoi(token);
+			}
+		
+			spriteInfo.SetCoordinates(coordinates, sizeof(INT) * nMax_SpriteCoordinateCount);
+		}
+
+		AddSpriteInfo(i, &spriteInfo);
 	}
 
 	fclose(file);
+}
+
+void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {
+	g_vSpriteInfos.push_back(*spriteInfo);
+
+	LVITEM item = {};
+	item.mask = LVIF_TEXT;
+	item.iItem = index;
+	//item.iItem = spriteInfo->Index;
+	item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
+	item.state;
+	item.stateMask;
+
+	char itemText[szMax_Pos] = {};
+	item.pszText = itemText;
+	ListView_InsertItem(g_hBoxList, &item); // 아이템 추가
+
+	for (size_t i = 0; i < nMax_SpriteCoordinateCount; i++)
+	{
+		_itoa_s(spriteInfo->Coordinates[i], itemText, 10);
+		ListView_SetItemText(g_hBoxList, index, i, itemText);
+	}
 }
 
 void SaveBoxListToFile() {
@@ -1212,6 +1202,7 @@ void SaveBoxListToFile() {
 		ListView_GetItemText(hList, i, 2, szTop, szMax_Pos);
 		ListView_GetItemText(hList, i, 3, szRight, szMax_Pos);
 		ListView_GetItemText(hList, i, 4, szBottom, szMax_Pos);
+
 		ListView_GetItemText(hList, i, 5, szPivotX, szMax_Pos);
 		ListView_GetItemText(hList, i, 6, szPivotY, szMax_Pos);
 
@@ -1222,31 +1213,5 @@ void SaveBoxListToFile() {
 }
 
 SpriteInfo GetSpriteInfo(int index) {
-	HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
-	//int itemCount = ListView_GetItemCount(hList);
-	//int selectedListItemIndex = ListView_GetNextItem(
-	//	g_hBoxList, // 윈도우 핸들
-	//	-1, // 검색을 시작할 인덱스
-	//	LVNI_SELECTED // 검색 조건
-	//);
-
-	SpriteInfo SpriteInfo = {};
-	SpriteInfo.Index = index;
-
-	char szItem[szMax_Pos];
-
-	ListView_GetItemText(hList, index, 1, szItem, szMax_Pos);
-	SpriteInfo.Rect.left = atoi(szItem);
-	ListView_GetItemText(hList, index, 2, szItem, szMax_Pos);
-	SpriteInfo.Rect.top = atoi(szItem);
-	ListView_GetItemText(hList, index, 3, szItem, szMax_Pos);
-	SpriteInfo.Rect.right = atoi(szItem);
-	ListView_GetItemText(hList, index, 4, szItem, szMax_Pos);
-	SpriteInfo.Rect.bottom = atoi(szItem);
-	ListView_GetItemText(hList, index, 5, szItem, szMax_Pos);
-	SpriteInfo.Pivot.x = atoi(szItem);
-	ListView_GetItemText(hList, index, 6, szItem, szMax_Pos);
-	SpriteInfo.Pivot.y = atoi(szItem);
-
-	return SpriteInfo;
+	return g_vSpriteInfos[index];
 }

@@ -20,6 +20,9 @@ typedef void(*CallbackFunc)(); // 이벤트 콜백
 #define szMax_PosLine 99
 #define nFrameRate 60
 #define nPivotHalfSize 5
+#define nMax_SpriteCollision 1
+#define nMax_SpriteCoordinateCount (4/*sprite*/ + 2/*pivot*/ + (nMax_SpriteCollision * 4))
+#define nMax_SpriteCoordinateByteSize (sizeof(int) * nMax_SpriteCoordinateCount)
 //
 //#define Max_Student_Id 6 + 1
 //#define Max_Student_Name 10 + 1
@@ -63,26 +66,30 @@ typedef struct _BitmapViewInfo {
 } BitmapViewInfo;
 
 typedef struct _SpriteInfo {
-	INT Index;
+	INT Coordinates[nMax_SpriteCoordinateCount];
 	RECT Rect;
 	XY Pivot;
-	RECT *Collisions;
+	RECT Collisions[nMax_SpriteCollision];
 	UINT CollisionCount;
+
+	void SetCoordinates(INT coordinates[], UINT count) {
+		memcpy(Coordinates, coordinates, count);
+
+		int i = 0;
+		Rect.left = Coordinates[i++];
+		Rect.top = Coordinates[i++];
+		Rect.right = Coordinates[i++];
+		Rect.bottom = Coordinates[i++];
+		Pivot.x = Coordinates[i++];
+		Pivot.y = Coordinates[i++];
+
+		for (size_t j = 0; j < nMax_SpriteCollision; j++)
+		{
+			RECT collision = { Coordinates[i++] ,Coordinates[i++] ,Coordinates[i++] ,Coordinates[i++] };
+			Collisions[j] = collision;
+		}
+	}
 } SpriteInfo;
-//typedef struct _Student {
-//	char Id[Max_Student_Id];
-//	char Name[Max_Student_Name];
-//} Student, *PStudent;
-//
-//typedef struct _Score {
-//	char Course[Max_Score_Text];
-//	char Point[Max_Score_Text];
-//
-//	_Score(const char *course, const char *point) {
-//		strcpy_s(Course, course);
-//		strcpy_s(Point, point);
-//	}
-//} Score, *PScore;
 // ===== struct ===== end
 
 
@@ -94,15 +101,6 @@ inline WH ScreenRectToWH(RECT rect) {
 
 	return wh;
 }
-//
-//inline RECT DivideMagnificationTo(RECT rect, float magnification) {
-//	rect.top = rect.top / magnification;
-//	rect.left = rect.left / magnification;
-//	rect.right = rect.right / magnification;
-//	rect.bottom = ceil(rect.bottom / magnification);
-//
-//	return rect;
-//}
 // ===== function ===== end
 
 // ===== global operation overloading ===== 
