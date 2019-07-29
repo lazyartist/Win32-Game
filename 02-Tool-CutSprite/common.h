@@ -3,7 +3,7 @@
 #include <iostream> // sprintf_s()
 #include "Windows.h"
 //#include <math.h>
-//#include <vector>
+#include <vector>
 
 using namespace std;
 
@@ -25,6 +25,7 @@ typedef void(*CallbackFunc)(); // 이벤트 콜백
 //#define nMax_SpriteCoordinateCount (4/*sprite*/ + 2/*pivot*/ + (nMax_SpriteCollision * 4))
 #define nMax_SpriteCoordinateByteSize (sizeof(int) * nMax_SpriteCoordinateCount)
 #define nMax_RectPos 4
+
 #define NoSpriteSelect -1
 
 //
@@ -73,7 +74,8 @@ typedef struct _SpriteInfo {
 	INT Coordinates[nMax_SpriteCoordinateCount];
 	RECT Rect;
 	XY Pivot;
-	RECT Collisions[nMax_SpriteCollision];
+	//RECT Collisions[nMax_SpriteCollision];
+	vector<RECT> Collisions;
 	UINT CollisionCount;
 
 	void SetCoordinates(INT coordinates[], UINT count) {
@@ -106,7 +108,20 @@ typedef struct _SpriteInfo {
 		}
 
 		RECT collision = { collisionPos[0] , collisionPos[1] , collisionPos[2] , collisionPos[3] };
-		Collisions[CollisionCount++] = collision;
+		//Collisions[CollisionCount++] = collision;
+
+		++CollisionCount;
+		Collisions.push_back(collision);
+	}
+	void RemoveCollision(int index) {
+		if (index < 0 || index >= CollisionCount) {
+			return;
+		}
+
+		//auto iter = Collisions.begin();
+		vector<RECT>::iterator iter = Collisions.begin();
+		Collisions.erase(iter + index);
+		--CollisionCount;
 	}
 } SpriteInfo;
 // ===== struct ===== end

@@ -997,10 +997,29 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		case IDC_BUTTON10: // 컬리전 삭제
 		{
-			HWND hList = GetDlgItem(hDlg, IDC_LIST1);
-			ListView_DeleteAllItems(hList);
+			int spriteListItemIndex = ListView_GetNextItem(
+				g_hSpriteList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
 
-			g_vSpriteInfos.clear();
+			if (spriteListItemIndex != NoSpriteSelect) {
+				int collisionListItemIndex = ListView_GetNextItem(
+					g_hCollisionList, // 윈도우 핸들
+					-1, // 검색을 시작할 인덱스
+					LVNI_SELECTED // 검색 조건
+				);
+
+				if (collisionListItemIndex != NoSpriteSelect) {
+					
+					SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
+					spriteInfo.RemoveCollision(collisionListItemIndex);
+					g_SpriteInfo = spriteInfo;
+
+					UpdateCollisionList();
+				}
+
+			}
 		}
 		break;
 
