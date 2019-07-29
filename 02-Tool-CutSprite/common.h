@@ -123,6 +123,14 @@ typedef struct _SpriteInfo {
 		Collisions.erase(iter + index);
 		--CollisionCount;
 	}
+	void RemoveAllCollisions() {
+		if (CollisionCount == 0) {
+			return;
+		}
+
+		Collisions.clear();
+		CollisionCount = 0;
+	}
 } SpriteInfo;
 // ===== struct ===== end
 

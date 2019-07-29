@@ -555,9 +555,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		UINT pixelOffset = fMagnification - 1;
 		char szItem[szMax_Pos];
 		RECT spriteRect;
-		SpriteInfo SpriteInfo;
+		SpriteInfo spriteInfo;
 
-		HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
 		int itemCount = g_vSpriteInfos.size();
 		int selectedListItemIndex = ListView_GetNextItem(
 			g_hSpriteList, // 윈도우 핸들
@@ -565,15 +564,17 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			LVNI_SELECTED // 검색 조건
 		);
 
-		HPEN hPen = CreatePen(PS_DASHDOT, 1, RGB(0, 255, 0));
+		HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+		HPEN hSelectedPen = CreatePen(PS_DASHDOT, 1, RGB(0, 255, 0));
 		HPEN hOldPen = nullptr;
 		for (size_t i = 0; i < itemCount; i++)
 		{
-			SpriteInfo = GetSpriteInfo(i);
-			spriteRect = SpriteInfo.Rect;
+			spriteInfo = GetSpriteInfo(i);
+			spriteRect = spriteInfo.Rect;
 
+			// 선택된 Sprite는 외곽선의 색상을 다르게한다.
 			if (selectedListItemIndex == i) {
-				hOldPen = (HPEN)SelectObject(g_hBufferMemDC, hPen);
+				hOldPen = (HPEN)SelectObject(g_hBufferMemDC, hSelectedPen);
 				//SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
 				SetROP2(g_hBufferMemDC, R2_MERGENOTPEN); // 외곽은 핑크, 내부는 비어있는 사각형
 			}
@@ -588,7 +589,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			// sprite pivot
 			SetROP2(g_hBufferMemDC, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
-			XY xyPivot = { SpriteInfo.Rect.left + SpriteInfo.Pivot.x, SpriteInfo.Rect.top + SpriteInfo.Pivot.y };
+			XY xyPivot = { spriteInfo.Rect.left + spriteInfo.Pivot.x, spriteInfo.Rect.top + spriteInfo.Pivot.y };
 			xyPivot = xyPivot * fMagnification;
 			xyPivot = xyPivot - g_pntScrollPos;
 			MoveToEx(g_hBufferMemDC, xyPivot.x - nPivotHalfSize, xyPivot.y, nullptr);
@@ -596,12 +597,28 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			MoveToEx(g_hBufferMemDC, xyPivot.x, xyPivot.y - nPivotHalfSize, nullptr);
 			LineTo(g_hBufferMemDC, xyPivot.x, xyPivot.y + nPivotHalfSize);
 
+
+			//if (selectedListItemIndex == i) {
+			if (true) {
+				(HPEN)SelectObject(g_hBufferMemDC, hPen);
+
+				for (size_t ii = 0; ii < spriteInfo.CollisionCount; ii++)
+				{
+					// collision rect
+					RECT collisionRect = spriteInfo.Collisions[ii];
+					collisionRect = collisionRect * fMagnification;
+					//collisionRect = collisionRect - g_pntScrollPos;
+					//Rectangle(g_hBufferMemDC, collisionRect.left, collisionRect.top, collisionRect.right + 1 + pixelOffset, collisionRect.bottom + 1 + pixelOffset);
+					Rectangle(g_hBufferMemDC, spriteRect.left + collisionRect.left, spriteRect.top + collisionRect.top, spriteRect.left + collisionRect.right + 1 + pixelOffset, spriteRect.top + collisionRect.bottom + 1 + pixelOffset);
+				}
+			}
+
 			if (hOldPen != nullptr) {
 				(HPEN)SelectObject(g_hBufferMemDC, hOldPen);
 				hOldPen = nullptr;
 			}
 		}
-		DeleteObject(hPen);
+		DeleteObject(hSelectedPen);
 
 		// 현재 드래그 영역
 		if (g_rectLBDrag.left != g_rectLBDrag.right) {
@@ -1011,9 +1028,9 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				);
 
 				if (collisionListItemIndex != NoSpriteSelect) {
-					
 					SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
 					spriteInfo.RemoveCollision(collisionListItemIndex);
+
 					g_SpriteInfo = spriteInfo;
 
 					UpdateCollisionList();
@@ -1025,10 +1042,20 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		case IDC_BUTTON11: // 컬리전 모두 삭제
 		{
-			HWND hList = GetDlgItem(hDlg, IDC_LIST1);
-			ListView_DeleteAllItems(hList);
+			int spriteListItemIndex = ListView_GetNextItem(
+				g_hSpriteList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
 
-			g_vSpriteInfos.clear();
+			if (spriteListItemIndex != NoSpriteSelect) {
+				SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
+				spriteInfo.RemoveAllCollisions();
+
+				g_SpriteInfo = spriteInfo;
+
+				UpdateCollisionList();
+			}
 		}
 		break;
 
