@@ -143,6 +143,12 @@ inline WH ScreenRectToWH(RECT rect) {
 
 	return wh;
 }
+
+// \n 제거
+inline void RemoveCarriageReturn(char *sz) {
+	// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
+	sz[strcspn(sz, "\n")] = 0; // strcspn()으로 "\n"의 위치를 찾고 그 위치에 0을 넣어준다.
+}
 // ===== function ===== end
 
 // ===== global operation overloading ===== 

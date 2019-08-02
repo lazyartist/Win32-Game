@@ -54,6 +54,13 @@ const UINT g_nSmallIconId = IDI_SMALL;			  // 작은 아이콘 ID
 const UINT g_nMenuId_OpenFile = ID_32771;		  // 파일 열기 메뉴 ID
 const UINT g_nMenuId_SaveFile = ID_32772;		  // 파일 저장 메뉴 ID
 
+const UINT g_nMainWndTimerId = 1;
+const UINT g_nBottomWndTimerId = 10;
+
+char g_szImageFileName[MAX_PATH] = {};
+//char g_szImageFileName[] = "sprites/castlevania_sm.bmp";
+//char g_szImageFileName[] = "sprites/test_100_red.bmp";
+
 MouseModeType g_MouseModeType = MouseModeType::Sprite;
 BitmapViewInfo g_BitmapViewInfo;
 CutImage g_CutImage;
@@ -73,6 +80,7 @@ void AddRectToCollisionList(RECT rect);
 void AddMagnification(float v);
 void SaveSpriteListToFile();
 void LoadSpriteListFromFile();
+void InitBitmapForMainWnd();
 SpriteInfo GetSpriteInfo(int index);
 void AddSpriteInfo(INT index, SpriteInfo *spriteInfo);
 void UpdateCollisionList();
@@ -87,11 +95,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	MyRegisterClass(hInstance);
 
-	// 응용 프로그램 초기화를 수행합니다:
+	// 초기화
 	if (!InitInstance(hInstance, nCmdShow))
 	{
 		return FALSE;
 	}
+
+	// 프로그램 시작
+	LoadSpriteListFromFile();
+	InitBitmapForMainWnd();
 
 	MSG msg;
 
@@ -187,54 +199,6 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	{
 	case WM_CREATE:
 	{
-		// test
-		string str;
-		//str.capacity = 10;
-		str.reserve(30);
-		str.append("a");
-		str.append("\t");
-		str.append("a");
-		str.append("\t");
-		str.append("a");
-		str.append("\n");
-
-
-		// load bitmap
-		g_hBitmapSrc = (HBITMAP)LoadImage(nullptr, "sprites/castlevania.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-		//g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/castlevania_sm.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-		//g_hBitmap = (HBITMAP)LoadImage(nullptr, "sprites/test_100_red.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-
-		GetObject(g_hBitmapSrc, sizeof(BITMAP), &g_bitmapHeader);
-
-		HDC hdc = GetDC(hWnd);
-
-		// 원본 Bitmap DC
-		// 추후 TransparentBlt() 등으로 복사 할 때 비트맵 영역을 벗어나면 화면이 그려지지 않기 때문에 원본 비트맵 보다 더 큰 비트맵을 만들어 복사한다.
-		g_hBitmapSrcDC = CreateCompatibleDC(hdc);
-		HBITMAP hBitmapExpand = g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth * 2, g_bitmapHeader.bmHeight * 2);
-		SelectObject(g_hBitmapSrcDC, hBitmapExpand);
-
-		// 임시 원본 Bitmap DC
-		HDC hBitmapSrcDCTemp = CreateCompatibleDC(hdc);
-		SelectObject(hBitmapSrcDCTemp, g_hBitmapSrc);
-
-		// 원본 Bitmap DC에 임시 원본 Bitmap DC 복사
-		BitBlt(g_hBitmapSrcDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, hBitmapSrcDCTemp, 0, 0, SRCCOPY);
-
-		// 버퍼 비트맵 생성
-		g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
-
-		g_CutImage.Init(g_hBitmapSrcDC, g_bitmapHeader);
-
-		DeleteObject(g_hBitmapSrc);
-		DeleteDC(hdc);
-
-		// transparent color
-		g_BitmapViewInfo.TransparentColor = GetPixel(g_hBitmapSrcDC, 0, 0);
-
-		UpdateMainWndScroll();
-
-		SetTimer(hWnd, 1, 1000 / nFrameRate, nullptr);
 	}
 	break;
 
@@ -515,6 +479,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		// 메모리 DC에는 기본적으로 아주 작은 크기의 비트맵만 있기 때문에 다른 DC를 복사하겨나 그리기를 하려면 비트맵을 만들어줘야한다.
 		// SelectObject()로 비트맵을 지정할 경우는 안해도 된다.
 		HBITMAP hOldBitmap = (HBITMAP)SelectObject(g_hBufferMemDC, g_hBufferBitmap);
+
+		// 백버퍼용 DC를 매번 생성하지 않을 경우 화면은 지우고 다시 그려야하는데 이 때 사용할 수 있는 명령어가 PatBlt() 이다.
 
 		RECT crt;
 		GetClientRect(hWnd, &crt);
@@ -863,7 +829,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		ListView_InsertColumn(g_hSpriteList, 6, &col); // 컬럼 추가6
 		// ===== List에 컬럼 추가 ===== end
 
-		LoadSpriteListFromFile();
+		//LoadSpriteListFromFile();
 
 		// ===== List 뷰 설정 =====
 		// 기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨
@@ -1236,6 +1202,10 @@ void LoadSpriteListFromFile() {
 
 	HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
 
+	//char szImagePath[MAX_PATH] = {};
+	fgets(g_szImageFileName, MAX_PATH, file);
+	RemoveCarriageReturn(g_szImageFileName);
+
 	char szItemCount[szMax_SpriteCount] = {};
 	fgets(szItemCount, szMax_SpriteCount, file);
 
@@ -1299,6 +1269,45 @@ void LoadSpriteListFromFile() {
 	fclose(file);
 }
 
+void InitBitmapForMainWnd() {
+
+	// load bitmap
+	g_hBitmapSrc = (HBITMAP)LoadImage(nullptr, g_szImageFileName, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+
+	GetObject(g_hBitmapSrc, sizeof(BITMAP), &g_bitmapHeader);
+
+	HDC hdc = GetDC(g_hMainWnd);
+
+	// 원본 Bitmap DC
+	// 추후 TransparentBlt() 등으로 복사 할 때 비트맵 영역을 벗어나면 화면이 그려지지 않기 때문에 원본 비트맵 보다 더 큰 비트맵을 만들어 복사한다.
+	g_hBitmapSrcDC = CreateCompatibleDC(hdc);
+	HBITMAP hBitmapExpand = g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth * 2, g_bitmapHeader.bmHeight * 2);
+	SelectObject(g_hBitmapSrcDC, hBitmapExpand);
+
+	// 임시 원본 Bitmap DC
+	HDC hBitmapSrcDCTemp = CreateCompatibleDC(hdc);
+	SelectObject(hBitmapSrcDCTemp, g_hBitmapSrc);
+
+	// 원본 Bitmap DC에 임시 원본 Bitmap DC 복사
+	BitBlt(g_hBitmapSrcDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, hBitmapSrcDCTemp, 0, 0, SRCCOPY);
+
+	// 버퍼 비트맵 생성
+	g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
+
+	g_CutImage.Init(g_hBitmapSrcDC, g_bitmapHeader);
+
+	DeleteObject(g_hBitmapSrc);
+	DeleteDC(hdc);
+
+	// transparent color
+	g_BitmapViewInfo.TransparentColor = GetPixel(g_hBitmapSrcDC, 0, 0);
+
+	UpdateMainWndScroll();
+
+	SetTimer(g_hMainWnd, g_nMainWndTimerId, 1000 / nFrameRate, nullptr);
+
+}
+
 void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {
 	g_vSpriteInfos.push_back(*spriteInfo);
 
@@ -1326,6 +1335,10 @@ void SaveSpriteListToFile() {
 	file = _fsopen("spritesList.cut", "wt", _SH_DENYNO);
 
 	if (file == nullptr) return;
+
+	// image file name
+	fputs(g_szImageFileName, file);
+	fputs("\n", file);
 
 	// item count
 	int itemCount = g_vSpriteInfos.size();
