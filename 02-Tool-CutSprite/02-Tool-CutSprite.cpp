@@ -793,43 +793,30 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		MoveWindow(hDlg, mainWndRect.right, mainWndRect.top, g_whRightWndSize.x, g_whRightWndSize.y, true);
 
-		// Sprite list
-		g_hSpriteList = GetDlgItem(hDlg, IDC_LIST1);
-
-		// ===== List에 컬럼 추가 =====
-		// List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.
-		char colText1[] = "left";
-		char colText2[] = "top";
-		char colText3[] = "right";
-		char colText4[] = "bottom";
-		char colText5[] = "pivot x";
-		char colText6[] = "pivot y";
 
 		LVCOLUMN col = {};
 		col.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
 		col.fmt = LVCFMT_LEFT;
 		col.cx = 50;
 
-		col.pszText = colText1;
-		ListView_InsertColumn(g_hSpriteList, 1, &col); // 컬럼 추가1
+		// ===== List에 컬럼 추가 =====
+		// Sprite list
+		g_hSpriteList = GetDlgItem(hDlg, IDC_LIST1);
 
-		col.pszText = colText2;
-		ListView_InsertColumn(g_hSpriteList, 2, &col); // 컬럼 추가2
+		// List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.
+		const char *spriteListColumnNames[] = { "time", "left", "top", "right", "bottom", "pivot x", "pivot y" };
+		UINT columnCount = sizeof(spriteListColumnNames) / sizeof(char *);
 
-		col.pszText = colText3;
-		ListView_InsertColumn(g_hSpriteList, 3, &col); // 컬럼 추가3
 
-		col.pszText = colText4;
-		ListView_InsertColumn(g_hSpriteList, 4, &col); // 컬럼 추가4
-
-		col.pszText = colText5;
-		ListView_InsertColumn(g_hSpriteList, 5, &col); // 컬럼 추가5
-
-		col.pszText = colText6;
-		ListView_InsertColumn(g_hSpriteList, 6, &col); // 컬럼 추가6
+		char column[99];
+		for (size_t i = 0; i < columnCount; i++)
+		{
+			strcpy_s(column, spriteListColumnNames[i]);
+			col.pszText = column;
+			ListView_InsertColumn(g_hSpriteList, i, &col); // 컬럼 추가1
+		}
 		// ===== List에 컬럼 추가 ===== end
 
-		//LoadSpriteListFromFile();
 
 		// ===== List 뷰 설정 =====
 		// 기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨
@@ -845,20 +832,15 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		g_hCollisionList = GetDlgItem(hDlg, IDC_LIST2);
 
 		// ===== Collision List에 컬럼 추가 =====
-		col.pszText = colText1;
-		ListView_InsertColumn(g_hCollisionList, 1, &col); // 컬럼 추가1
-
-		col.pszText = colText2;
-		ListView_InsertColumn(g_hCollisionList, 2, &col); // 컬럼 추가2
-
-		col.pszText = colText3;
-		ListView_InsertColumn(g_hCollisionList, 3, &col); // 컬럼 추가3
-
-		col.pszText = colText4;
-		ListView_InsertColumn(g_hCollisionList, 4, &col); // 컬럼 추가4
+		const char *collisionListColumnNames[] = { "left", "top", "right", "bottom" };
+		columnCount = sizeof(collisionListColumnNames) / sizeof(char *);
+		for (size_t i = 0; i < 4; i++)
+		{
+			strcpy_s(column, collisionListColumnNames[i]);
+			col.pszText = column;
+			ListView_InsertColumn(g_hCollisionList, i, &col); // 컬럼 추가1
+		}
 		// ===== Collision List에 컬럼 추가 ===== end
-
-		//LoadSpriteListFromFile();
 
 		// ===== Collision List 뷰 설정 =====
 		// 기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨
