@@ -71,6 +71,7 @@ typedef struct _BitmapViewInfo {
 } BitmapViewInfo;
 
 typedef struct _SpriteInfo {
+	UINT Time;
 	INT Coordinates[nMax_SpriteCoordinateCount];
 	RECT Rect;
 	XY Pivot;

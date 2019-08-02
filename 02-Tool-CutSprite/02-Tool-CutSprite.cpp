@@ -1007,6 +1007,44 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		}
 		break;
 
+		case IDC_BUTTON12: // Time 설정
+		{
+			
+
+			int spriteListItemIndex = ListView_GetNextItem(
+				g_hSpriteList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
+
+			if (spriteListItemIndex != NoSpriteSelect) {
+				SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
+				//spriteInfo.RemoveAllCollisions();
+
+				char szTime[szMax_Pos] = {};
+
+				HWND hEditTime = GetDlgItem(hDlg, IDC_EDIT4);
+				GetDlgItemText(g_hRightWnd, IDC_EDIT4, szTime, szMax_Pos);
+
+				UINT time = atoi(szTime);
+				if (time == 0) {
+					szTime[0] = '0';
+					szTime[1] = 0;
+				}
+
+				//ListView_GetItemText(g_hSpriteList, spriteListItemIndex, 0, szTime);
+
+				ListView_SetItemText(g_hSpriteList, spriteListItemIndex, 0, szTime);
+
+				spriteInfo.Time = time;
+
+				g_SpriteInfo = spriteInfo;
+
+				//UpdateCollisionList();
+			}
+		}
+		break;
+
 		default:
 			break;
 		}
@@ -1216,9 +1254,11 @@ void LoadSpriteListFromFile() {
 		{
 			nextToken = itemLine;
 
-			int coordinates[nMax_SpriteCoordinateCount] = {  };
+			token = strtok_s(nullptr, "\t", &nextToken);
+			spriteInfo.Time = atoi(token);
 
 			// rect, pivot
+			int coordinates[nMax_SpriteCoordinateCount] = {  };
 			for (size_t j = 0; j < nMax_SpriteCoordinateCount; j++)
 			{
 				token = strtok_s(nullptr, "\t", &nextToken);
@@ -1305,10 +1345,14 @@ void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {
 	item.pszText = itemText;
 	ListView_InsertItem(g_hSpriteList, &item); // 아이템 추가
 
+	_itoa_s(spriteInfo->Time, itemText, 10);
+	ListView_SetItemText(g_hSpriteList, index, 0, itemText);
+
+	UINT subitemCount = 1;
 	for (size_t i = 0; i < nMax_SpriteCoordinateCount; i++)
 	{
 		_itoa_s(spriteInfo->Coordinates[i], itemText, 10);
-		ListView_SetItemText(g_hSpriteList, index, i, itemText);
+		ListView_SetItemText(g_hSpriteList, index, i + subitemCount, itemText);
 	}
 }
 
@@ -1331,9 +1375,11 @@ void SaveSpriteListToFile() {
 	auto iter = g_vSpriteInfos.begin();
 	while (iter != g_vSpriteInfos.end())
 	{
+		// time
+		fprintf_s(file, "%d", iter->Time);
 
 		// rect, pivot
-		fprintf_s(file, "%d\t%d\t%d\t%d\t%d\t%d", iter->Rect.left, iter->Rect.top, iter->Rect.right, iter->Rect.bottom, iter->Pivot.x, iter->Pivot.y);
+		fprintf_s(file, "\t%d\t%d\t%d\t%d\t%d\t%d", iter->Rect.left, iter->Rect.top, iter->Rect.right, iter->Rect.bottom, iter->Pivot.x, iter->Pivot.y);
 
 		// collision
 		fprintf_s(file, "\t%d", iter->CollisionCount);
