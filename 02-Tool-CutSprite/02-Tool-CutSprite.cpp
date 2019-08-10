@@ -18,13 +18,19 @@ POINT g_whRightWndSize = { 0, 0 }; // 리소스에 의해 결정
 // 전역 변수:
 HINSTANCE g_hInst;                                // 현재 인스턴스입니다.
 
+// original bitmap
 HDC g_hBitmapSrcDC;
-HDC g_hBufferMemDC;
-HBITMAP g_hBitmapSrc;
-HBITMAP g_hBufferBitmap;
-BITMAP g_bitmapHeader;
+BITMAP g_bitmapSrcHeader;
+
+// buffer dc
+HDC g_hBufferMemDC_MainWnd;
+HDC g_hBufferMemDC_BottomWnd;
+
+
 HWND g_hSpriteList = nullptr;
 HWND g_hCollisionList = nullptr;
+
+HDC g_hAniBufferMemDC;
 
 bool g_bIsLBDrag = false;
 RECT g_rectLBDrag = { 0, 0, 0, 0 };
@@ -322,8 +328,8 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				if (g_pntScrollPos.y < 0) g_pntScrollPos.y = 0;
 
 				// 이미지가 클라이언트 영역보다 클 경우 이동할 수 있는 최대 스크롤 범위
-				int nMaxScrollX = (g_bitmapHeader.bmWidth * g_BitmapViewInfo.Magnification - g_whMainWndSize.x) + g_nScrollbarWidth;
-				int nMaxScrollY = (g_bitmapHeader.bmHeight * g_BitmapViewInfo.Magnification - g_whMainWndSize.y) + g_nScrollbarWidth;
+				int nMaxScrollX = (g_bitmapSrcHeader.bmWidth * g_BitmapViewInfo.Magnification - g_whMainWndSize.x) + g_nScrollbarWidth;
+				int nMaxScrollY = (g_bitmapSrcHeader.bmHeight * g_BitmapViewInfo.Magnification - g_whMainWndSize.y) + g_nScrollbarWidth;
 
 				// 최대 스크롤 범위가 음수라는 건 클라이언트 영역보다 이미지가 작다는 뜻이므로 
 				// 스크롤 되지 않게 최대 스크롤 범위를 0으로 설정한다.
@@ -471,20 +477,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		HDC hdc = GetDC(hWnd);
 
-
-		//if (g_hBufferMemDC) {
-		//	DeleteDC(g_hBufferMemDC);
-		//}
-		g_hBufferMemDC = CreateCompatibleDC(hdc);
-		// 메모리 DC에는 기본적으로 아주 작은 크기의 비트맵만 있기 때문에 다른 DC를 복사하겨나 그리기를 하려면 비트맵을 만들어줘야한다.
-		// SelectObject()로 비트맵을 지정할 경우는 안해도 된다.
-		HBITMAP hOldBitmap = (HBITMAP)SelectObject(g_hBufferMemDC, g_hBufferBitmap);
-
 		// 백버퍼용 DC를 매번 생성하지 않을 경우 화면은 지우고 다시 그려야하는데 이 때 사용할 수 있는 명령어가 PatBlt() 이다.
-
 		RECT crt;
 		GetClientRect(hWnd, &crt);
-		FillRect(g_hBufferMemDC, &crt, GetSysColorBrush(COLOR_WINDOW));
+		FillRect(g_hBufferMemDC_MainWnd, &crt, GetSysColorBrush(COLOR_WINDOW));
 
 		// bitmap
 		// 버퍼 DC를 원본 비트맵 DC로 덮어쓰며 확대/축소한다.
@@ -493,25 +489,21 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		//TransparentBlt(g_hBufferMemDC, -g_pntScrollPos.x, -g_pntScrollPos.y, g_bitmapHeader.bmWidth * fMagnification, g_bitmapHeader.bmHeight * fMagnification, g_hBitmapSrcDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, RGB(255, 0, 0));
 
 		// 화면에 보이는 비트맵만 복사해서 속도를 높이려 했는데 원본 비트맵 영역을 벗어나면 흰화면이 나온다. 추후 개선
-		TransparentBlt(g_hBufferMemDC, 0, 0,
-			//min(g_bitmapHeader.bmWidth - g_pntScrollPos.x / fMagnification, g_bitmapHeader.bmWidth),
-			//min(g_bitmapHeader.bmHeight - g_pntScrollPos.y / fMagnification, g_bitmapHeader.bmHeight),
-			g_bitmapHeader.bmWidth,
-			g_bitmapHeader.bmHeight,
+		TransparentBlt(g_hBufferMemDC_MainWnd, 0, 0,
+			g_bitmapSrcHeader.bmWidth,
+			g_bitmapSrcHeader.bmHeight,
 
 			g_hBitmapSrcDC,
 			g_pntScrollPos.x / fMagnification,
 			g_pntScrollPos.y / fMagnification,
-			(g_bitmapHeader.bmWidth / fMagnification),
-			(g_bitmapHeader.bmHeight / fMagnification),
-			//min(g_bitmapHeader.bmWidth - g_pntScrollPos.x / fMagnification, (g_bitmapHeader.bmWidth / fMagnification)),
-			//min(g_bitmapHeader.bmHeight - g_pntScrollPos.y / fMagnification, (g_bitmapHeader.bmHeight / fMagnification)),
+			(g_bitmapSrcHeader.bmWidth / fMagnification),
+			(g_bitmapSrcHeader.bmHeight / fMagnification),
 
 			RGB(255, 0, 0));
 
 		// draw rect
 		//SetROP2(hdc, R2_BLACK); // 외곽은 검은색, 내부는 비어있는 사각형
-		SetROP2(g_hBufferMemDC, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
+		SetROP2(g_hBufferMemDC_MainWnd, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
 
 		// Rectangle 고려사항
 		// 1. Rectangle은 left, top좌표에 해당하는 픽셀에 라인을 그리지만 right, bottom은 해당하는 픽셀 - 1 위치에 라인을 그린다.
@@ -540,33 +532,33 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			// 선택된 Sprite는 외곽선의 색상을 다르게한다.
 			if (selectedListItemIndex == i) {
-				hOldPen = (HPEN)SelectObject(g_hBufferMemDC, hSelectedPen);
+				hOldPen = (HPEN)SelectObject(g_hBufferMemDC_MainWnd, hSelectedPen);
 				//SetROP2(hdc, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
-				SetROP2(g_hBufferMemDC, R2_MERGENOTPEN); // 외곽은 핑크, 내부는 비어있는 사각형
+				SetROP2(g_hBufferMemDC_MainWnd, R2_MERGENOTPEN); // 외곽은 핑크, 내부는 비어있는 사각형
 			}
 			else {
-				SetROP2(g_hBufferMemDC, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
+				SetROP2(g_hBufferMemDC_MainWnd, R2_MASKPEN); // 외곽은 검은색, 내부는 비어있는 사각형
 			}
 
 			// sprite rect
 			spriteRect = spriteRect * fMagnification;
 			spriteRect = spriteRect - g_pntScrollPos;
-			Rectangle(g_hBufferMemDC, spriteRect.left, spriteRect.top, spriteRect.right + 1 + pixelOffset, spriteRect.bottom + 1 + pixelOffset);
+			Rectangle(g_hBufferMemDC_MainWnd, spriteRect.left, spriteRect.top, spriteRect.right + 1 + pixelOffset, spriteRect.bottom + 1 + pixelOffset);
 
 			// sprite pivot
-			SetROP2(g_hBufferMemDC, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
+			SetROP2(g_hBufferMemDC_MainWnd, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
 			XY xyPivot = { spriteInfo.Rect.left + spriteInfo.Pivot.x, spriteInfo.Rect.top + spriteInfo.Pivot.y };
 			xyPivot = xyPivot * fMagnification;
 			xyPivot = xyPivot - g_pntScrollPos;
-			MoveToEx(g_hBufferMemDC, xyPivot.x - nPivotHalfSize, xyPivot.y, nullptr);
-			LineTo(g_hBufferMemDC, xyPivot.x + nPivotHalfSize, xyPivot.y);
-			MoveToEx(g_hBufferMemDC, xyPivot.x, xyPivot.y - nPivotHalfSize, nullptr);
-			LineTo(g_hBufferMemDC, xyPivot.x, xyPivot.y + nPivotHalfSize);
+			MoveToEx(g_hBufferMemDC_MainWnd, xyPivot.x - nPivotHalfSize, xyPivot.y, nullptr);
+			LineTo(g_hBufferMemDC_MainWnd, xyPivot.x + nPivotHalfSize, xyPivot.y);
+			MoveToEx(g_hBufferMemDC_MainWnd, xyPivot.x, xyPivot.y - nPivotHalfSize, nullptr);
+			LineTo(g_hBufferMemDC_MainWnd, xyPivot.x, xyPivot.y + nPivotHalfSize);
 
 
 			//if (selectedListItemIndex == i) {
 			if (true) {
-				(HPEN)SelectObject(g_hBufferMemDC, hPen);
+				(HPEN)SelectObject(g_hBufferMemDC_MainWnd, hPen);
 
 				for (size_t ii = 0; ii < spriteInfo.CollisionCount; ii++)
 				{
@@ -575,12 +567,12 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 					collisionRect = collisionRect * fMagnification;
 					//collisionRect = collisionRect - g_pntScrollPos;
 					//Rectangle(g_hBufferMemDC, collisionRect.left, collisionRect.top, collisionRect.right + 1 + pixelOffset, collisionRect.bottom + 1 + pixelOffset);
-					Rectangle(g_hBufferMemDC, spriteRect.left + collisionRect.left, spriteRect.top + collisionRect.top, spriteRect.left + collisionRect.right + 1 + pixelOffset, spriteRect.top + collisionRect.bottom + 1 + pixelOffset);
+					Rectangle(g_hBufferMemDC_MainWnd, spriteRect.left + collisionRect.left, spriteRect.top + collisionRect.top, spriteRect.left + collisionRect.right + 1 + pixelOffset, spriteRect.top + collisionRect.bottom + 1 + pixelOffset);
 				}
 			}
 
 			if (hOldPen != nullptr) {
-				(HPEN)SelectObject(g_hBufferMemDC, hOldPen);
+				(HPEN)SelectObject(g_hBufferMemDC_MainWnd, hOldPen);
 				hOldPen = nullptr;
 			}
 		}
@@ -588,14 +580,12 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		// 현재 드래그 영역
 		if (g_rectLBDrag.left != g_rectLBDrag.right) {
-			SetROP2(g_hBufferMemDC, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
+			SetROP2(g_hBufferMemDC_MainWnd, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
 			RECT rectDrag = g_rectLBDrag * fMagnification;
 			rectDrag = rectDrag - g_pntScrollPos;
-			Rectangle(g_hBufferMemDC, rectDrag.left, rectDrag.top, rectDrag.right + 1 + pixelOffset, rectDrag.bottom + 1 + pixelOffset);
+			Rectangle(g_hBufferMemDC_MainWnd, rectDrag.left, rectDrag.top, rectDrag.right + 1 + pixelOffset, rectDrag.bottom + 1 + pixelOffset);
 		}
 
-		SelectObject(g_hBufferMemDC, hOldBitmap);
-		DeleteDC(g_hBufferMemDC);
 		ReleaseDC(hWnd, hdc);
 
 		// 버퍼 DC를 그려준 뒤 WM_PAINT 메시지 발생을 위해 InvalidateRect()호출한다.
@@ -609,20 +599,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
 
-		// MemoryDC가 해제되지 않은 상태에서 CreateCompatibleDC()로 다시 할당하면 화면에 보이지 않는다.(왜인지는 모르겠다.)
-		if (g_hBufferMemDC) {
-			DeleteDC(g_hBufferMemDC);
-		}
-		g_hBufferMemDC = CreateCompatibleDC(hdc);
-		SelectObject(g_hBufferMemDC, g_hBufferBitmap);
-		BitBlt(hdc, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, g_hBufferMemDC, 0, 0, SRCCOPY);
-
-		// clear
-		DeleteDC(g_hBufferMemDC);
+		// 버퍼DC를 화면DC에 복사한다.
+		BitBlt(hdc, 0, 0, g_bitmapSrcHeader.bmWidth, g_bitmapSrcHeader.bmHeight, g_hBufferMemDC_MainWnd, 0, 0, SRCCOPY);
 
 		EndPaint(hWnd, &ps);
-
-		//dlog("WM_PAINT aa");
 	}
 	break;
 	case WM_MOVE:
@@ -730,6 +710,8 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 	case WM_CREATE:
 	{
 		SetWindowPositionToCenter(hWnd);
+
+		SetTimer(g_hMainWnd, g_nMainWndTimerId, 1000 / nFrameRate, nullptr);
 	}
 	break;
 	case WM_COMMAND:
@@ -746,11 +728,61 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 		}
 	}
 	break;
+
+	case WM_TIMER:
+	{
+		HDC hdc = GetDC(hWnd);
+
+		float fMagnification = g_BitmapViewInfo.Magnification;
+
+		// 백버퍼용 DC를 매번 생성하지 않을 경우 화면은 지우고 다시 그려야하는데 이 때 사용할 수 있는 명령어가 PatBlt() 이다.
+		RECT crt;
+		GetClientRect(hWnd, &crt);
+		FillRect(g_hBufferMemDC_BottomWnd, &crt, GetSysColorBrush(COLOR_WINDOW));
+
+		// 화면 정중앙 좌표
+		XY center = { g_whBottomWndSize.x / 2, g_whBottomWndSize.y / 2 };
+
+		// 선택된 스프라이트의 크기
+		WH spriteSize = { g_SpriteInfo.Rect.right - g_SpriteInfo.Rect.left , g_SpriteInfo.Rect.bottom - g_SpriteInfo.Rect.top };
+		UINT w = g_SpriteInfo.Rect.right - g_SpriteInfo.Rect.left;
+		UINT h = g_SpriteInfo.Rect.bottom - g_SpriteInfo.Rect.top;
+		TransparentBlt(g_hBufferMemDC_BottomWnd,
+			center.x - g_SpriteInfo.Pivot.x * fMagnification,
+			center.y - g_SpriteInfo.Pivot.y * fMagnification,
+
+			spriteSize.w * fMagnification,
+			spriteSize.h * fMagnification,
+
+			g_hBitmapSrcDC,
+			g_SpriteInfo.Rect.left,
+			g_SpriteInfo.Rect.top,
+			spriteSize.w,
+			spriteSize.h,
+
+			RGB(255, 0, 0));
+
+
+		// 가로,세로 선 그리기
+		SetROP2(g_hBufferMemDC_BottomWnd, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
+		MoveToEx(g_hBufferMemDC_BottomWnd, 0, center.y, nullptr);
+		LineTo(g_hBufferMemDC_BottomWnd, g_whBottomWndSize.x, center.y);
+		MoveToEx(g_hBufferMemDC_BottomWnd, center.x, 0, nullptr);
+		LineTo(g_hBufferMemDC_BottomWnd, center.x, g_whBottomWndSize.y);
+
+
+		InvalidateRect(hWnd, nullptr, true);
+	}
+	break;
+
 	case WM_PAINT:
 	{
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
-		// TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
+
+		BitBlt(hdc, 0, 0, g_whBottomWndSize.x, g_whBottomWndSize.y, g_hBufferMemDC_BottomWnd, 0, 0, SRCCOPY);
+
+		//ReleaseDC(hWnd, hdc);
 		EndPaint(hWnd, &ps);
 	}
 	break;
@@ -1009,8 +1041,6 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		case IDC_BUTTON12: // Time 설정
 		{
-			
-
 			int spriteListItemIndex = ListView_GetNextItem(
 				g_hSpriteList, // 윈도우 핸들
 				-1, // 검색을 시작할 인덱스
@@ -1143,8 +1173,8 @@ void SetWindowPositionToCenter(HWND hWnd) {
 }
 
 void UpdateMainWndScroll() {
-	int wBitmap = g_bitmapHeader.bmWidth * g_BitmapViewInfo.Magnification;
-	int hBitmap = g_bitmapHeader.bmHeight * g_BitmapViewInfo.Magnification;
+	int wBitmap = g_bitmapSrcHeader.bmWidth * g_BitmapViewInfo.Magnification;
+	int hBitmap = g_bitmapSrcHeader.bmHeight * g_BitmapViewInfo.Magnification;
 	bool bHorzScroll = wBitmap > (g_whMainWndSize.x - g_nScrollbarWidth);
 	bool bVertScroll = hBitmap > (g_whMainWndSize.y - g_nScrollbarWidth);
 
@@ -1294,32 +1324,44 @@ void LoadSpriteListFromFile() {
 void InitBitmapForMainWnd() {
 
 	// load bitmap
-	g_hBitmapSrc = (HBITMAP)LoadImage(nullptr, g_szImageFileName, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	HBITMAP hBitmapSrc = (HBITMAP)LoadImage(nullptr, g_szImageFileName, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
-	GetObject(g_hBitmapSrc, sizeof(BITMAP), &g_bitmapHeader);
+	GetObject(hBitmapSrc, sizeof(BITMAP), &g_bitmapSrcHeader);
 
-	HDC hdc = GetDC(g_hMainWnd);
+	HDC hdcMain = GetDC(g_hMainWnd);
 
 	// 원본 Bitmap DC
 	// 추후 TransparentBlt() 등으로 복사 할 때 비트맵 영역을 벗어나면 화면이 그려지지 않기 때문에 원본 비트맵 보다 더 큰 비트맵을 만들어 복사한다.
-	g_hBitmapSrcDC = CreateCompatibleDC(hdc);
-	HBITMAP hBitmapExpand = g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth * 2, g_bitmapHeader.bmHeight * 2);
+	g_hBitmapSrcDC = CreateCompatibleDC(hdcMain);
+	// 메모리 DC에는 기본적으로 아주 작은 크기의 비트맵만 있기 때문에 다른 DC를 복사하겨나 그리기를 하려면 비트맵을 만들어줘야한다.
+	// SelectObject()로 비트맵을 지정할 경우는 안해도 된다.
+	HBITMAP hBitmapExpand = CreateCompatibleBitmap(hdcMain, g_bitmapSrcHeader.bmWidth * 2, g_bitmapSrcHeader.bmHeight * 2);
 	SelectObject(g_hBitmapSrcDC, hBitmapExpand);
 
-	// 임시 원본 Bitmap DC
-	HDC hBitmapSrcDCTemp = CreateCompatibleDC(hdc);
-	SelectObject(hBitmapSrcDCTemp, g_hBitmapSrc);
+	// 원본 Bitmap DC에 로드한 비트맵을 복사하기 위한 임시 Bitmap DC
+	HDC hBitmapSrcDCTemp = CreateCompatibleDC(hdcMain);
+	SelectObject(hBitmapSrcDCTemp, hBitmapSrc); // 로드한 비트맵 적용
+	DeleteObject(hBitmapSrc);
 
-	// 원본 Bitmap DC에 임시 원본 Bitmap DC 복사
-	BitBlt(g_hBitmapSrcDC, 0, 0, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight, hBitmapSrcDCTemp, 0, 0, SRCCOPY);
+	// 원본 Bitmap DC에 비트맵 복사
+	BitBlt(g_hBitmapSrcDC, 0, 0, g_bitmapSrcHeader.bmWidth, g_bitmapSrcHeader.bmHeight, hBitmapSrcDCTemp, 0, 0, SRCCOPY);
 
-	// 버퍼 비트맵 생성
-	g_hBufferBitmap = CreateCompatibleBitmap(hdc, g_bitmapHeader.bmWidth, g_bitmapHeader.bmHeight);
+	// 메인 윈도우 BufferDC
+	g_hBufferMemDC_MainWnd = CreateCompatibleDC(hdcMain);
+	HBITMAP g_hBufferBitmap = CreateCompatibleBitmap(hdcMain, g_bitmapSrcHeader.bmWidth, g_bitmapSrcHeader.bmHeight);
+	SelectObject(g_hBufferMemDC_MainWnd, g_hBufferBitmap);
+	DeleteObject(g_hBufferBitmap);
 
-	g_CutImage.Init(g_hBitmapSrcDC, g_bitmapHeader);
+	// 하단 윈도우 BufferDC
+	HDC hdcBottom = GetDC(g_hBottomWnd);
+	g_hBufferMemDC_BottomWnd = CreateCompatibleDC(hdcBottom);
+	g_hBufferBitmap = CreateCompatibleBitmap(hdcBottom, g_whBottomWndSize.x, g_whBottomWndSize.y);
+	SelectObject(g_hBufferMemDC_BottomWnd, g_hBufferBitmap);
+	DeleteObject(g_hBufferBitmap);
 
-	DeleteObject(g_hBitmapSrc);
-	DeleteDC(hdc);
+	g_CutImage.Init(g_hBitmapSrcDC, g_bitmapSrcHeader);
+
+	DeleteDC(hdcMain);
 
 	// transparent color
 	g_BitmapViewInfo.TransparentColor = GetPixel(g_hBitmapSrcDC, 0, 0);
@@ -1327,7 +1369,7 @@ void InitBitmapForMainWnd() {
 	UpdateMainWndScroll();
 
 	SetTimer(g_hMainWnd, g_nMainWndTimerId, 1000 / nFrameRate, nullptr);
-
+	SetTimer(g_hBottomWnd, g_nBottomWndTimerId, 1000 / nFrameRate, nullptr);
 }
 
 void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {

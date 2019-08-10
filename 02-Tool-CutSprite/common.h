@@ -18,7 +18,9 @@ typedef void(*CallbackFunc)(); // 이벤트 콜백
 #define szMax_SpriteCount 4
 #define szMax_Pos 6
 #define szMax_PosLine 99
-#define nFrameRate 60
+//#define nFrameRate 300
+//#define nFrameRate 144
+#define nFrameRate 60 // 모니터 주사율이 60hz인데 60보다 높이면 더 부드럽게 보인다. 왜일까?
 #define nPivotHalfSize 5
 #define nMax_SpriteCollision 4
 #define nMax_SpriteCoordinateCount (4/*sprite*/ + 2/*pivot*/)
@@ -71,7 +73,7 @@ typedef struct _BitmapViewInfo {
 } BitmapViewInfo;
 
 typedef struct _SpriteInfo {
-	UINT Time;
+	UINT Time = 0;
 	INT Coordinates[nMax_SpriteCoordinateCount];
 	RECT Rect;
 	XY Pivot;
