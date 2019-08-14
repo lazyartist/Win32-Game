@@ -93,7 +93,7 @@ void AddMagnification(float v);
 void LoadSettingFile(const char *filePath);
 void SaveAniFile(const char *filePath);
 void LoadAniFile(const char *filePath);
-void InitBitmapForMainWnd();
+void LoadSpriteForMainWnd();
 SpriteInfo GetSpriteInfo(int index);
 void AddSpriteInfo(INT index, SpriteInfo *spriteInfo);
 void SetPivots(HWND hDlg);
@@ -119,7 +119,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// 프로그램 시작
 	LoadSettingFile("setting.cfg");
 	LoadAniFile(g_szAniFilePath);
-	InitBitmapForMainWnd();
+	LoadSpriteForMainWnd();
 
 	MSG msg;
 
@@ -1008,7 +1008,45 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		break;
 		case IDC_BUTTON6: // 파일 저장
 		{
-			SaveAniFile("Resources/spritesList.ani");
+			// 빈문자열로 만들어야 파일 다이얼로그가 열린다.
+			char szAniFilePath[MAX_PATH] = {};
+
+			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
+			//static char lpstrFile[MAX_PATH];
+			// static 또는 전역변수로 선언하지 않아도 다이얼로그가 열림(강의에서는 필요하다고 함)
+			static char lpstrFileTitle[MAX_PATH] = {};
+
+			OPENFILENAME ofn = { 0, };
+			ofn.lStructSize = sizeof(OPENFILENAME);
+			ofn.hwndOwner = nullptr;
+			//ofn.hwndOwner = hDlg;
+			ofn.lpstrFilter = "Ani File(*.ani)\0*.ani\0";
+			ofn.lpstrFile = szAniFilePath;
+			//ofn.lpstrFile = lpstrFile;
+			ofn.lpstrFileTitle = lpstrFileTitle;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.nMaxFileTitle = MAX_PATH;
+			ofn.lpstrTitle = "Save ani";
+
+			// 현재 실행파일의 경로
+			char defaultPath[MAX_PATH];
+			GetModuleFileName(nullptr, defaultPath, MAX_PATH);
+
+			// 기본 폴더 지정
+			ofn.lpstrInitialDir = defaultPath;
+			//ofn.lpstrInitialDir = "C:\\";
+
+			if (GetOpenFileName(&ofn)) {
+				// 경로 확인용
+				//char szResult[MAX_PATH];
+				//sprintf_s(szResult, "Path: %s\n%s", ofn.lpstrFile, ofn.lpstrFileTitle);
+				//MessageBox(hDlg, szResult, NULL, MB_OK);
+
+				SaveAniFile(ofn.lpstrFile);
+				//LoadAniFile(ofn.lpstrFile);
+				//InitBitmapForMainWnd();
+
+			};
 		}
 		break;
 
@@ -1179,7 +1217,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 				//LoadAniFile(ofn.lpstrFileTitle);
 				LoadAniFile(ofn.lpstrFile);
-				InitBitmapForMainWnd();
+				LoadSpriteForMainWnd();
 
 			};
 
@@ -1223,7 +1261,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				//MessageBox(hDlg, szResult, NULL, MB_OK);
 
 				strcpy_s(g_szSpriteFilePath, MAX_PATH, ofn.lpstrFile);
-				InitBitmapForMainWnd();
+				LoadSpriteForMainWnd();
 			}
 			else {
 				auto err = GetLastError();
@@ -1428,7 +1466,7 @@ void LoadAniFile(const char *filePath) {
 	fgets(g_szSpriteFilePath, MAX_PATH, file);
 	RemoveCarriageReturn(g_szSpriteFilePath);
 
-	char szItemCount[szMax_SpriteCount] = {};
+ 	char szItemCount[szMax_SpriteCount] = {};
 	fgets(szItemCount, szMax_SpriteCount, file);
 
 	// item count
@@ -1496,10 +1534,13 @@ void LoadAniFile(const char *filePath) {
 	SetDlgItemText(g_hRightWnd, IDC_EDIT5, GetFileNameByFullPath(g_szAniFilePath));
 }
 
-void InitBitmapForMainWnd() {
+void LoadSpriteForMainWnd() {
 
 	// load bitmap
 	HBITMAP hBitmapSrc = (HBITMAP)LoadImage(nullptr, g_szSpriteFilePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	if (hBitmapSrc == nullptr) {
+		dlog("err", GetLastError());
+	}
 
 	GetObject(hBitmapSrc, sizeof(BITMAP), &g_bitmapSrcHeader);
 
