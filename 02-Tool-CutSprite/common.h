@@ -153,6 +153,20 @@ inline void RemoveCarriageReturn(char *sz) {
 	// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
 	sz[strcspn(sz, "\n")] = 0; // strcspn()으로 "\n"의 위치를 찾고 그 위치에 0을 넣어준다.
 }
+
+// 파일 경로에서 파일명 시작 문자열의 포인터를 반환
+inline char * GetFileNameByFullPath(char *path) {
+	auto szFileName = strrchr(path, '/'); // strrchr() 마지막으로 일치하는 문자의 포인터를 반환
+	if (szFileName == nullptr) {
+		szFileName = strrchr(path, '\\'); // strrchr() 마지막으로 일치하는 문자의 포인터를 반환
+	}
+
+	if (szFileName != nullptr) {
+		++szFileName; // '/' or '\\' 제거
+	}
+
+	return szFileName;
+}
 // ===== function ===== end
 
 // ===== global operation overloading ===== 

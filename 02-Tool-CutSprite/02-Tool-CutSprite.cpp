@@ -119,7 +119,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// 프로그램 시작
 	LoadSettingFile("setting.cfg");
 	LoadAniFile(g_szAniFilePath);
-	//InitBitmapForMainWnd();
+	InitBitmapForMainWnd();
 
 	MSG msg;
 
@@ -1143,6 +1143,9 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		case IDC_BUTTON15: // Load ani file
 		{
+			// 빈문자열로 만들어야 파일 다이얼로그가 열린다.
+			g_szAniFilePath[0] = 0;
+
 			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
 			//static char lpstrFile[MAX_PATH];
 			// static 또는 전역변수로 선언하지 않아도 다이얼로그가 열림(강의에서는 필요하다고 함)
@@ -1176,10 +1179,8 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 				//LoadAniFile(ofn.lpstrFileTitle);
 				LoadAniFile(ofn.lpstrFile);
-				strcpy_s(g_szAniFilePath, MAX_PATH, ofn.lpstrFile);
 				InitBitmapForMainWnd();
 
-				SetDlgItemText(hDlg, IDC_EDIT5, ofn.lpstrFileTitle);
 			};
 
 		}
@@ -1187,6 +1188,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		case IDC_BUTTON16: // Load sprite
 		{
+			// 빈문자열로 만들어야 파일 다이얼로그가 열린다.
 			g_szSpriteFilePath[0] = 0;
 
 			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
@@ -1220,10 +1222,8 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				//sprintf_s(szResult, "Path: %s\n%s", ofn.lpstrFile, ofn.lpstrFileTitle);
 				//MessageBox(hDlg, szResult, NULL, MB_OK);
 
-				strcpy_s(g_szAniFilePath, MAX_PATH, ofn.lpstrFile);
+				strcpy_s(g_szSpriteFilePath, MAX_PATH, ofn.lpstrFile);
 				InitBitmapForMainWnd();
-
-				SetDlgItemText(hDlg, IDC_EDIT6, ofn.lpstrFileTitle);
 			}
 			else {
 				auto err = GetLastError();
@@ -1491,6 +1491,9 @@ void LoadAniFile(const char *filePath) {
 	}
 
 	fclose(file);
+
+	strcpy_s(g_szAniFilePath, MAX_PATH, filePath);
+	SetDlgItemText(g_hRightWnd, IDC_EDIT5, GetFileNameByFullPath(g_szAniFilePath));
 }
 
 void InitBitmapForMainWnd() {
@@ -1547,10 +1550,12 @@ void InitBitmapForMainWnd() {
 	// transparent color
 	g_BitmapViewInfo.TransparentColor = GetPixel(g_hBitmapSrcDC, 0, 0);
 
-	UpdateMainWndScroll();
-
 	SetTimer(g_hMainWnd, g_nMainWndTimerId, 1000 / nFrameRate, nullptr);
 	SetTimer(g_hBottomWnd, g_nBottomWndTimerId, 1000 / nFrameRate, nullptr);
+
+	// update
+	UpdateMainWndScroll();
+	SetDlgItemText(g_hRightWnd, IDC_EDIT6, GetFileNameByFullPath(g_szSpriteFilePath));
 
 	InvalidateRect(g_hMainWnd, nullptr, true);
 	InvalidateRect(g_hBottomWnd, nullptr, true);
