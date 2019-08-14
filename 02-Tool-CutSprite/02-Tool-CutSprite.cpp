@@ -70,9 +70,8 @@ bool g_bAniPlay = false;
 DWORD g_nAniPrevTime = 0; // milliseconds
 UINT g_nAniSpriteIndex = 0;
 
-char g_szImageFileName[MAX_PATH] = {};
-//char g_szImageFileName[] = "sprites/castlevania_sm.bmp";
-//char g_szImageFileName[] = "sprites/test_100_red.bmp";
+char g_szAniFilePath[MAX_PATH] = {};
+char g_szSpriteFilePath[MAX_PATH] = {};
 
 MouseModeType g_MouseModeType = MouseModeType::Sprite;
 BitmapViewInfo g_BitmapViewInfo;
@@ -91,8 +90,9 @@ void SetWindowPositionToCenter(HWND hWnd);
 void AddRectToSpriteList(RECT rect);
 void AddRectToCollisionList(RECT rect);
 void AddMagnification(float v);
-void SaveSpriteListToFile();
-void LoadSpriteListFromFile();
+void LoadSettingFile(const char *filePath);
+void SaveAniFile(const char *filePath);
+void LoadAniFile(const char *filePath);
 void InitBitmapForMainWnd();
 SpriteInfo GetSpriteInfo(int index);
 void AddSpriteInfo(INT index, SpriteInfo *spriteInfo);
@@ -117,8 +117,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	// 프로그램 시작
-	LoadSpriteListFromFile();
-	InitBitmapForMainWnd();
+	LoadSettingFile("setting.cfg");
+	LoadAniFile(g_szAniFilePath);
+	//InitBitmapForMainWnd();
 
 	MSG msg;
 
@@ -788,10 +789,10 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			spriteSize.h,
 
 			g_BitmapViewInfo.TransparentColor);
-			//RGB(255, 0, 0));
+		//RGB(255, 0, 0));
 
 
-		// 가로,세로 선 그리기
+	// 가로,세로 선 그리기
 		SetROP2(g_hBufferMemDC_BottomWnd, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
 		MoveToEx(g_hBufferMemDC_BottomWnd, 0, center.y, nullptr);
 		LineTo(g_hBufferMemDC_BottomWnd, g_whBottomWndSize.x, center.y);
@@ -1007,7 +1008,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		break;
 		case IDC_BUTTON6: // 파일 저장
 		{
-			SaveSpriteListToFile();
+			SaveAniFile("Resources/spritesList.ani");
 		}
 		break;
 
@@ -1137,6 +1138,98 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		{
 			SetPivots(hDlg);
 			UpdateSpriteList();
+		}
+		break;
+
+		case IDC_BUTTON15: // Load ani file
+		{
+			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
+			//static char lpstrFile[MAX_PATH];
+			// static 또는 전역변수로 선언하지 않아도 다이얼로그가 열림(강의에서는 필요하다고 함)
+			static char lpstrFileTitle[MAX_PATH] = {};
+
+			OPENFILENAME ofn = { 0, };
+			ofn.lStructSize = sizeof(OPENFILENAME);
+			ofn.hwndOwner = nullptr;
+			//ofn.hwndOwner = hDlg;
+			ofn.lpstrFilter = "Every File(*.*)\0*.*\0";
+			ofn.lpstrFile = g_szAniFilePath;
+			//ofn.lpstrFile = lpstrFile;
+			ofn.lpstrFileTitle = lpstrFileTitle;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.nMaxFileTitle = MAX_PATH;
+			ofn.lpstrTitle = "title";
+
+			// 현재 실행파일의 경로
+			char defaultPath[MAX_PATH];
+			GetModuleFileName(nullptr, defaultPath, MAX_PATH);
+
+			// 기본 폴더 지정
+			ofn.lpstrInitialDir = defaultPath;
+			//ofn.lpstrInitialDir = "C:\\";
+
+			if (GetOpenFileName(&ofn)) {
+				// 경로 확인용
+				//char szResult[MAX_PATH];
+				//sprintf_s(szResult, "Path: %s\n%s", ofn.lpstrFile, ofn.lpstrFileTitle);
+				//MessageBox(hDlg, szResult, NULL, MB_OK);
+
+				//LoadAniFile(ofn.lpstrFileTitle);
+				LoadAniFile(ofn.lpstrFile);
+				strcpy_s(g_szAniFilePath, MAX_PATH, ofn.lpstrFile);
+				InitBitmapForMainWnd();
+
+				SetDlgItemText(hDlg, IDC_EDIT5, ofn.lpstrFileTitle);
+			};
+
+		}
+		break;
+
+		case IDC_BUTTON16: // Load sprite
+		{
+			g_szSpriteFilePath[0] = 0;
+
+			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
+			//static char lpstrFile[MAX_PATH];
+			// static 또는 전역변수로 선언하지 않아도 다이얼로그가 열림(강의에서는 필요하다고 함)
+			static char lpstrFileTitle[MAX_PATH] = {};
+
+			OPENFILENAME ofn = { 0, };
+			ofn.lStructSize = sizeof(OPENFILENAME);
+			ofn.hwndOwner = nullptr;
+			//ofn.hwndOwner = hDlg;
+			ofn.lpstrFilter = "Every File(*.*)\0*.*\0";
+			ofn.lpstrFile = g_szSpriteFilePath;
+			//ofn.lpstrFile = lpstrFile;
+			ofn.lpstrFileTitle = lpstrFileTitle;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.nMaxFileTitle = MAX_PATH;
+			ofn.lpstrTitle = "title";
+
+			// 현재 실행파일의 경로
+			char defaultPath[MAX_PATH];
+			GetModuleFileName(nullptr, defaultPath, MAX_PATH);
+
+			// 기본 폴더 지정
+			ofn.lpstrInitialDir = defaultPath;
+			//ofn.lpstrInitialDir = "C:\\";
+
+			if (GetOpenFileName(&ofn)) {
+				// 경로 확인용
+				//char szResult[MAX_PATH];
+				//sprintf_s(szResult, "Path: %s\n%s", ofn.lpstrFile, ofn.lpstrFileTitle);
+				//MessageBox(hDlg, szResult, NULL, MB_OK);
+
+				strcpy_s(g_szAniFilePath, MAX_PATH, ofn.lpstrFile);
+				InitBitmapForMainWnd();
+
+				SetDlgItemText(hDlg, IDC_EDIT6, ofn.lpstrFileTitle);
+			}
+			else {
+				auto err = GetLastError();
+				dlog(err);
+			};
+
 		}
 		break;
 
@@ -1309,19 +1402,31 @@ void AddMagnification(float v) {
 	UpdateMainWndScroll();
 }
 
-void LoadSpriteListFromFile() {
+void LoadSettingFile(const char *filePath) {
+	FILE *file = nullptr;
+	file = _fsopen(filePath, "rt", _SH_DENYNO);
+
+	if (file == nullptr) return;
+
+	fgets(g_szAniFilePath, MAX_PATH, file);
+	RemoveCarriageReturn(g_szSpriteFilePath);
+
+	fclose(file);
+}
+
+void LoadAniFile(const char *filePath) {
 	g_vSpriteInfos.clear();
 
 	FILE *file = nullptr;
-	file = _fsopen("spritesList.cut", "rt", _SH_DENYNO);
+	file = _fsopen(filePath, "rt", _SH_DENYNO);
 
 	if (file == nullptr) return;
 
 	HWND hList = GetDlgItem(g_hRightWnd, IDC_LIST1);
 
 	//char szImagePath[MAX_PATH] = {};
-	fgets(g_szImageFileName, MAX_PATH, file);
-	RemoveCarriageReturn(g_szImageFileName);
+	fgets(g_szSpriteFilePath, MAX_PATH, file);
+	RemoveCarriageReturn(g_szSpriteFilePath);
 
 	char szItemCount[szMax_SpriteCount] = {};
 	fgets(szItemCount, szMax_SpriteCount, file);
@@ -1391,7 +1496,7 @@ void LoadSpriteListFromFile() {
 void InitBitmapForMainWnd() {
 
 	// load bitmap
-	HBITMAP hBitmapSrc = (HBITMAP)LoadImage(nullptr, g_szImageFileName, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	HBITMAP hBitmapSrc = (HBITMAP)LoadImage(nullptr, g_szSpriteFilePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
 	GetObject(hBitmapSrc, sizeof(BITMAP), &g_bitmapSrcHeader);
 
@@ -1399,6 +1504,9 @@ void InitBitmapForMainWnd() {
 
 	// 원본 Bitmap DC
 	// 추후 TransparentBlt() 등으로 복사 할 때 비트맵 영역을 벗어나면 화면이 그려지지 않기 때문에 원본 비트맵 보다 더 큰 비트맵을 만들어 복사한다.
+	if (g_hBitmapSrcDC) {
+		DeleteDC(g_hBitmapSrcDC);
+	}
 	g_hBitmapSrcDC = CreateCompatibleDC(hdcMain);
 	// 메모리 DC에는 기본적으로 아주 작은 크기의 비트맵만 있기 때문에 다른 DC를 복사하겨나 그리기를 하려면 비트맵을 만들어줘야한다.
 	// SelectObject()로 비트맵을 지정할 경우는 안해도 된다.
@@ -1414,6 +1522,9 @@ void InitBitmapForMainWnd() {
 	BitBlt(g_hBitmapSrcDC, 0, 0, g_bitmapSrcHeader.bmWidth, g_bitmapSrcHeader.bmHeight, hBitmapSrcDCTemp, 0, 0, SRCCOPY);
 
 	// 메인 윈도우 BufferDC
+	if (g_hBufferMemDC_MainWnd) {
+		DeleteDC(g_hBufferMemDC_MainWnd);
+	}
 	g_hBufferMemDC_MainWnd = CreateCompatibleDC(hdcMain);
 	HBITMAP g_hBufferBitmap = CreateCompatibleBitmap(hdcMain, g_bitmapSrcHeader.bmWidth, g_bitmapSrcHeader.bmHeight);
 	SelectObject(g_hBufferMemDC_MainWnd, g_hBufferBitmap);
@@ -1421,6 +1532,9 @@ void InitBitmapForMainWnd() {
 
 	// 하단 윈도우 BufferDC
 	HDC hdcBottom = GetDC(g_hBottomWnd);
+	if (g_hBufferMemDC_BottomWnd) {
+		DeleteDC(g_hBufferMemDC_BottomWnd);
+	}
 	g_hBufferMemDC_BottomWnd = CreateCompatibleDC(hdcBottom);
 	g_hBufferBitmap = CreateCompatibleBitmap(hdcBottom, g_whBottomWndSize.x, g_whBottomWndSize.y);
 	SelectObject(g_hBufferMemDC_BottomWnd, g_hBufferBitmap);
@@ -1437,6 +1551,9 @@ void InitBitmapForMainWnd() {
 
 	SetTimer(g_hMainWnd, g_nMainWndTimerId, 1000 / nFrameRate, nullptr);
 	SetTimer(g_hBottomWnd, g_nBottomWndTimerId, 1000 / nFrameRate, nullptr);
+
+	InvalidateRect(g_hMainWnd, nullptr, true);
+	InvalidateRect(g_hBottomWnd, nullptr, true);
 }
 
 void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {
@@ -1466,14 +1583,14 @@ void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {
 	//}
 }
 
-void SaveSpriteListToFile() {
+void SaveAniFile(const char *filePath) {
 	FILE *file = nullptr;
-	file = _fsopen("spritesList.cut", "wt", _SH_DENYNO);
+	file = _fsopen(filePath, "wt", _SH_DENYNO);
 
 	if (file == nullptr) return;
 
 	// image file name
-	fputs(g_szImageFileName, file);
+	fputs(g_szSpriteFilePath, file);
 	fputs("\n", file);
 
 	// item count
