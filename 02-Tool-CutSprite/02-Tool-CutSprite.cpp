@@ -47,6 +47,7 @@ HWND g_hMainWnd;                                  // 메인 윈도우
 HWND g_hRightWnd;                                 // 오른쪽 윈도우
 HWND g_hBottomWnd;                                // 하단 윈도우
 
+// ===== Resource =====
 WCHAR g_szMainWndTitle[] = L"Main";               // 제목 표시줄 텍스트
 WCHAR g_szBottomWndTitle[] = L"Bottom";           // 제목 표시줄 텍스트
 
@@ -54,14 +55,20 @@ WCHAR g_szMainWndClass[] = L"MainWnd";            // 메인창 클래스 이름
 WCHAR g_szBottomWndClass[] = L"BottomWnd";        // 하단창 클래스 이름
 
 const UINT g_nRightDlgId = IDD_DIALOG1;           // 우측 다이얼로그 리소스 ID
-const UINT g_nMenuId = IDC_MY02TOOLCUTSPRITE;			  // 메뉴 ID
-const UINT g_nIconId = IDI_MY02TOOLCUTSPRITE;			  // 아이콘 ID
+const UINT g_nMenuId = IDC_MY02TOOLCUTSPRITE;	  // 메뉴 ID
+const UINT g_nIconId = IDI_MY02TOOLCUTSPRITE;	  // 아이콘 ID
 const UINT g_nSmallIconId = IDI_SMALL;			  // 작은 아이콘 ID
 const UINT g_nMenuId_OpenFile = ID_32771;		  // 파일 열기 메뉴 ID
 const UINT g_nMenuId_SaveFile = ID_32772;		  // 파일 저장 메뉴 ID
+// ===== Resource ===== end
 
 const UINT g_nMainWndTimerId = 1;
 const UINT g_nBottomWndTimerId = 10;
+
+// animation
+bool g_bAniPlay = false;
+DWORD g_nAniPrevTime = 0; // milliseconds
+UINT g_nAniSpriteIndex = 0;
 
 char g_szImageFileName[MAX_PATH] = {};
 //char g_szImageFileName[] = "sprites/castlevania_sm.bmp";
@@ -89,6 +96,8 @@ void LoadSpriteListFromFile();
 void InitBitmapForMainWnd();
 SpriteInfo GetSpriteInfo(int index);
 void AddSpriteInfo(INT index, SpriteInfo *spriteInfo);
+void SetPivots(HWND hDlg);
+void UpdateSpriteList();
 void UpdateCollisionList();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -209,7 +218,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	break;
 
 	case WM_SETCURSOR:
-		dlog("WM_SETCURSOR", g_bIsRBDrag);
+		//dlog("WM_SETCURSOR", g_bIsRBDrag);
 		if (g_bIsRBDrag) {
 			SetCursor(LoadCursor(nullptr, IDC_SIZEALL));
 			return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
@@ -731,6 +740,24 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 	case WM_TIMER:
 	{
+		DWORD g_nAniTime = GetTickCount();
+
+		if (!g_bAniPlay || (g_nAniTime - g_nAniPrevTime) < g_SpriteInfo.Time) {
+			break;
+		}
+		g_nAniPrevTime = g_nAniTime;
+
+		UINT spriteCount = g_vSpriteInfos.size();
+
+		if (spriteCount == 0) {
+			break;
+		}
+
+		UINT nAniSpriteIndex = g_nAniSpriteIndex++ % spriteCount;
+		g_SpriteInfo = g_vSpriteInfos[nAniSpriteIndex];
+
+		//dlog("WM_SETCURSOR", g_nAniPrevTime);
+
 		HDC hdc = GetDC(hWnd);
 
 		float fMagnification = g_BitmapViewInfo.Magnification;
@@ -760,7 +787,8 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 			spriteSize.w,
 			spriteSize.h,
 
-			RGB(255, 0, 0));
+			g_BitmapViewInfo.TransparentColor);
+			//RGB(255, 0, 0));
 
 
 		// 가로,세로 선 그리기
@@ -882,6 +910,22 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
 		);
 		// ===== Collision List 뷰 설정 ===== end
+
+		// ===== ComboBox =====
+		const char *pivots[] = { "LT", "RT", "LB", "RB", "CC" };
+		HWND hCombo = GetDlgItem(hDlg, IDC_COMBO1);
+		UINT pivotCount = sizeof(pivots) / sizeof(char *);
+		for (size_t i = 0; i < pivotCount; i++)
+		{
+			ComboBox_InsertString(
+				hCombo,
+				i, // 삽입할 인덱스, 아이템 개수보다 높은 인덱스이면 무시됨
+				pivots[i]
+			);
+		}
+		ComboBox_SetCurSel(hCombo, 0);
+
+		// ===== ComboBox ===== end
 	}
 	return (INT_PTR)TRUE;
 
@@ -1041,37 +1085,58 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		case IDC_BUTTON12: // Time 설정
 		{
+			HWND hEditTime = GetDlgItem(hDlg, IDC_EDIT4);
+			char szTime[szMax_Pos] = {};
+			GetDlgItemText(g_hRightWnd, IDC_EDIT4, szTime, szMax_Pos);
+
+			UINT time = atoi(szTime);
+			if (time == 0) {
+				szTime[0] = '0';
+				szTime[1] = 0;
+			}
+
+			// all
+			UINT spriteCount = g_vSpriteInfos.size();
+			for (size_t i = 0; i < spriteCount; i++)
+			{
+				SpriteInfo &spriteInfo = g_vSpriteInfos[i];
+				spriteInfo.Time = time;
+
+				ListView_SetItemText(g_hSpriteList, i, 0, szTime);
+			}
+
 			int spriteListItemIndex = ListView_GetNextItem(
 				g_hSpriteList, // 윈도우 핸들
 				-1, // 검색을 시작할 인덱스
 				LVNI_SELECTED // 검색 조건
 			);
-
 			if (spriteListItemIndex != NoSpriteSelect) {
 				SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
-				//spriteInfo.RemoveAllCollisions();
-
-				char szTime[szMax_Pos] = {};
-
-				HWND hEditTime = GetDlgItem(hDlg, IDC_EDIT4);
-				GetDlgItemText(g_hRightWnd, IDC_EDIT4, szTime, szMax_Pos);
-
-				UINT time = atoi(szTime);
-				if (time == 0) {
-					szTime[0] = '0';
-					szTime[1] = 0;
-				}
-
-				//ListView_GetItemText(g_hSpriteList, spriteListItemIndex, 0, szTime);
-
-				ListView_SetItemText(g_hSpriteList, spriteListItemIndex, 0, szTime);
-
-				spriteInfo.Time = time;
-
 				g_SpriteInfo = spriteInfo;
-
-				//UpdateCollisionList();
 			}
+
+			//if (spriteListItemIndex != NoSpriteSelect) {
+			//}
+		}
+		break;
+
+		case IDC_BUTTON13: // Play
+		{
+			g_bAniPlay = !g_bAniPlay;
+
+			if (g_bAniPlay) {
+				SetDlgItemText(hDlg, IDC_BUTTON13, "Stop");
+			}
+			else {
+				SetDlgItemText(hDlg, IDC_BUTTON13, "Play");
+			}
+		}
+		break;
+
+		case IDC_BUTTON14: // Pivot 변경
+		{
+			SetPivots(hDlg);
+			UpdateSpriteList();
 		}
 		break;
 
@@ -1208,6 +1273,8 @@ void AddRectToSpriteList(RECT rect) {
 
 	SpriteInfo spriteInfo;
 	INT coordinates[nMax_SpriteCoordinateCount] = { rect.left, rect.top, rect.right, rect.bottom, 0, };
+
+	spriteInfo.Time = 200;
 
 	// rect, pivot
 	spriteInfo.SetCoordinates(coordinates, nMax_SpriteCoordinateByteSize);
@@ -1375,27 +1442,28 @@ void InitBitmapForMainWnd() {
 void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {
 	g_vSpriteInfos.push_back(*spriteInfo);
 
-	LVITEM item = {};
-	item.mask = LVIF_TEXT;
-	item.iItem = index;
-	//item.iItem = spriteInfo->Index;
-	item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
-	item.state;
-	item.stateMask;
+	UpdateSpriteList();
 
-	char itemText[szMax_Pos] = {};
-	item.pszText = itemText;
-	ListView_InsertItem(g_hSpriteList, &item); // 아이템 추가
+	//LVITEM item = {};
+	//item.mask = LVIF_TEXT;
+	//item.iItem = index;
+	//item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
+	//item.state;
+	//item.stateMask;
 
-	_itoa_s(spriteInfo->Time, itemText, 10);
-	ListView_SetItemText(g_hSpriteList, index, 0, itemText);
+	//char itemText[szMax_Pos] = {};
+	//item.pszText = itemText;
+	//ListView_InsertItem(g_hSpriteList, &item); // 아이템 추가
 
-	UINT subitemCount = 1;
-	for (size_t i = 0; i < nMax_SpriteCoordinateCount; i++)
-	{
-		_itoa_s(spriteInfo->Coordinates[i], itemText, 10);
-		ListView_SetItemText(g_hSpriteList, index, i + subitemCount, itemText);
-	}
+	//_itoa_s(spriteInfo->Time, itemText, 10);
+	//ListView_SetItemText(g_hSpriteList, index, 0, itemText);
+
+	//UINT subitemCount = 1;
+	//for (size_t i = 0; i < nMax_SpriteCoordinateCount; i++)
+	//{
+	//	_itoa_s(spriteInfo->Coordinates[i], itemText, 10);
+	//	ListView_SetItemText(g_hSpriteList, index, i + subitemCount, itemText);
+	//}
 }
 
 void SaveSpriteListToFile() {
@@ -1440,6 +1508,72 @@ void SaveSpriteListToFile() {
 
 SpriteInfo GetSpriteInfo(int index) {
 	return g_vSpriteInfos[index];
+}
+
+void SetPivots(HWND hDlg) {
+	HWND hCombo = GetDlgItem(hDlg, IDC_COMBO1);
+	char szPivotType[szMax_Pos] = {};
+	ComboBox_GetText(hCombo, szPivotType, szMax_Pos);
+
+	// 문자열이 같은지 확인
+	UINT spriteCount = g_vSpriteInfos.size();
+	for (size_t i = 0; i < spriteCount; i++)
+	{
+		SpriteInfo &spriteInfo = g_vSpriteInfos[i];
+		UINT w = spriteInfo.Rect.right - spriteInfo.Rect.left;
+		UINT h = spriteInfo.Rect.bottom - spriteInfo.Rect.top;
+
+		if (strcmp(szPivotType, "LT") == 0) {
+			spriteInfo.Pivot.x = 0;
+			spriteInfo.Pivot.y = 0;
+		}
+		else if (strcmp(szPivotType, "RT") == 0) {
+			spriteInfo.Pivot.x = w;
+			spriteInfo.Pivot.y = 0;
+		}
+		else if (strcmp(szPivotType, "LB") == 0) {
+			spriteInfo.Pivot.x = 0;
+			spriteInfo.Pivot.y = h;
+		}
+		else if (strcmp(szPivotType, "RB") == 0) {
+			spriteInfo.Pivot.x = w;
+			spriteInfo.Pivot.y = h;
+		}
+		else if (strcmp(szPivotType, "CC") == 0) {
+			spriteInfo.Pivot.x = w / 2;
+			spriteInfo.Pivot.y = h / 2;
+		}
+	}
+}
+
+void UpdateSpriteList() {
+	ListView_DeleteAllItems(g_hSpriteList);
+
+	UINT spriteCount = g_vSpriteInfos.size();
+	for (size_t i = 0; i < spriteCount; i++)
+	{
+		SpriteInfo *spriteInfo = &g_vSpriteInfos[i];
+		LVITEM item = {};
+		item.mask = LVIF_TEXT;
+		item.iItem = i;
+		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
+		item.state;
+		item.stateMask;
+
+		char itemText[szMax_Pos] = {};
+		item.pszText = itemText;
+		ListView_InsertItem(g_hSpriteList, &item); // 아이템 추가
+
+		_itoa_s(spriteInfo->Time, itemText, 10);
+		ListView_SetItemText(g_hSpriteList, i, 0, itemText);
+
+		UINT subitemCount = 1;
+		for (size_t jj = 0; jj < nMax_SpriteCoordinateCount; jj++)
+		{
+			_itoa_s(spriteInfo->Coordinates[jj], itemText, 10);
+			ListView_SetItemText(g_hSpriteList, i, jj + subitemCount, itemText);
+		}
+	}
 }
 
 void UpdateCollisionList() {

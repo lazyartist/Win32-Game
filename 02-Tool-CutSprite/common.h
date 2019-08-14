@@ -91,17 +91,18 @@ typedef struct _SpriteInfo {
 		Rect.bottom = Coordinates[i++];
 		Pivot.x = Coordinates[i++];
 		Pivot.y = Coordinates[i++];
-
-		//for (size_t j = 0; j < nMax_SpriteCollision; j++)
-		//{
-		//	RECT collision = { Coordinates[i++] ,Coordinates[i++] ,Coordinates[i++] ,Coordinates[i++] };
-		//	Collisions[j] = collision;
-		//}
 	}
-	/*void AddCollision(RECT collisions[], UINT count) {
-		memcpy(Collisions, collisions, count);
-		CollisionCount = count;
-	}*/
+	void SetPivot(INT x, INT y) {
+		int i = 0;
+		Rect.left = Coordinates[i++];
+		Rect.top = Coordinates[i++];
+		Rect.right = Coordinates[i++];
+		Rect.bottom = Coordinates[i++];
+		Coordinates[4] = x;
+		Coordinates[5] = y;
+		Pivot.x = x;
+		Pivot.y = y;
+	}
 	void ResetCollisionCount() {
 		CollisionCount = 0;
 	}
