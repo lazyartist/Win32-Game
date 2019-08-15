@@ -26,6 +26,9 @@ BITMAP g_bitmapSrcHeader;
 HDC g_hBufferMemDC_MainWnd;
 HDC g_hBufferMemDC_BottomWnd;
 
+// 프로그램 경로
+char g_szExePath[MAX_PATH]; // exe 파일 경로
+char g_szCurDir[MAX_PATH] = {}; // 작업 경로, 프로그램 실행 중 파일 대화상자에서 선택한 곳으로 바뀌기 때문에 프로그램 실행과 동시에 저장해둔다.
 
 HWND g_hSpriteList = nullptr;
 HWND g_hCollisionList = nullptr;
@@ -90,7 +93,8 @@ void SetWindowPositionToCenter(HWND hWnd);
 void AddRectToSpriteList(RECT rect);
 void AddRectToCollisionList(RECT rect);
 void AddMagnification(float v);
-void LoadSettingFile(const char *filePath);
+void LoadSettings(const char *filePath);
+void SaveSettings(const char *filePath);
 void SaveAniFile(const char *filePath);
 void LoadAniFile(const char *filePath);
 void LoadSpriteForMainWnd();
@@ -117,7 +121,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	// 프로그램 시작
-	LoadSettingFile("setting.cfg");
+	LoadSettings("settings.cfg");
 	LoadAniFile(g_szAniFilePath);
 	LoadSpriteForMainWnd();
 
@@ -171,6 +175,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	// 스크롤 넓이를 구해서 클라이언트 영역에서 빼주면 스크롤 영역이 딱 맞지가 않는다. 일단 대충 *4해서 맞춘다.
 	g_nScrollbarWidth = GetSystemMetrics(SM_CXVSCROLL) * 6;
 	//g_nScrollbarWidth = 0;
+
+	// 프로그램이 실행된 경로
+	GetModuleFileName(nullptr, g_szExePath, MAX_PATH);
+	// 프로그램의 작업 경로
+	GetCurrentDirectory(MAX_PATH, g_szCurDir);
 
 	// 메인 윈도우
 	RECT clientRect = { 0, 0, g_whMainWndSize.x - 1, g_whMainWndSize.y - 1 };
@@ -1006,49 +1015,6 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			//return (INT_PTR)TRUE; // 리턴 true하지 않으면 이 프로시저에서 메시지 처리에 실패했다고 생각하고 운영체제가 기본 메시지 처리를 실행한다.
 		}
 		break;
-		case IDC_BUTTON6: // 파일 저장
-		{
-			// 빈문자열로 만들어야 파일 다이얼로그가 열린다.
-			char szAniFilePath[MAX_PATH] = {};
-
-			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
-			//static char lpstrFile[MAX_PATH];
-			// static 또는 전역변수로 선언하지 않아도 다이얼로그가 열림(강의에서는 필요하다고 함)
-			static char lpstrFileTitle[MAX_PATH] = {};
-
-			OPENFILENAME ofn = { 0, };
-			ofn.lStructSize = sizeof(OPENFILENAME);
-			ofn.hwndOwner = nullptr;
-			//ofn.hwndOwner = hDlg;
-			ofn.lpstrFilter = "Ani File(*.ani)\0*.ani\0";
-			ofn.lpstrFile = szAniFilePath;
-			//ofn.lpstrFile = lpstrFile;
-			ofn.lpstrFileTitle = lpstrFileTitle;
-			ofn.nMaxFile = MAX_PATH;
-			ofn.nMaxFileTitle = MAX_PATH;
-			ofn.lpstrTitle = "Save ani";
-
-			// 현재 실행파일의 경로
-			char defaultPath[MAX_PATH];
-			GetModuleFileName(nullptr, defaultPath, MAX_PATH);
-
-			// 기본 폴더 지정
-			ofn.lpstrInitialDir = defaultPath;
-			//ofn.lpstrInitialDir = "C:\\";
-
-			if (GetOpenFileName(&ofn)) {
-				// 경로 확인용
-				//char szResult[MAX_PATH];
-				//sprintf_s(szResult, "Path: %s\n%s", ofn.lpstrFile, ofn.lpstrFileTitle);
-				//MessageBox(hDlg, szResult, NULL, MB_OK);
-
-				SaveAniFile(ofn.lpstrFile);
-				//LoadAniFile(ofn.lpstrFile);
-				//InitBitmapForMainWnd();
-
-			};
-		}
-		break;
 
 		case IDC_BUTTON7: // 피봇 모드
 		{
@@ -1224,6 +1190,52 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		}
 		break;
 
+
+
+		case IDC_BUTTON6: // 파일 저장
+		{
+			// 빈문자열로 만들어야 파일 다이얼로그가 열린다.
+			char szAniFilePath[MAX_PATH] = {};
+
+			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
+			//static char lpstrFile[MAX_PATH];
+			// static 또는 전역변수로 선언하지 않아도 다이얼로그가 열림(강의에서는 필요하다고 함)
+			static char lpstrFileTitle[MAX_PATH] = {};
+
+			OPENFILENAME ofn = { 0, };
+			ofn.lStructSize = sizeof(OPENFILENAME);
+			ofn.hwndOwner = nullptr;
+			//ofn.hwndOwner = hDlg;
+			ofn.lpstrFilter = "Ani File(*.ani)\0*.ani\0";
+			ofn.lpstrFile = szAniFilePath;
+			//ofn.lpstrFile = lpstrFile;
+			ofn.lpstrFileTitle = lpstrFileTitle;
+			ofn.nMaxFile = MAX_PATH;
+			ofn.nMaxFileTitle = MAX_PATH;
+			ofn.lpstrTitle = "Save ani";
+
+			// 현재 실행파일의 경로
+			char defaultPath[MAX_PATH];
+			GetModuleFileName(nullptr, defaultPath, MAX_PATH);
+
+			// 기본 폴더 지정
+			ofn.lpstrInitialDir = defaultPath;
+			//ofn.lpstrInitialDir = "C:\\";
+
+			if (GetOpenFileName(&ofn)) {
+				// 경로 확인용
+				//char szResult[MAX_PATH];
+				//sprintf_s(szResult, "Path: %s\n%s", ofn.lpstrFile, ofn.lpstrFileTitle);
+				//MessageBox(hDlg, szResult, NULL, MB_OK);
+
+				SaveAniFile(ofn.lpstrFile);
+				//LoadAniFile(ofn.lpstrFile);
+				//InitBitmapForMainWnd();
+
+			};
+		}
+		break;
+
 		case IDC_BUTTON16: // Load sprite
 		{
 			// 빈문자열로 만들어야 파일 다이얼로그가 열린다.
@@ -1268,6 +1280,12 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				dlog(err);
 			};
 
+		}
+		break;
+
+		case IDC_BUTTON17: // Save settings
+		{
+			SaveSettings("settings.cfg");
 		}
 		break;
 
@@ -1440,14 +1458,21 @@ void AddMagnification(float v) {
 	UpdateMainWndScroll();
 }
 
-void LoadSettingFile(const char *filePath) {
+void LoadSettings(const char *filePath) {
+	// 프로그램의 작업 경로
+	char curDir[MAX_PATH] = {};
+	GetCurrentDirectory(MAX_PATH, curDir);
+
+	char fullPath[MAX_PATH] = {};
+	sprintf_s(fullPath, "%s\\%s", curDir, filePath);
+
 	FILE *file = nullptr;
-	file = _fsopen(filePath, "rt", _SH_DENYNO);
+	file = _fsopen(fullPath, "rt", _SH_DENYNO);
 
 	if (file == nullptr) return;
 
 	fgets(g_szAniFilePath, MAX_PATH, file);
-	RemoveCarriageReturn(g_szSpriteFilePath);
+	RemoveCarriageReturn(g_szAniFilePath);
 
 	fclose(file);
 }
@@ -1665,6 +1690,22 @@ void SaveAniFile(const char *filePath) {
 
 		++iter;
 	}
+
+	fclose(file);
+}
+
+void SaveSettings(const char *filePath) {
+	char fullPath[MAX_PATH] = {};
+	sprintf_s(fullPath, "%s\\%s", g_szCurDir, filePath);
+
+	FILE *file = nullptr;
+	file = _fsopen(fullPath, "wt", _SH_DENYNO);
+
+	if (file == nullptr) return;
+
+	// image file name
+	fputs(g_szAniFilePath, file);
+	fputs("\n", file);
 
 	fclose(file);
 }

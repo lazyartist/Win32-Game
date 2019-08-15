@@ -39,7 +39,7 @@
 #define IDC_BUTTON16                    1024
 #define IDC_EDIT5                       1025
 #define IDC_EDIT6                       1026
-#define IDC_EDIT7                       1027
+#define IDC_BUTTON17                    1027
 #define ID_32771                        32771
 #define ID_32772                        32772
 #define IDC_STATIC                      -1
