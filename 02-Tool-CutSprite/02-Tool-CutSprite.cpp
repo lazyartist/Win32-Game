@@ -7,6 +7,7 @@
 #include "02-Tool-CutSprite.h"
 #include "common.h"
 #include "CutImage.h"
+#include "lib.h"
 
 #define MAX_LOADSTRING 100
 

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CutImage.h"
 #include "common.h"
+#include "lib.h"
 
 CutImage::CutImage()
 {
@@ -31,7 +32,7 @@ RECT CutImage::FitToImage(RECT rect, COLORREF transparentColor)
 
 RECT CutImage::ScanTop(RECT rect)
 {
-	WH wh = ScreenRectToWH(rect);
+	WH wh = RectToWH(rect);
 
 	for (size_t i = 0; i < wh.h; i++)
 	{
@@ -50,7 +51,7 @@ RECT CutImage::ScanTop(RECT rect)
 
 RECT CutImage::ScanBottom(RECT rect)
 {
-	WH wh = ScreenRectToWH(rect);
+	WH wh = RectToWH(rect);
 
 	for (size_t i = 0; i < wh.h; i++)
 	{
@@ -70,7 +71,7 @@ RECT CutImage::ScanBottom(RECT rect)
 
 RECT CutImage::ScanLeft(RECT rect)
 {
-	WH wh = ScreenRectToWH(rect);
+	WH wh = RectToWH(rect);
 
 	for (size_t i = 0; i < wh.w; i++)
 	{
@@ -89,7 +90,7 @@ RECT CutImage::ScanLeft(RECT rect)
 
 RECT CutImage::ScanRight(RECT rect)
 {
-	WH wh = ScreenRectToWH(rect);
+	WH wh = RectToWH(rect);
 
 	for (size_t i = 0; i < wh.w; i++)
 	{
