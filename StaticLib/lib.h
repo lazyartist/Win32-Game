@@ -1,5 +1,19 @@
 #pragma once
 
+// ===== define =====
+#define nMax_Boxes 999
+#define szMax_SpriteCount 4
+#define szMax_Pos 6
+#define szMax_PosLine 99
+#define nFrameRate 60 // 모니터 주사율이 60hz인데 60보다 높이면 더 부드럽게 보인다. 왜일까?
+#define nPivotHalfSize 5
+#define nMax_SpriteCollision 4
+#define nMax_SpriteCoordinateCount (4/*sprite*/ + 2/*pivot*/)
+#define nMax_SpriteCoordinateByteSize (sizeof(int) * nMax_SpriteCoordinateCount)
+#define nMax_RectPos 4
+
+#define NoSpriteSelect -1
+
 // ===== struct =====
 typedef struct _XY {
 	INT x;
