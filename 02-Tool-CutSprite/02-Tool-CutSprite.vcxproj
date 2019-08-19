@@ -23,7 +23,7 @@
     <ProjectGuid>{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>My02ToolCutSprite</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
     <ProjectName>02-Tool-SpriteAnimation</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

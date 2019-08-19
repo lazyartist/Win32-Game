@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include "windows.h"
+
 // ===== define =====
 #define nMax_Boxes 999
 #define szMax_SpriteCount 4
@@ -13,6 +16,8 @@
 #define nMax_RectPos 4
 
 #define NoSpriteSelect -1
+
+using namespace std;
 
 // ===== struct =====
 typedef struct _XY {
