@@ -9,8 +9,8 @@ public:
 	~CGameFrameTest();
 
 	virtual void InitImpl();
-	virtual void UpdateImpl();
-	virtual void RenderImpl();
+	virtual void UpdateLogicImpl();
+	virtual void UpdateRenderImpl();
 	virtual void ReleaseImpl();
 };
 

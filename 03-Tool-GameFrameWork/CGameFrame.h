@@ -1,11 +1,13 @@
 #pragma once
+#include "lib.h"
+
 class CGameFrame
 {
 public:
 	CGameFrame();
 	~CGameFrame();
 
-	void Init(HWND hWnd, UINT frameTime);
+	void Init(HWND hWnd, UINT frameTime, WH whClient, bool isFullScreen);
 	void Update();
 	void UpdateRender();
 	void Release();
@@ -15,11 +17,17 @@ public:
 	virtual void UpdateRenderImpl();
 	virtual void ReleaseImpl();
 
-private:
+	void SetFullScreen(bool isFullScreen);
+
+protected:
 	HWND _hWnd;
+	HDC _hdc;
+	HDC _hdcMem;
+	HPEN _hClientAreaPen;
 
 	UINT _fps;
 	UINT _frameTime;
+	WH _whClientSize;
 	DWORD _prevFrameTime;
 
 	UINT _fpsPrevCount;

@@ -12,21 +12,21 @@ CGameFrameTest::~CGameFrameTest()
 }
 
 void CGameFrameTest::InitImpl() {
-	//CGameFrame::InitImpl();
-	dlog("InitImpl child");
+	//dlog("InitImpl child");
 }
 
-void CGameFrameTest::UpdateImpl() {
-	//CGameFrame::InitImpl();
-	dlog("UpdateImpl child");
+void CGameFrameTest::UpdateLogicImpl() {
+	//dlog("UpdateLogicImpl child");
+
 }
 
-void CGameFrameTest::RenderImpl() {
-	//CGameFrame::InitImpl();
-	dlog("RenderImpl child");
+void CGameFrameTest::UpdateRenderImpl() {
+	//dlog("UpdateRenderImpl child");
+
+	RECT rect = { 300, 300, 400, 400 };
+	DrawText(_hdcMem, "Test", 9, &rect, DT_LEFT);
 }
 
 void CGameFrameTest::ReleaseImpl() {
-	//CGameFrame::InitImpl();
-	dlog("ReleaseImpl child");
+	//dlog("ReleaseImpl child");
 }

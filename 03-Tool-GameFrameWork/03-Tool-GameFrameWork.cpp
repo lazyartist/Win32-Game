@@ -5,14 +5,19 @@
 #include "03-Tool-GameFrameWork.h"
 #include "CGameFrame.h"
 #include "CGameFrameTest.h"
+#include "lib.h"
+#include "common.h"
 
 #define MAX_LOADSTRING 100
 
 // 전역 변수:
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
+HWND g_hWnd;                                // 현재 인스턴스입니다.
 WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
 
+// 
+WH g_whClientSize = { 800, 600 };
 CGameFrame *g_CGameFrame;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
@@ -42,7 +47,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY03TOOLGAMEFRAMEWORK));
+	// init CGameFrame
+	g_CGameFrame = new CGameFrameTest();
+	g_CGameFrame->Init(g_hWnd, nFrameTime, g_whClientSize, false);
+	//g_CGameFrame->Init(g_hWnd, nFrameTime, g_whClientSize, true);
+
+	//HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY03TOOLGAMEFRAMEWORK));
 
 	MSG msg;
 
@@ -53,13 +63,16 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
 			//if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
 			{
+				if (msg.message == WM_QUIT) {
+					break;
+				}
+
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
 		}
 
 		g_CGameFrame->Update();
-		//g_CGameFrame->UpdateRender();
 	}
 
 	g_CGameFrame->Release();
@@ -92,7 +105,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY03TOOLGAMEFRAMEWORK));
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MY03TOOLGAMEFRAMEWORK);
+	wcex.lpszMenuName = nullptr;
+	//wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MY03TOOLGAMEFRAMEWORK);
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -113,17 +127,19 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
+	RECT clientRect = { 0, 0, g_whClientSize.w - 1, g_whClientSize.h - 1 };
+	AdjustWindowRect(&clientRect, WS_OVERLAPPEDWINDOW, false);
+
 	HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+	//HWND hWnd = CreateWindowW(szWindowClass, szTitle, CDS_FULLSCREEN,
+		CW_USEDEFAULT, 0, clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, nullptr, nullptr, hInstance, nullptr);
 
 	if (!hWnd)
 	{
 		return FALSE;
 	}
 
-	// init CGameFrame
-	g_CGameFrame = new CGameFrameTest();
-	g_CGameFrame->Init(hWnd, 1000/60);
+	g_hWnd = hWnd;
 
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
