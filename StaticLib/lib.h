@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <list>
 #include "windows.h"
 
 // ===== define =====
@@ -19,6 +20,12 @@
 
 using namespace std;
 
+// ===== enum =====
+enum UnitStateType {
+	Idel, Walk
+};
+// ===== enum ===== end
+
 // ===== struct =====
 typedef struct _XY {
 	INT x;
@@ -29,8 +36,47 @@ typedef struct _WH {
 	UINT w;
 	UINT h;
 } WH;
+// ===== struct ===== end
 
-typedef struct _SpriteInfo {
+// ===== class ===== 
+class UnitState {
+public:
+	UnitStateType UnitStateType;
+	XY xy;
+	UINT msTime; // milliseconds
+
+	UnitState() {
+		//
+	}
+};
+
+class UnitStatePattern {
+public:
+	list<UnitState> unitStates;
+	UINT unitStateIndex;
+
+	UnitStatePattern() {
+		//
+	}
+};
+
+class Unit {
+public :
+	XY xy;
+	UnitStatePattern unitStatePattern;
+	INT speedPerSeconds;
+
+	Unit() {
+		//
+	}
+
+	void Render() {
+		//
+	}
+};
+
+typedef class _SpriteInfo {
+public:
 	UINT Time = 0;
 	INT Coordinates[nMax_SpriteCoordinateCount];
 	RECT Rect;
@@ -94,7 +140,7 @@ typedef struct _SpriteInfo {
 		CollisionCount = 0;
 	}
 } SpriteInfo;
-// ===== struct ===== end
+// ===== class ===== end
 
 
 // ===== function =====

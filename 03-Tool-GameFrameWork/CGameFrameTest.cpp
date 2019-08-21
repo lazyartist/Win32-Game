@@ -6,7 +6,6 @@ CGameFrameTest::CGameFrameTest()
 {
 }
 
-
 CGameFrameTest::~CGameFrameTest()
 {
 }

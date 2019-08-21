@@ -46,10 +46,15 @@ void CGameFrame::Init(HWND hWnd, UINT frameTime, WH whClientSize, bool isFullScr
 void CGameFrame::Update()
 {
 	DWORD time = GetTickCount();
-	DWORD elapsedTime = time - _prevFrameTime;
-	if (elapsedTime >= _frameTime) {
-		_fps = 1000 / elapsedTime;
+	DWORD nDeltaTime = time - _prevFrameTime;
+	if (nDeltaTime >= _frameTime) {
+		_fps = 1000 / nDeltaTime;
 		_prevFrameTime = time;
+		// 넘어간 시간만큼 이전 시간 설정시 빼줌(게임엔진들은 이런 방식으로 안하는듯.)
+		//_prevFrameTime = time - (elapsedTime - _frameTime);
+
+		_nDeltaTime = nDeltaTime;
+		_fDeltaTime = (float)_nDeltaTime / 1000;
 
 		_fpsCount++;
 
@@ -93,8 +98,14 @@ void CGameFrame::UpdateRender()
 	// draw fps count
 	char szFpsPrevCount[nStrLen_FPS];
 	_itoa_s(_fpsPrevCount, szFpsPrevCount, nStrLen_FPS, 10);
-	RECT rectFpsCount = { 0, 100, 200, 200 };
+	RECT rectFpsCount = { 0, 100, 100, 200 };
 	DrawText(_hdcMem, szFpsPrevCount, strlen(szFpsPrevCount), &rectFpsCount, DT_LEFT);
+
+	// draw _nDeltaTime
+	char szNDeltaTime[nStrLen_FPS];
+	_itoa_s(_nDeltaTime, szNDeltaTime, nStrLen_FPS, 10);
+	RECT rectNDeltaTime = { 0, 200, 100, 300 };
+	DrawText(_hdcMem, szNDeltaTime, strlen(szNDeltaTime), &rectNDeltaTime, DT_LEFT);
 
 	// 클라이언트 영역이 지정한데로 설정됐는지 우하단에 점을 찍어 확인
 	SelectObject(_hdcMem, _hClientAreaPen);
