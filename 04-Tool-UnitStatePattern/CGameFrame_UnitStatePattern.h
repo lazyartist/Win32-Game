@@ -1,4 +1,5 @@
 #pragma once
+#include "lib.h"
 #include "CGameFrame.h"
 
 class CGameFrame_UnitStatePattern :
@@ -12,5 +13,19 @@ public:
 	virtual void UpdateLogicImpl();
 	virtual void UpdateRenderImpl();
 	virtual void ReleaseImpl();
+
+	void DrawUnit();
+	void DrawUnitState();
+	void InitUnit();
+
+	void PlayStop(bool isPlay);
+
+	vector<UnitState> UnitStates;
+	UINT UnitStateIndex;
+	bool IsPlaying;
+
+private :
+	fXY _xyClientCenter;
+	Unit _unit;
 };
 

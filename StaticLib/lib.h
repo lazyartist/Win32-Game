@@ -32,17 +32,34 @@ typedef struct _XY {
 	INT y;
 } XY;
 
+typedef struct _fXY {
+	FLOAT x;
+	FLOAT y;
+
+	float distance() {
+		return sqrt((x) * (x) + (y) * (y));
+	}
+	float distance(_fXY xy) {
+		return sqrt((xy.x - x) * (xy.x - x) + (xy.y - y) * (xy.y - y));
+	}
+} fXY;
+
 typedef struct _WH {
 	UINT w;
 	UINT h;
 } WH;
+
+typedef struct _fWH {
+	FLOAT w;
+	FLOAT h;
+} fWH;
 // ===== struct ===== end
 
 // ===== class ===== 
 class UnitState {
 public:
 	UnitStateType UnitStateType;
-	XY xy;
+	fXY xy;
 	UINT msTime; // milliseconds
 
 	UnitState() {
@@ -62,9 +79,10 @@ public:
 
 class Unit {
 public :
-	XY xy;
+	fXY xy;
+	WH wh;
 	UnitStatePattern unitStatePattern;
-	INT speedPerSeconds;
+	float speedPerSeconds = 1;
 
 	Unit() {
 		//
@@ -220,6 +238,13 @@ inline RECT operator-(RECT rect, POINT pnt) {
 	return rect;
 }
 
+inline XY operator-(XY xy1, XY xy2) {
+	xy1.x -= xy2.x;
+	xy1.y -= xy2.y;
+
+	return xy1;
+}
+
 inline XY operator-(XY xy, POINT pnt) {
 	xy.x -= pnt.x;
 	xy.y -= pnt.y;
@@ -232,6 +257,27 @@ inline XY operator*(XY xy, float v) {
 	xy.y *= v;
 
 	return xy;
+}
+
+inline bool operator==(XY xy1, XY xy2) {
+	return (xy1.x == xy2.x) && (xy1.y == xy2.y);
+}
+
+inline fXY operator-(fXY xy1, fXY xy2) {
+	xy1.x -= xy2.x;
+	xy1.y -= xy2.y;
+
+	return xy1;
+}
+
+inline bool operator==(fXY xy1, fXY xy2) {
+	return (xy1.x == xy2.x) && (xy1.y == xy2.y);
+}
+
+inline bool same(fXY xy1, fXY xy2) {
+	return (abs(xy1.x - xy2.x) < 0.1) && (abs(xy1.x - xy2.x) < 0.1);
+	//return (abs(xy1.x - xy2.x) < 0.01) && (abs(xy1.x - xy2.x) < 0.01);
+	//return (abs(xy1.x - xy2.x) < 0.001) && (abs(xy1.x - xy2.x) < 0.001);
 }
 // ===== operation overloading ===== end
 

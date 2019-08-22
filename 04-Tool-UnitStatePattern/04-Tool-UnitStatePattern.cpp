@@ -21,8 +21,6 @@ HWND g_hWnd;
 HWND g_hDlg;
 CGameFrame_UnitStatePattern g_cUnitStatePattern;
 HWND g_hUnitStateList;
-//list<UnitState> g_lUnitStates;
-vector<UnitState> g_lUnitStates;
 
 void SetWindowPositionToCenter(HWND hWnd);
 void UpdateSubWndPosition();
@@ -56,7 +54,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	g_cUnitStatePattern.Init(g_hWnd, 1000 / 60, { g_whClientSize.w, g_whClientSize.h }, false);
+	g_cUnitStatePattern.Init(g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, false);
 
 	SetWindowPositionToCenter(g_hWnd);
 
@@ -206,6 +204,19 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// 메뉴 선택을 구문 분석합니다:
 		switch (wmId)
 		{
+		case IDC_BUTTON1: // PlayStop
+		{
+			g_cUnitStatePattern.PlayStop(!g_cUnitStatePattern.IsPlaying);
+
+			if (g_cUnitStatePattern.IsPlaying) {
+				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Stop");
+			}
+			else {
+				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Play");
+
+			}
+		}
+		break;
 			//case IDM_ABOUT:
 				//DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 				//break;
@@ -275,11 +286,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int y = GET_Y_LPARAM(lParam);
 
 		UnitState unitState;
-		unitState.xy = { x, y };
+		unitState.xy = { (float)x, (float)y };
 		unitState.msTime = 0;
 		unitState.UnitStateType = UnitStateType::Walk;
 
-		g_lUnitStates.push_back(unitState);
+		g_cUnitStatePattern.UnitStates.push_back(unitState);
 
 		UpdateUnitStatesList();
 	}
@@ -364,10 +375,10 @@ void UpdateSubWndPosition() {
 void UpdateUnitStatesList(){
 	ListView_DeleteAllItems(g_hUnitStateList);
 
-	UINT spriteCount = g_lUnitStates.size();
+	UINT spriteCount = g_cUnitStatePattern.UnitStates.size();
 	for (size_t i = 0; i < spriteCount; i++)
 	{
-		UnitState *unitState = &g_lUnitStates[i];
+		UnitState *unitState = &g_cUnitStatePattern.UnitStates[i];
 		LVITEM item = {};
 		item.mask = LVIF_TEXT;
 		item.iItem = i;
