@@ -20,6 +20,10 @@ public:
 
 	void PlayStop(bool isPlay);
 	void AddUnitState(UnitState unitState);
+	bool DeleteUnitState(UINT index);
+	bool DeleteAllUnitState();
+	bool UpUnitState(UINT index);
+	bool DownUnitState(UINT index);
 	void LoadUnitStatePatternFile(const char * filePath);
 	void SaveUnitStatePatternFile(const char *filePath);
 

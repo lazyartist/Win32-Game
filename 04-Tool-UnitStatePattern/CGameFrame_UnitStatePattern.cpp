@@ -135,6 +135,46 @@ void CGameFrame_UnitStatePattern::AddUnitState(UnitState unitState)
 	UnitStates.push_back(unitState);
 }
 
+bool CGameFrame_UnitStatePattern::DeleteUnitState(UINT index)
+{
+	if (index >= UnitStates.size()) return false;
+
+	auto iter = UnitStates.begin();
+	UnitStates.erase(iter + index);
+
+	return true;
+}
+
+bool CGameFrame_UnitStatePattern::DeleteAllUnitState()
+{
+	if (IsPlaying) return false;
+
+	UnitStates.clear();
+
+	return true;
+}
+
+bool CGameFrame_UnitStatePattern::UpUnitState(UINT index)
+{
+	if (index == 0 || index >= UnitStates.size()) return false;
+
+	UnitState unitStateTemp = UnitStates[index-1];
+	UnitStates[index - 1] = UnitStates[index];
+	UnitStates[index] = unitStateTemp;
+
+	return true;
+}
+
+bool CGameFrame_UnitStatePattern::DownUnitState(UINT index)
+{
+	if (index < 0 || index >= UnitStates.size()-1) return false;
+
+	UnitState unitStateTemp = UnitStates[index + 1];
+	UnitStates[index + 1] = UnitStates[index];
+	UnitStates[index] = unitStateTemp;
+
+	return true;
+}
 
 void CGameFrame_UnitStatePattern::LoadUnitStatePatternFile(const char *filePath) {
 	FILE *file = nullptr;

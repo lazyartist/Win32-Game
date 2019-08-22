@@ -217,17 +217,67 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		}
 		break;
-		
+
 		case IDC_BUTTON2: // Load
 		{
 			g_cUnitStatePattern.LoadUnitStatePatternFile("test.usp");
 			UpdateUnitStatesList();
 		}
 		break;
-		
+
 		case IDC_BUTTON3: // Save
 		{
 			g_cUnitStatePattern.SaveUnitStatePatternFile("test.usp");
+		}
+		break;
+
+		case IDC_BUTTON4: // Delete
+		{
+			int selectedListItemIndex = ListView_GetNextItem(
+				g_hUnitStateList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
+
+			if (selectedListItemIndex != -1) {
+				g_cUnitStatePattern.DeleteUnitState(selectedListItemIndex);
+				UpdateUnitStatesList();
+			}
+		}
+		break;
+
+		case IDC_BUTTON5: // Delete All
+		{
+			g_cUnitStatePattern.DeleteAllUnitState();
+			UpdateUnitStatesList();
+		}
+		break;
+
+		case IDC_BUTTON6: // Up
+		{
+			int selectedListItemIndex = ListView_GetNextItem(
+				g_hUnitStateList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
+
+			if (g_cUnitStatePattern.UpUnitState(selectedListItemIndex)) {
+				UpdateUnitStatesList();
+			};
+		}
+		break;
+
+		case IDC_BUTTON7: // Down
+		{
+			int selectedListItemIndex = ListView_GetNextItem(
+				g_hUnitStateList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
+
+			if (g_cUnitStatePattern.DownUnitState(selectedListItemIndex)) {
+				UpdateUnitStatesList();
+			};
 		}
 		break;
 
@@ -383,7 +433,7 @@ void UpdateSubWndPosition() {
 	MoveWindow(g_hDlg, rectWnd.right + 2, rectWnd.top, rectDlg.right - rectDlg.left, rectDlg.bottom - rectDlg.top, true);
 }
 
-void UpdateUnitStatesList(){
+void UpdateUnitStatesList() {
 	ListView_DeleteAllItems(g_hUnitStateList);
 
 	UINT spriteCount = g_cUnitStatePattern.UnitStates.size();
