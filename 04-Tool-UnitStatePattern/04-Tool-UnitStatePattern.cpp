@@ -18,6 +18,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 
 WH g_whClientSize = { 800, 600 };
 char g_szAniFilePath[MAX_PATH];
+const char *g_szUnitStateTypeAsString[] = { "Idle" , "Walk" };
 
 HWND g_hWnd;
 HWND g_hDlg;
@@ -216,7 +217,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 			else {
 				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Play");
-
+				g_cUnitStatePattern.InitUnit();
 			}
 		}
 		break;
@@ -553,7 +554,8 @@ void UpdateUnitStatesList() {
 		item.stateMask;
 
 		char itemText[szMax_Pos] = {};
-		_itoa_s(unitState->UnitStateType, itemText, 10);
+		//_itoa_s(unitState->UnitStateType, itemText, 10);
+		strcpy_s(itemText, szMax_Pos, g_szUnitStateTypeAsString[unitState->UnitStateType]);
 		item.pszText = itemText;
 		ListView_InsertItem(g_hUnitStateList, &item); // 아이템 추가
 
