@@ -149,6 +149,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="04-Tool-UnitStatePattern.h" />
+    <ClInclude Include="04common.h" />
     <ClInclude Include="CGameFrame_UnitStatePattern.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />

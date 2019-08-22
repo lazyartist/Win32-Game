@@ -217,9 +217,20 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		}
 		break;
-			//case IDM_ABOUT:
-				//DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-				//break;
+		
+		case IDC_BUTTON2: // Load
+		{
+			g_cUnitStatePattern.LoadUnitStatePatternFile("test.usp");
+			UpdateUnitStatesList();
+		}
+		break;
+		
+		case IDC_BUTTON3: // Save
+		{
+			g_cUnitStatePattern.SaveUnitStatePatternFile("test.usp");
+		}
+		break;
+
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
 			break;
@@ -290,7 +301,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		unitState.msTime = 0;
 		unitState.UnitStateType = UnitStateType::Walk;
 
-		g_cUnitStatePattern.UnitStates.push_back(unitState);
+		g_cUnitStatePattern.AddUnitState(unitState);
 
 		UpdateUnitStatesList();
 	}

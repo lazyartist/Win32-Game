@@ -19,6 +19,9 @@ public:
 	void InitUnit();
 
 	void PlayStop(bool isPlay);
+	void AddUnitState(UnitState unitState);
+	void LoadUnitStatePatternFile(const char * filePath);
+	void SaveUnitStatePatternFile(const char *filePath);
 
 	vector<UnitState> UnitStates;
 	UINT UnitStateIndex;

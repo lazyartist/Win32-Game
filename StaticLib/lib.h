@@ -16,6 +16,9 @@
 #define nMax_SpriteCoordinateByteSize (sizeof(int) * nMax_SpriteCoordinateCount)
 #define nMax_RectPos 4
 
+#define szMax_XY 30 + 1
+#define szMax_UnitStateLine 99
+
 #define NoSpriteSelect -1
 
 using namespace std;

@@ -2,6 +2,8 @@
 #include "lib.h"
 #include "CGameFrame_UnitStatePattern.h"
 #include "CGameFrame.cpp"
+#include "04common.h"
+#include <iostream>
 
 
 CGameFrame_UnitStatePattern::CGameFrame_UnitStatePattern()
@@ -126,4 +128,87 @@ void CGameFrame_UnitStatePattern::PlayStop(bool isPlay)
 
 	}
 
+}
+
+void CGameFrame_UnitStatePattern::AddUnitState(UnitState unitState)
+{
+	UnitStates.push_back(unitState);
+}
+
+
+void CGameFrame_UnitStatePattern::LoadUnitStatePatternFile(const char *filePath) {
+	FILE *file = nullptr;
+	file = _fsopen(filePath, "rt", _SH_DENYNO);
+
+	if (file == nullptr) return;
+
+	char szItemCount[szMax_SpriteCount] = {};
+	fgets(szItemCount, szMax_SpriteCount, file);
+
+	// item count
+	int itemCount = atoi(szItemCount);
+
+	UnitStates.clear();
+	UnitStates.reserve(itemCount);
+
+	// ===== List에 아이템 추가 =====
+	char itemLine[szMax_UnitStateLine] = {};
+	char *token;
+	char *nextToken;
+
+	char itemText[szMax_XY] = {};
+	for (size_t i = 0; i < itemCount; i++)
+	{
+		memset(itemLine, 0, szMax_UnitStateLine);
+		fgets(itemLine, szMax_UnitStateLine, file);
+
+		// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
+		itemLine[strcspn(itemLine, "\n")] = 0; // strcspn()으로 "\n"의 위치를 찾고 그 위치에 0을 넣어준다.
+
+		if (strnlen_s(itemLine, szMax_PosLine) == 0) continue;
+
+		UnitState unitState;
+		{
+			nextToken = itemLine;
+
+			token = strtok_s(nullptr, "\t", &nextToken);
+			unitState.UnitStateType = (UnitStateType)atoi(token);
+
+			token = strtok_s(nullptr, "\t", &nextToken);
+			unitState.xy.x = atof(token);
+			token = strtok_s(nullptr, "\t", &nextToken);
+			unitState.xy.y = atof(token);
+			token = strtok_s(nullptr, "\t", &nextToken);
+			unitState.msTime = atoi(token);
+		}
+		
+		AddUnitState(unitState);
+		//AddSpriteInfo(i, &unitState);
+	}
+
+	fclose(file);
+}
+
+
+void CGameFrame_UnitStatePattern::SaveUnitStatePatternFile(const char *filePath) {
+	FILE *file = nullptr;
+	file = _fsopen(filePath, "wt", _SH_DENYNO);
+
+	if (file == nullptr) return;
+
+	// item count
+	int itemCount = UnitStates.size();
+	char szItemCount[szMax_UnitStateCount] = {};
+	sprintf_s<szMax_UnitStateCount>(szItemCount, "%d\n", itemCount);
+	fputs(szItemCount, file);
+
+	auto iter = UnitStates.begin();
+	while (iter != UnitStates.end())
+	{
+		fprintf_s(file, "%d\t%f\t%f\t%d\n", iter->UnitStateType, iter->xy.x, iter->xy.y, iter->msTime);
+
+		++iter;
+	}
+
+	fclose(file);
 }
