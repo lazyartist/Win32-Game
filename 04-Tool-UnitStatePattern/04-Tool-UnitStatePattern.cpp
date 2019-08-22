@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include <windowsx.h> // GET_X_LPARAM
 #include "Commctrl.h"
+#include <commdlg.h>
 #include "04-Tool-UnitStatePattern.h"
 #include "CGameFrame_UnitStatePattern.h"
 
@@ -16,6 +17,7 @@ WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
 
 WH g_whClientSize = { 800, 600 };
+char g_szAniFilePath[MAX_PATH];
 
 HWND g_hWnd;
 HWND g_hDlg;
@@ -23,6 +25,7 @@ CGameFrame_UnitStatePattern g_cUnitStatePattern;
 HWND g_hUnitStateList;
 
 void SetWindowPositionToCenter(HWND hWnd);
+bool OpenFileDialog(OPENFILENAME &ofn);
 void UpdateSubWndPosition();
 void UpdateUnitStatesList();
 
@@ -220,14 +223,21 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON2: // Load
 		{
-			g_cUnitStatePattern.LoadUnitStatePatternFile("test.usp");
-			UpdateUnitStatesList();
+			OPENFILENAME ofn = { 0, };
+			if (OpenFileDialog(ofn)) {
+				g_cUnitStatePattern.LoadUnitStatePatternFile(ofn.lpstrFile);
+				UpdateUnitStatesList();
+			};
 		}
 		break;
 
 		case IDC_BUTTON3: // Save
 		{
-			g_cUnitStatePattern.SaveUnitStatePatternFile("test.usp");
+			OPENFILENAME ofn = { 0, };
+			if (OpenFileDialog(ofn)) {
+				g_cUnitStatePattern.SaveUnitStatePatternFile(ofn.lpstrFile);
+				UpdateUnitStatesList();
+			};
 		}
 		break;
 
@@ -289,6 +299,51 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 	}
 	break;
+
+	case WM_NOTIFY:
+	{
+		// ListView의 통지 메시지 받기
+		if (wParam == IDC_LIST2) {
+			NMHDR *pnmhdr = nullptr;
+
+			// NMHDR을 얻는 방법1.
+			NMTTDISPINFO *nmttdispinfo = (NMTTDISPINFO*)lParam;
+			pnmhdr = &(nmttdispinfo->hdr);
+
+			// NMHDR을 얻는 방법2.
+			// NMTTDISPINFO는 NMHDR을 확장하는 구조체로서
+			// 첫 멤버변수로 NMHDR을 가지고 있기 때문에 NMHDR 형으로도 캐스팅이 가능하다.
+			pnmhdr = (NMHDR*)lParam;
+
+			pnmhdr->hwndFrom; // 윈도우 핸들
+			pnmhdr->idFrom; // 컨트롤 아이디
+			pnmhdr->code; // 통지 코드
+
+			if (pnmhdr->code == NM_CLICK) {
+				// 클릭된 아이템 인덱스 알아내기
+				g_cUnitStatePattern.SelectedUnitStateIndex = ListView_GetNextItem(
+					pnmhdr->hwndFrom, // 윈도우 핸들
+					-1, // 검색을 시작할 인덱스
+					LVNI_SELECTED // 검색 조건
+				);
+
+				// update pivot
+				if (g_cUnitStatePattern.SelectedUnitStateIndex != NoSelectedIndex) {
+					
+				}
+			}
+			else if (pnmhdr->code == LVN_ITEMCHANGED) {
+				//InvalidateRect(g_hMainWnd, nullptr, true);
+				g_cUnitStatePattern.SelectedUnitStateIndex = ListView_GetNextItem(
+					pnmhdr->hwndFrom, // 윈도우 핸들
+					-1, // 검색을 시작할 인덱스
+					LVNI_SELECTED // 검색 조건
+				);
+			}
+		}
+	}
+	break;
+
 	case WM_PAINT:
 	{
 		PAINTSTRUCT ps;
@@ -350,6 +405,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		unitState.xy = { (float)x, (float)y };
 		unitState.msTime = 0;
 		unitState.UnitStateType = UnitStateType::Walk;
+
+		g_cUnitStatePattern.AddUnitState(unitState);
+
+		UpdateUnitStatesList();
+	}
+	break;
+
+	case WM_RBUTTONDOWN:
+	{
+		int x = GET_X_LPARAM(lParam);
+		int y = GET_Y_LPARAM(lParam);
+
+		UnitState unitState;
+		unitState.xy = { (float)x, (float)y };
+		unitState.msTime = 1000;
+		unitState.UnitStateType = UnitStateType::Idle;
 
 		g_cUnitStatePattern.AddUnitState(unitState);
 
@@ -422,6 +493,40 @@ void SetWindowPositionToCenter(HWND hWnd) {
 	//MoveWindow(hWnd, (screenX / 2) - (clientW / 2), (screenY / 2) - (clientH / 2), clientW, clientH, false);
 
 	UpdateSubWndPosition();
+}
+
+bool OpenFileDialog(OPENFILENAME &ofn) {
+	// 빈문자열로 만들어야 파일 다이얼로그가 열린다.
+	g_szAniFilePath[0] = 0;
+
+	// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
+	//static char lpstrFile[MAX_PATH];
+	// static 또는 전역변수로 선언하지 않아도 다이얼로그가 열림(강의에서는 필요하다고 함)
+	static char lpstrFileTitle[MAX_PATH] = {};
+
+	//OPENFILENAME ofn = { 0, };
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.hwndOwner = nullptr;
+	//ofn.hwndOwner = hDlg;
+	ofn.lpstrFilter = "Unit State Pattern(*.usp)\0*.usp\0";
+	ofn.lpstrFile = g_szAniFilePath;
+	//ofn.lpstrFile = lpstrFile;
+	ofn.lpstrFileTitle = lpstrFileTitle;
+	ofn.nMaxFile = MAX_PATH;
+	ofn.nMaxFileTitle = MAX_PATH;
+	ofn.lpstrTitle = "title";
+
+	// 이 프로그램에서 사용한 마지막 경로를 리겅하고 있다가 기본 폴더로 열어주는데 운영체제가 해주는 듯하다.
+	// 특정 폴더를 기본폴더로 지정하려면 GetModuleFileName, GetCurrentDirectory를 활용한다.
+	// 현재 실행파일의 경로
+	//char defaultPath[MAX_PATH];
+	//GetModuleFileName(nullptr, defaultPath, MAX_PATH);
+
+	// 기본 폴더 지정
+	//ofn.lpstrInitialDir = defaultPath;
+	//ofn.lpstrInitialDir = "C:\\";
+
+	return GetOpenFileName(&ofn);
 }
 
 void UpdateSubWndPosition() {

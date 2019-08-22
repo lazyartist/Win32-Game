@@ -29,10 +29,12 @@ public:
 
 	vector<UnitState> UnitStates;
 	UINT UnitStateIndex;
+	UINT SelectedUnitStateIndex;
 	bool IsPlaying;
 
 private :
 	fXY _xyClientCenter;
 	Unit _unit;
+	DWORD _unitIdleTime = 0;
 };
 

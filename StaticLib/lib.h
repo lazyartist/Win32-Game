@@ -19,13 +19,13 @@
 #define szMax_XY 30 + 1
 #define szMax_UnitStateLine 99
 
-#define NoSpriteSelect -1
+#define NoSelectedIndex -1
 
 using namespace std;
 
 // ===== enum =====
 enum UnitStateType {
-	Idel, Walk
+	Idle, Walk
 };
 // ===== enum ===== end
 
@@ -277,7 +277,7 @@ inline bool operator==(fXY xy1, fXY xy2) {
 	return (xy1.x == xy2.x) && (xy1.y == xy2.y);
 }
 
-inline bool same(fXY xy1, fXY xy2) {
+inline bool sameXY(fXY xy1, fXY xy2) {
 	return (abs(xy1.x - xy2.x) < 0.1) && (abs(xy1.x - xy2.x) < 0.1);
 	//return (abs(xy1.x - xy2.x) < 0.01) && (abs(xy1.x - xy2.x) < 0.01);
 	//return (abs(xy1.x - xy2.x) < 0.001) && (abs(xy1.x - xy2.x) < 0.001);

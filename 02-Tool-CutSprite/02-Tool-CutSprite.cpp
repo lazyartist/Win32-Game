@@ -1035,7 +1035,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		case IDC_BUTTON9: // 컬리전 등록
 		{
-			if (g_SpriteInfoIndex != NoSpriteSelect) {
+			if (g_SpriteInfoIndex != NoSelectedIndex) {
 				AddRectToCollisionList(g_rectLBDrag);
 
 			}
@@ -1050,14 +1050,14 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				LVNI_SELECTED // 검색 조건
 			);
 
-			if (spriteListItemIndex != NoSpriteSelect) {
+			if (spriteListItemIndex != NoSelectedIndex) {
 				int collisionListItemIndex = ListView_GetNextItem(
 					g_hCollisionList, // 윈도우 핸들
 					-1, // 검색을 시작할 인덱스
 					LVNI_SELECTED // 검색 조건
 				);
 
-				if (collisionListItemIndex != NoSpriteSelect) {
+				if (collisionListItemIndex != NoSelectedIndex) {
 					SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
 					spriteInfo.RemoveCollision(collisionListItemIndex);
 
@@ -1078,7 +1078,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				LVNI_SELECTED // 검색 조건
 			);
 
-			if (spriteListItemIndex != NoSpriteSelect) {
+			if (spriteListItemIndex != NoSelectedIndex) {
 				SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
 				spriteInfo.RemoveAllCollisions();
 
@@ -1116,7 +1116,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				-1, // 검색을 시작할 인덱스
 				LVNI_SELECTED // 검색 조건
 			);
-			if (spriteListItemIndex != NoSpriteSelect) {
+			if (spriteListItemIndex != NoSelectedIndex) {
 				SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
 				g_SpriteInfo = spriteInfo;
 			}
