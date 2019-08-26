@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{A7B86CE9-AA38-49ED-8BB1-A875D4C5AABF}</ProjectGuid>
+    <ProjectGuid>{AC7FF16C-7ABA-4E39-AD5D-F043D57A4637}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>My04ToolUnitStatePattern</RootNamespace>
+    <RootNamespace>My05ToolUnit</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -90,7 +90,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\StaticLib;..\03-Tool-GameFrameWork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\03-Tool-GameFrameWork;..\StaticLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -148,15 +148,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="04-Tool-UnitStatePattern.h" />
-    <ClInclude Include="CGameFrame_UnitStatePattern.h" />
+    <ClInclude Include="05-Tool-Unit.h" />
+    <ClInclude Include="CGameFrame_Unit.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="04-Tool-UnitStatePattern.cpp" />
-    <ClCompile Include="CGameFrame_UnitStatePattern.cpp" />
+    <ClCompile Include="05-Tool-Unit.cpp" />
+    <ClCompile Include="CGameFrame_Unit.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -165,10 +165,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="04-Tool-UnitStatePattern.rc" />
+    <ResourceCompile Include="05-Tool-Unit.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="04-Tool-UnitStatePattern.ico" />
+    <Image Include="05-Tool-Unit.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>

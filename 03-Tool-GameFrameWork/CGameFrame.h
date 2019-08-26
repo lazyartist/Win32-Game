@@ -5,9 +5,9 @@ class CGameFrame
 {
 public:
 	CGameFrame();
-	~CGameFrame();
+	virtual ~CGameFrame();
 
-	void Init(HWND hWnd, UINT frameTime, WH whClient, bool isFullScreen);
+	void Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClient, WindowMode windowMode);
 	void Update();
 	void UpdateRender();
 	void Release();
@@ -22,6 +22,7 @@ public:
 
 protected:
 	HWND _hWnd;
+	HWND _hCanvas;
 	HDC _hdc;
 	HDC _hdcMem;
 	HPEN _hClientAreaPen;

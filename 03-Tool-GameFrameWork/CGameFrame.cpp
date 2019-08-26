@@ -14,11 +14,12 @@ CGameFrame::~CGameFrame()
 	dlog("~CGameFrame");
 }
 
-void CGameFrame::Init(HWND hWnd, UINT frameTime, WH whClientSize, bool isFullScreen)
+void CGameFrame::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSize, WindowMode windowMode)
 {
 	dlog("Init");
 
 	_hWnd = hWnd;
+	_hCanvas = hCanvas;
 	_frameTime = frameTime;
 	_whClientSize = whClientSize;
 
@@ -28,7 +29,7 @@ void CGameFrame::Init(HWND hWnd, UINT frameTime, WH whClientSize, bool isFullScr
 	_fps = 0;
 	_fpsPrevCount = 0;
 
-	_hdc = GetDC(_hWnd);
+	_hdc = GetDC(_hCanvas);
 	_hdcMem = CreateCompatibleDC(_hdc);
 	// CreateCompatibleBitmap에 원본 DC인 _hdc를 전달해야한다.
 	// _hdcMem은 아주작고 기본적인 비트맵만 있기 때문에 CreateCompatibleBitmap에 _hdcMem을 전달하면 이와 동일한 비트맵을 생성하기 때문이다. 컬러적용도 안된다.
@@ -38,7 +39,19 @@ void CGameFrame::Init(HWND hWnd, UINT frameTime, WH whClientSize, bool isFullScr
 
 	_hClientAreaPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
 
-	SetFullScreen(isFullScreen);
+	switch (windowMode)
+	{
+	case None:
+		break;
+	case Window:
+		SetFullScreen(false);
+		break;
+	case FullScreen:
+		SetFullScreen(true);
+		break;
+	default:
+		break;
+	}
 
 	InitImpl();
 }
@@ -120,7 +133,7 @@ void CGameFrame::Release()
 {
 	//dlog("Release");
 
-	ReleaseDC(_hWnd, _hdc);
+	ReleaseDC(_hCanvas, _hdc);
 	DeleteDC(_hdcMem);
 	DeleteObject(_hClientAreaPen);
 	ReleaseImpl();

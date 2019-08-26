@@ -22,11 +22,11 @@ const char *g_szUnitStateTypeAsString[] = { "Idle" , "Walk" };
 
 HWND g_hWnd;
 HWND g_hDlg;
-CGameFrame_UnitStatePattern g_cUnitStatePattern;
+CGameFrame_UnitStatePattern g_gfUnitStatePattern;
 HWND g_hUnitStateList;
 
 void SetWindowPositionToCenter(HWND hWnd);
-bool OpenFileDialog(OPENFILENAME &ofn);
+//bool OpenFileDialog(OPENFILENAME &ofn);
 void UpdateSubWndPosition();
 void UpdateUnitStatesList();
 
@@ -58,7 +58,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	g_cUnitStatePattern.Init(g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, false);
+	g_gfUnitStatePattern.Init(g_hWnd, g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, WindowMode::Window);
 
 	SetWindowPositionToCenter(g_hWnd);
 
@@ -83,10 +83,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		}
 
-		g_cUnitStatePattern.Update();
+		g_gfUnitStatePattern.Update();
 	}
 
-	g_cUnitStatePattern.Release();
+	g_gfUnitStatePattern.Release();
 
 	return (int)msg.wParam;
 }
@@ -208,25 +208,27 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// 메뉴 선택을 구문 분석합니다:
 		switch (wmId)
 		{
+		
 		case IDC_BUTTON1: // PlayStop
 		{
-			g_cUnitStatePattern.PlayStop(!g_cUnitStatePattern.IsPlaying);
+			g_gfUnitStatePattern.PlayStop(!g_gfUnitStatePattern.IsPlaying);
 
-			if (g_cUnitStatePattern.IsPlaying) {
+			if (g_gfUnitStatePattern.IsPlaying) {
 				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Stop");
 			}
 			else {
 				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Play");
-				g_cUnitStatePattern.InitUnit();
+				g_gfUnitStatePattern.InitUnit();
 			}
 		}
 		break;
 
 		case IDC_BUTTON2: // Load
 		{
-			OPENFILENAME ofn = { 0, };
-			if (OpenFileDialog(ofn)) {
-				g_cUnitStatePattern.LoadUnitStatePatternFile(ofn.lpstrFile);
+			//OPENFILENAME ofn = { 0, };
+			char filePath[MAX_PATH] = {};
+			if (OpenFileDialog(filePath)) {
+				g_gfUnitStatePattern.UnitStatePattern.LoadUnitStatePatternFile(filePath);
 				UpdateUnitStatesList();
 			};
 		}
@@ -234,9 +236,10 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON3: // Save
 		{
-			OPENFILENAME ofn = { 0, };
-			if (OpenFileDialog(ofn)) {
-				g_cUnitStatePattern.SaveUnitStatePatternFile(ofn.lpstrFile);
+			//OPENFILENAME ofn = { 0, };
+			char filePath[MAX_PATH] = {};
+			if (OpenFileDialog(filePath)) {
+				g_gfUnitStatePattern.UnitStatePattern.SaveUnitStatePatternFile(filePath);
 				UpdateUnitStatesList();
 			};
 		}
@@ -251,7 +254,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			);
 
 			if (selectedListItemIndex != -1) {
-				g_cUnitStatePattern.DeleteUnitState(selectedListItemIndex);
+				g_gfUnitStatePattern.UnitStatePattern.DeleteUnitState(selectedListItemIndex);
 				UpdateUnitStatesList();
 			}
 		}
@@ -259,7 +262,9 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON5: // Delete All
 		{
-			g_cUnitStatePattern.DeleteAllUnitState();
+			if (g_gfUnitStatePattern.IsPlaying) break;
+
+			g_gfUnitStatePattern.UnitStatePattern.DeleteAllUnitState();
 			UpdateUnitStatesList();
 		}
 		break;
@@ -272,7 +277,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				LVNI_SELECTED // 검색 조건
 			);
 
-			if (g_cUnitStatePattern.UpUnitState(selectedListItemIndex)) {
+			if (g_gfUnitStatePattern.UnitStatePattern.UpUnitState(selectedListItemIndex)) {
 				UpdateUnitStatesList();
 			};
 		}
@@ -286,7 +291,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				LVNI_SELECTED // 검색 조건
 			);
 
-			if (g_cUnitStatePattern.DownUnitState(selectedListItemIndex)) {
+			if (g_gfUnitStatePattern.UnitStatePattern.DownUnitState(selectedListItemIndex)) {
 				UpdateUnitStatesList();
 			};
 		}
@@ -322,20 +327,20 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			if (pnmhdr->code == NM_CLICK) {
 				// 클릭된 아이템 인덱스 알아내기
-				g_cUnitStatePattern.SelectedUnitStateIndex = ListView_GetNextItem(
+				g_gfUnitStatePattern.SelectedUnitStateIndex = ListView_GetNextItem(
 					pnmhdr->hwndFrom, // 윈도우 핸들
 					-1, // 검색을 시작할 인덱스
 					LVNI_SELECTED // 검색 조건
 				);
 
 				// update pivot
-				if (g_cUnitStatePattern.SelectedUnitStateIndex != NoSelectedIndex) {
+				if (g_gfUnitStatePattern.SelectedUnitStateIndex != NoSelectedIndex) {
 					
 				}
 			}
 			else if (pnmhdr->code == LVN_ITEMCHANGED) {
 				//InvalidateRect(g_hMainWnd, nullptr, true);
-				g_cUnitStatePattern.SelectedUnitStateIndex = ListView_GetNextItem(
+				g_gfUnitStatePattern.SelectedUnitStateIndex = ListView_GetNextItem(
 					pnmhdr->hwndFrom, // 윈도우 핸들
 					-1, // 검색을 시작할 인덱스
 					LVNI_SELECTED // 검색 조건
@@ -403,11 +408,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int y = GET_Y_LPARAM(lParam);
 
 		UnitState unitState;
-		unitState.xy = { (float)x, (float)y };
-		unitState.msTime = 0;
+		unitState.XY = { (float)x, (float)y };
+		unitState.Time = 0;
 		unitState.UnitStateType = UnitStateType::Walk;
 
-		g_cUnitStatePattern.AddUnitState(unitState);
+		g_gfUnitStatePattern.UnitStatePattern.AddUnitState(unitState);
 
 		UpdateUnitStatesList();
 	}
@@ -419,11 +424,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int y = GET_Y_LPARAM(lParam);
 
 		UnitState unitState;
-		unitState.xy = { (float)x, (float)y };
-		unitState.msTime = 1000;
+		unitState.XY = { (float)x, (float)y };
+		unitState.Time = 1000;
 		unitState.UnitStateType = UnitStateType::Idle;
 
-		g_cUnitStatePattern.AddUnitState(unitState);
+		g_gfUnitStatePattern.UnitStatePattern.AddUnitState(unitState);
 
 		UpdateUnitStatesList();
 	}
@@ -496,40 +501,6 @@ void SetWindowPositionToCenter(HWND hWnd) {
 	UpdateSubWndPosition();
 }
 
-bool OpenFileDialog(OPENFILENAME &ofn) {
-	// 빈문자열로 만들어야 파일 다이얼로그가 열린다.
-	g_szAniFilePath[0] = 0;
-
-	// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
-	//static char lpstrFile[MAX_PATH];
-	// static 또는 전역변수로 선언하지 않아도 다이얼로그가 열림(강의에서는 필요하다고 함)
-	static char lpstrFileTitle[MAX_PATH] = {};
-
-	//OPENFILENAME ofn = { 0, };
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = nullptr;
-	//ofn.hwndOwner = hDlg;
-	ofn.lpstrFilter = "Unit State Pattern(*.usp)\0*.usp\0";
-	ofn.lpstrFile = g_szAniFilePath;
-	//ofn.lpstrFile = lpstrFile;
-	ofn.lpstrFileTitle = lpstrFileTitle;
-	ofn.nMaxFile = MAX_PATH;
-	ofn.nMaxFileTitle = MAX_PATH;
-	ofn.lpstrTitle = "title";
-
-	// 이 프로그램에서 사용한 마지막 경로를 리겅하고 있다가 기본 폴더로 열어주는데 운영체제가 해주는 듯하다.
-	// 특정 폴더를 기본폴더로 지정하려면 GetModuleFileName, GetCurrentDirectory를 활용한다.
-	// 현재 실행파일의 경로
-	//char defaultPath[MAX_PATH];
-	//GetModuleFileName(nullptr, defaultPath, MAX_PATH);
-
-	// 기본 폴더 지정
-	//ofn.lpstrInitialDir = defaultPath;
-	//ofn.lpstrInitialDir = "C:\\";
-
-	return GetOpenFileName(&ofn);
-}
-
 void UpdateSubWndPosition() {
 	RECT rectWnd;
 	GetWindowRect(g_hWnd, &rectWnd);
@@ -542,10 +513,11 @@ void UpdateSubWndPosition() {
 void UpdateUnitStatesList() {
 	ListView_DeleteAllItems(g_hUnitStateList);
 
-	UINT spriteCount = g_cUnitStatePattern.UnitStates.size();
+	UINT spriteCount = g_gfUnitStatePattern.UnitStatePattern.UnitStates.size();
+	//UINT spriteCount = g_gfUnitStatePattern.UnitStates.size();
 	for (size_t i = 0; i < spriteCount; i++)
 	{
-		UnitState *unitState = &g_cUnitStatePattern.UnitStates[i];
+		UnitState *unitState = &g_gfUnitStatePattern.UnitStatePattern.UnitStates[i];
 		LVITEM item = {};
 		item.mask = LVIF_TEXT;
 		item.iItem = i;
@@ -561,13 +533,13 @@ void UpdateUnitStatesList() {
 
 		//ListView_SetItemText(g_hUnitStateList, i, 0, itemText);
 
-		_itoa_s(unitState->xy.x, itemText, 10);
+		_itoa_s(unitState->XY.x, itemText, 10);
 		ListView_SetItemText(g_hUnitStateList, i, 1, itemText);
 
-		_itoa_s(unitState->xy.y, itemText, 10);
+		_itoa_s(unitState->XY.y, itemText, 10);
 		ListView_SetItemText(g_hUnitStateList, i, 2, itemText);
 
-		_itoa_s(unitState->msTime, itemText, 10);
+		_itoa_s(unitState->Time, itemText, 10);
 		ListView_SetItemText(g_hUnitStateList, i, 3, itemText);
 	}
 }

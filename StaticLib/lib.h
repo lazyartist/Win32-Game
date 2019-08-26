@@ -3,6 +3,7 @@
 #include <vector>
 #include <list>
 #include "windows.h"
+#include "function.h"
 
 // ===== define =====
 #define nMax_Boxes 999
@@ -18,14 +19,22 @@
 
 #define szMax_XY 30 + 1
 #define szMax_UnitStateLine 99
+#define szMax_UnitName 99
+
+#define nMax_UnitStateCount 999
+#define szMax_UnitStateCount 3 + 1
 
 #define NoSelectedIndex -1
 
 using namespace std;
 
 // ===== enum =====
+enum WindowMode{
+	None, Window, FullScreen
+};
 enum UnitStateType {
-	Idle, Walk
+	Idle, Walk,
+	Count
 };
 // ===== enum ===== end
 
@@ -59,43 +68,6 @@ typedef struct _fWH {
 // ===== struct ===== end
 
 // ===== class ===== 
-class UnitState {
-public:
-	UnitStateType UnitStateType;
-	fXY xy;
-	UINT msTime; // milliseconds
-
-	UnitState() {
-		//
-	}
-};
-
-class UnitStatePattern {
-public:
-	list<UnitState> unitStates;
-	UINT unitStateIndex;
-
-	UnitStatePattern() {
-		//
-	}
-};
-
-class Unit {
-public :
-	fXY xy;
-	WH wh;
-	UnitStatePattern unitStatePattern;
-	float speedPerSeconds = 1;
-
-	Unit() {
-		//
-	}
-
-	void Render() {
-		//
-	}
-};
-
 typedef class _SpriteInfo {
 public:
 	UINT Time = 0;
@@ -161,6 +133,197 @@ public:
 		CollisionCount = 0;
 	}
 } SpriteInfo;
+
+class UnitState {
+public:
+	UnitStateType UnitStateType;
+	fXY XY;
+	UINT Time; // milliseconds
+
+	UnitState() {
+		//
+	}
+};
+
+class UnitStatePattern {
+public:
+	vector<UnitState> UnitStates;
+	UINT UnitStateIndex;
+
+	UnitStatePattern() {
+		//
+	}
+
+	~UnitStatePattern() {
+		//
+	}
+
+	UnitState GetCurUnitState() {
+		return UnitStates[UnitStateIndex];
+	}
+
+	void UpUnitStateIndex() {
+		++UnitStateIndex;
+
+		if (UnitStateIndex == UnitStates.size()) {
+			UnitStateIndex = 0;
+		}
+	}
+
+	void AddUnitState(UnitState unitState)
+	{
+		UnitStates.push_back(unitState);
+	}
+
+	bool DeleteUnitState(UINT index)
+	{
+		if (index >= UnitStates.size()) return false;
+
+		auto iter = UnitStates.begin();
+		UnitStates.erase(iter + index);
+
+		return true;
+	}
+
+	bool DeleteAllUnitState()
+	{
+		UnitStates.clear();
+
+		return true;
+	}
+
+	bool UpUnitState(UINT index)
+	{
+		if (index == 0 || index >= UnitStates.size()) return false;
+
+		UnitState unitStateTemp = UnitStates[index - 1];
+		UnitStates[index - 1] = UnitStates[index];
+		UnitStates[index] = unitStateTemp;
+
+		return true;
+	}
+
+	bool DownUnitState(UINT index)
+	{
+		if (index < 0 || index >= UnitStates.size() - 1) return false;
+
+		UnitState unitStateTemp = UnitStates[index + 1];
+		UnitStates[index + 1] = UnitStates[index];
+		UnitStates[index] = unitStateTemp;
+
+		return true;
+	}
+
+	void LoadUnitStatePatternFile(const char *filePath) {
+		FILE *file = nullptr;
+		file = _fsopen(filePath, "rt", _SH_DENYNO);
+
+		if (file == nullptr) return;
+
+		char szItemCount[szMax_SpriteCount] = {};
+		fgets(szItemCount, szMax_SpriteCount, file);
+
+		// item count
+		int itemCount = atoi(szItemCount);
+
+		UnitStates.clear();
+		UnitStates.reserve(itemCount);
+
+		// ===== List에 아이템 추가 =====
+		char itemLine[szMax_UnitStateLine] = {};
+		char *token;
+		char *nextToken;
+
+		char itemText[szMax_XY] = {};
+		for (size_t i = 0; i < itemCount; i++)
+		{
+			memset(itemLine, 0, szMax_UnitStateLine);
+			fgets(itemLine, szMax_UnitStateLine, file);
+
+			// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
+			itemLine[strcspn(itemLine, "\n")] = 0; // strcspn()으로 "\n"의 위치를 찾고 그 위치에 0을 넣어준다.
+
+			if (strnlen_s(itemLine, szMax_PosLine) == 0) continue;
+
+			UnitState unitState;
+			{
+				nextToken = itemLine;
+
+				token = strtok_s(nullptr, "\t", &nextToken);
+				unitState.UnitStateType = (UnitStateType)atoi(token);
+
+				token = strtok_s(nullptr, "\t", &nextToken);
+				unitState.XY.x = atof(token);
+				token = strtok_s(nullptr, "\t", &nextToken);
+				unitState.XY.y = atof(token);
+				token = strtok_s(nullptr, "\t", &nextToken);
+				unitState.Time = atoi(token);
+			}
+
+			AddUnitState(unitState);
+		}
+
+		fclose(file);
+	}
+
+	void SaveUnitStatePatternFile(const char *filePath) {
+		FILE *file = nullptr;
+		file = _fsopen(filePath, "wt", _SH_DENYNO);
+
+		if (file == nullptr) return;
+
+		// item count
+		int itemCount = UnitStates.size();
+		char szItemCount[szMax_UnitStateCount] = {};
+		sprintf_s<szMax_UnitStateCount>(szItemCount, "%d\n", itemCount);
+		fputs(szItemCount, file);
+
+		auto iter = UnitStates.begin();
+		while (iter != UnitStates.end())
+		{
+			fprintf_s(file, "%d\t%f\t%f\t%d\n", iter->UnitStateType, iter->XY.x, iter->XY.y, iter->Time);
+
+			++iter;
+		}
+
+		fclose(file);
+	}
+};
+
+struct AniFilePath {
+	char FilePath[MAX_PATH];
+	char FileTitle[MAX_PATH];
+};
+
+class Unit {
+public:
+	char Name[szMax_UnitName];
+	fXY XY;
+	WH WH;
+	AniFilePath UnitStateAnis[UnitStateType::Count];
+	//vector<AniFilePath> UnitStateAnis;
+	UnitStatePattern UnitStatePattern;
+	float SpeedPerSeconds = 1;
+	vector<SpriteInfo> SpriteInfos[sizeof(UnitStateType)];
+
+	Unit() {
+		for (size_t i = 0; i < UnitStateType::Count; i++)
+		{
+			UnitStateAnis[i].FilePath[0] = 0;
+			UnitStateAnis[i].FileTitle[0] = 0;
+		}
+		//UnitStateAnis
+	}
+
+	void Render() {
+		//
+	}
+
+	void SetName(const char *name) {
+		strcpy_s(Name, szMax_UnitName, name);
+	}
+
+};
 // ===== class ===== end
 
 
