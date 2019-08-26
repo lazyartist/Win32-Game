@@ -14,8 +14,8 @@ public:
 	virtual void UpdateRenderImpl();
 	virtual void ReleaseImpl();
 
-	void LoadUnit(char *filePath);
-	void SaveUnit(char *filePath);
+	void LoadUnit(const char *filePath);
+	void SaveUnit(const char *filePath);
 	
 	//vector<AniFilePath> AniFilePaths;
 	//vector<char *> AniFilePaths;

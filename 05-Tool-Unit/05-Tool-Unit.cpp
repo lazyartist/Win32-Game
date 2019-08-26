@@ -29,8 +29,8 @@ CGameFrame_Unit g_gfUnit;
 //const char *g_szUnitStateTypeAsString[] = { "Idle"  };
 const char *g_szUnitStateTypeAsString[] = { "Idle" , "Walk" };
 
-void LoadUnit();
-void SaveUnit();
+void LoadUnit(const char *filePath);
+void SaveUnit(const char *filePath);
 
 void UpdateUI();
 void UpdateBitmap();
@@ -64,7 +64,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	HWND hWndPicture = GetDlgItem(g_hWnd, IDC_PIC1);
 	g_gfUnit.Init(g_hWnd, hWndPicture, 1000 / 90, { 800, 600 }, WindowMode::None);
-	UpdateUI();
+
+	//UpdateUI();
+	LoadUnit("X:\\StudySources\\Win32-Game\\02-Tool-CutSprite\\resources\\kirby.unit");
 
 	MSG msg;
 
@@ -213,10 +215,10 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON1: // Load
 		{
-			//char filePath[MAX_PATH] = {};
-			//if (OpenFileDialog2(filePath)) {
-				//SetDlgItemText(g_hWnd, IDC_EDIT1, "hihi");
-			//};
+			char filePath[MAX_PATH] = {};
+			if (OpenFileDialog(filePath)) {
+				LoadUnit(filePath);
+			};
 		}
 		break;
 
@@ -224,7 +226,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
-				g_gfUnit.SaveUnit(filePath);
+				SaveUnit(filePath);
 			}
 		}
 		break;
@@ -245,7 +247,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 					UpdateUnitStateAniList();
 				};
 			}
-			
+
 		}
 		break;
 
@@ -297,7 +299,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 		}
 		break;
-		
+
 
 		case IDC_BUTTON9: // Load Bitmap
 		{
@@ -402,8 +404,24 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
-void SaveUnit() {
+void LoadUnit(const char *filePath)
+{
+	g_gfUnit.LoadUnit(filePath);
 
+	UpdateUI();
+
+	g_gfUnit.Unit.LoadUnitBitmap(g_gfUnit.Unit.BitmapPath);
+	UpdateBitmap();
+
+	for (size_t i = 0; i < UnitStateType::Count; i++)
+	{
+		g_gfUnit.Unit.LoadAniFile((UnitStateType)i, g_gfUnit.Unit.AniInfos[i].FilePath);
+	}
+	UpdateUnitStateAniList();
+}
+
+void SaveUnit(const char *filePath) {
+	g_gfUnit.SaveUnit(filePath);
 }
 
 void UpdateUI() {

@@ -47,24 +47,70 @@ void CGameFrame_Unit::ReleaseImpl()
 {
 }
 
-void CGameFrame_Unit::LoadUnit(char *filePath)
+void CGameFrame_Unit::LoadUnit(const char *filePath)
 {
+	FILE *file = nullptr;
+	file = _fsopen(filePath, "rt", _SH_DENYNO);
+
+	if (file == nullptr) return;
+
+	// name
+	fgets(Unit.Name, szMax_UnitName, file);
+	RemoveCarriageReturn(Unit.Name);
+	
+	// bitmap path
+	fgets(Unit.BitmapPath, MAX_PATH, file);
+	RemoveCarriageReturn(Unit.BitmapPath);
+
+	// ani files
+	char szItemCount[szMax_PosLine] = {};
+	fgets(szItemCount, szMax_PosLine, file);
+	RemoveCarriageReturn(szItemCount);
+
+	int itemCount = atoi(szItemCount);
+	char itemLine[szMax_PosLine] = {};
+	for (size_t i = 0; i < itemCount; i++)
+	{
+		// ===== List에 아이템 추가 =====
+		memset(itemLine, 0, szMax_PosLine);
+
+		fgets(itemLine, szMax_PosLine, file);
+		RemoveCarriageReturn(itemLine);
+
+		char *token;
+		char *nextToken;
+
+		nextToken = itemLine;
+
+		AniInfo aniInfo;
+
+		token = strtok_s(nullptr, "\t", &nextToken);
+		strcpy_s(aniInfo.FilePath, MAX_PATH, token);
+
+		token = strtok_s(nullptr, "\t", &nextToken);
+		strcpy_s(aniInfo.FileTitle, MAX_PATH, token);
+
+		Unit.AniInfos[i] = aniInfo;
+	}
+
+
+	fclose(file);
 }
 
-void CGameFrame_Unit::SaveUnit(char *filePath)
+void CGameFrame_Unit::SaveUnit(const char *filePath)
 {
 	FILE *file = nullptr;
 	file = _fsopen(filePath, "wt", _SH_DENYNO);
 
 	if (file == nullptr) return;
 
+	// name
 	fprintf_s(file, "%s\n", Unit.Name);
+	// bitmap path
+	fprintf_s(file, "%s\n", Unit.BitmapPath);
 
-
-
-	// item count
+	// ani files
 	int itemCount = UnitStateType::Count;
-	//int itemCount = Unit.AniInfos.size();
 	fprintf_s(file, "%d\n", itemCount);
 	for (size_t i = 0; i < itemCount; i++)
 	{

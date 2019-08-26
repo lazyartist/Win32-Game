@@ -326,7 +326,9 @@ public:
 	HDC hBitmapDC;
 	bool _isPlaying = false;
 	bool _isPatternPlaying = false;
+	time_t _aniTime = 0;
 	UINT _aniIndex = 0;
+	SpriteInfo _curSpriteInfo;
 
 	Unit() {
 		for (size_t i = 0; i < UnitStateType::Count; i++)
@@ -343,13 +345,19 @@ public:
 	
 	void Update() {
 		if (_isPlaying) {
+			time_t time = GetTickCount();
+
+			if (time - _aniTime < _curSpriteInfo.Time) return;
+
+			_aniTime = time;
 			++_aniIndex;
 
 			vector<SpriteInfo> &spriteInfos = AniInfos[(int)CurUnitStateType].SpriteInfos;
-			//vector<SpriteInfo> &spriteInfos = SpriteInfosByUnitStateType[(int)CurUnitStateType];
 			if (_aniIndex >= spriteInfos.size()) {
 				_aniIndex = 0;
 			}
+
+			_curSpriteInfo = spriteInfos[_aniIndex];
 		}
 	}
 	
@@ -359,22 +367,21 @@ public:
 		// test
 		fWH g_whBottomWndSize = {800, 600};
 
-		vector<SpriteInfo> &spriteInfos = AniInfos[(int)CurUnitStateType].SpriteInfos;
-		//vector<SpriteInfo> &spriteInfos = SpriteInfosByUnitStateType[(int)CurUnitStateType];
-		SpriteInfo g_SpriteInfo = spriteInfos[_aniIndex];
+		//vector<SpriteInfo> &spriteInfos = AniInfos[(int)CurUnitStateType].SpriteInfos;
+		//SpriteInfo _curSpriteInfo = spriteInfos[_aniIndex];
 
 		// 화면 정중앙 좌표
 		fXY center = { g_whBottomWndSize.w / 2, g_whBottomWndSize.h / 2 };
 
 		// 선택된 스프라이트의 크기
-		fWH spriteSize = { g_SpriteInfo.Rect.right - g_SpriteInfo.Rect.left , g_SpriteInfo.Rect.bottom - g_SpriteInfo.Rect.top };
-		UINT w = g_SpriteInfo.Rect.right - g_SpriteInfo.Rect.left;
-		UINT h = g_SpriteInfo.Rect.bottom - g_SpriteInfo.Rect.top;
+		fWH spriteSize = { _curSpriteInfo.Rect.right - _curSpriteInfo.Rect.left , _curSpriteInfo.Rect.bottom - _curSpriteInfo.Rect.top };
+		UINT w = _curSpriteInfo.Rect.right - _curSpriteInfo.Rect.left;
+		UINT h = _curSpriteInfo.Rect.bottom - _curSpriteInfo.Rect.top;
 		TransparentBlt(hdc,
-			center.x - g_SpriteInfo.Pivot.x,
-			//center.x - g_SpriteInfo.Pivot.x * fMagnification,
-			center.y - g_SpriteInfo.Pivot.y,
-			//center.y - g_SpriteInfo.Pivot.y * fMagnification,
+			center.x - _curSpriteInfo.Pivot.x,
+			//center.x - _curSpriteInfo.Pivot.x * fMagnification,
+			center.y - _curSpriteInfo.Pivot.y,
+			//center.y - _curSpriteInfo.Pivot.y * fMagnification,
 
 			spriteSize.w,
 			//spriteSize.w * fMagnification,
@@ -382,21 +389,23 @@ public:
 			//spriteSize.h * fMagnification,
 
 			hBitmapDC,
-			g_SpriteInfo.Rect.left,
-			g_SpriteInfo.Rect.top,
+			_curSpriteInfo.Rect.left,
+			_curSpriteInfo.Rect.top,
 			spriteSize.w,
 			spriteSize.h,
 
 			RGB(255, 0, 0));
 			//g_BitmapViewInfo.TransparentColor);
-
-		TransparentBlt(hdc, 0, 0, 100, 100, hBitmapDC, 0, 0, 100, 100, RGB(255, 0, 0));
 	}
 
 	void Play(UnitStateType unitStateType) {
 		CurUnitStateType = unitStateType;
 		_isPlaying = true;
 		_aniIndex = 0;
+		_aniTime = GetTickCount();
+
+		vector<SpriteInfo> &spriteInfos = AniInfos[(int)CurUnitStateType].SpriteInfos;
+		_curSpriteInfo = spriteInfos[0];
 	}
 
 	void Stop() {
