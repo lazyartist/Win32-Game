@@ -340,7 +340,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				g_pntScrollPos.y = g_pntScrollPosWhenRButtonDown.y - (g_rectRBDrag.bottom - g_rectRBDrag.top);
 
 				// 스크롤이 이미지의 좌상단보다 더 좌상단으로 이동하지 못하게 0보다 작을 경우 0으로 조정한다.
-				// TranslationBlt() 호출 시 g_pntScrollPos.x, g_pntScrollPos.y의 부호를 바꿔서 전달하기 때문에 
+				// TransparentBlt() 호출 시 g_pntScrollPos.x, g_pntScrollPos.y의 부호를 바꿔서 전달하기 때문에 
 				// 음수이면 양수로 전달되고 양수로 전달됐다는 건 dc의 양수좌표부터 이미지 복사를 시작한다는 뜻이기 때문에 
 				// 이미지가 우하단으로 이동하게 되고 이미지의 좌상단을 보게된다.
 				// 0, 0 이하의 좌표는 볼 필요가 없으므로 음수일경우 0으로 조정한다.

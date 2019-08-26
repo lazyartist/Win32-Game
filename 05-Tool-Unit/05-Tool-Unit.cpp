@@ -23,7 +23,7 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 //
 HWND g_hWnd;
 HWND g_hUnitStateAniList;
-HWND g_hAniFileList;
+//HWND g_hAniFileList;
 CGameFrame_Unit g_gfUnit;
 
 //const char *g_szUnitStateTypeAsString[] = { "Idle"  };
@@ -33,6 +33,7 @@ void LoadUnit();
 void SaveUnit();
 
 void UpdateUI();
+void UpdateBitmap();
 void UpdateUnitStateAniList();
 void UpdateAniFilePath();
 
@@ -162,7 +163,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		}*/
 
 		g_hUnitStateAniList = GetDlgItem(hDlg, IDC_LIST1);
-		g_hAniFileList = GetDlgItem(hDlg, IDC_LIST2);
+		//g_hAniFileList = GetDlgItem(hDlg, IDC_LIST2);
 
 		// ===== List에 컬럼 추가 =====
 		// List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.
@@ -200,7 +201,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (id)
 		{
 
-		case IDC_EDIT1: // PlayStop
+		case IDC_EDIT1:
 		{
 			if (HIWORD(wParam) == EN_CHANGE) {
 				char unitName[szMax_UnitName];
@@ -239,11 +240,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 				char filePath[MAX_PATH] = {};
 				char fileTitle[MAX_PATH] = {};
 				if (OpenFileDialog(filePath, fileTitle)) {
-					AniFilePath aniFilePath;
-					strcpy_s(aniFilePath.FilePath, MAX_PATH, filePath);
-					strcpy_s(aniFilePath.FileTitle, MAX_PATH, fileTitle);
-
-					g_gfUnit.Unit.UnitStateAnis[itemIndex] = aniFilePath;
+					g_gfUnit.Unit.LoadAniFile((UnitStateType)itemIndex, filePath);
 
 					UpdateUnitStateAniList();
 				};
@@ -254,19 +251,62 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON4: // Delete .ani
 		{
+			UINT itemIndex = ListView_GetNextItem(
+				g_hUnitStateAniList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
 
+			if (itemIndex != NoSelectedIndex) {
+				g_gfUnit.Unit.AniInfos[itemIndex].FilePath[0] = 0;
+				g_gfUnit.Unit.AniInfos[itemIndex].FileTitle[0] = 0;
+
+				UpdateUnitStateAniList();
+			}
 		}
 		break;
 
-		case IDC_BUTTON5:
+		case IDC_BUTTON5: // Play Ani
 		{
+			UINT itemIndex = ListView_GetNextItem(
+				g_hUnitStateAniList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
 
+			if (itemIndex != NoSelectedIndex) {
+				//g_gfUnit.Unit.AniInfos[itemIndex].FilePath;
+
+				//g_gfUnit.Unit.AniInfos[itemIndex].FileTitle[0] = 0;
+
+				g_gfUnit.Unit.Play((UnitStateType)itemIndex);
+
+				//UpdateUnitStateAniList();
+			}
+		}
+		break;
+
+		case IDC_BUTTON10: // Stop Ani
+		{
+			g_gfUnit.Unit.Stop();
 		}
 		break;
 
 		case IDC_BUTTON6:
 		{
 
+		}
+		break;
+		
+
+		case IDC_BUTTON9: // Load Bitmap
+		{
+			char filePath[MAX_PATH] = {};
+			if (OpenFileDialog(filePath)) {
+				g_gfUnit.Unit.LoadUnitBitmap(filePath);
+
+				UpdateBitmap();
+			}
 		}
 		break;
 
@@ -370,6 +410,12 @@ void UpdateUI() {
 	SetDlgItemText(g_hWnd, IDC_EDIT1, g_gfUnit.Unit.Name);
 }
 
+void UpdateBitmap() {
+	HWND hWndPic2 = GetDlgItem(g_hWnd, IDC_PIC2);
+	HDC hdc = GetDC(hWndPic2);
+	TransparentBlt(hdc, 0, 0, 100, 100, g_gfUnit.Unit.hBitmapDC, 0, 0, 100, 100, RGB(255, 0, 0));
+}
+
 void UpdateUnitStateAniList() {
 	ListView_DeleteAllItems(g_hUnitStateAniList);
 
@@ -390,25 +436,25 @@ void UpdateUnitStateAniList() {
 
 		//item.pszText = itemText;
 		//item.iSubItem = 1;
-		//strcpy_s(itemText, MAX_PATH, g_gfUnit.Unit.UnitStateAnis[i].FileTitle);
-		ListView_SetItemText(g_hUnitStateAniList, i, 1, g_gfUnit.Unit.UnitStateAnis[i].FileTitle); // 아이템 추가0
+		//strcpy_s(itemText, MAX_PATH, g_gfUnit.Unit.AniInfos[i].FileTitle);
+		ListView_SetItemText(g_hUnitStateAniList, i, 1, g_gfUnit.Unit.AniInfos[i].FileTitle); // 아이템 추가0
 		//ListView_SetItemText(g_hUnitStateAniList, i, 1, &item); // 아이템 추가0
 	}
 }
 
-void UpdateAniFilePath() {
-	ListView_DeleteAllItems(g_hAniFileList);
-
-	LVITEM item = {};
-	item.mask = LVIF_TEXT;
-	item.iItem = 0;
-	item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
-	item.state;
-	item.stateMask;
-
-	for (size_t i = 0; i < UnitStateType::Count; i++)
-	{
-		item.pszText = g_gfUnit.Unit.UnitStateAnis[i].FileTitle;
-		ListView_InsertItem(g_hAniFileList, &item); // 아이템 추가0
-	}
-}
+//void UpdateAniFilePath() {
+//	ListView_DeleteAllItems(g_hAniFileList);
+//
+//	LVITEM item = {};
+//	item.mask = LVIF_TEXT;
+//	item.iItem = 0;
+//	item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
+//	item.state;
+//	item.stateMask;
+//
+//	for (size_t i = 0; i < UnitStateType::Count; i++)
+//	{
+//		item.pszText = g_gfUnit.Unit.AniInfos[i].FileTitle;
+//		ListView_InsertItem(g_hAniFileList, &item); // 아이템 추가0
+//	}
+//}
