@@ -5,6 +5,8 @@
 #include "windows.h"
 //#include "windowsx.h"
 #include "function.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 // ===== define =====
 #define nMax_SpriteCount 999
@@ -32,7 +34,7 @@
 using namespace std;
 
 // ===== enum =====
-enum WindowMode{
+enum WindowMode {
 	None, Window, FullScreen
 };
 enum UnitStateType {
@@ -52,12 +54,24 @@ typedef struct _fXY {
 	FLOAT y;
 
 	float distance() {
-		return sqrt((x) * (x) + (y) * (y));
+		return sqrt((x) * (x)+(y) * (y));
 	}
 	float distance(_fXY xy) {
 		return sqrt((xy.x - x) * (xy.x - x) + (xy.y - y) * (xy.y - y));
 	}
 } fXY;
+
+typedef struct _V2 {
+	FLOAT x;
+	FLOAT y;
+
+	/*float distance() {
+		return sqrt((x) * (x)+(y) * (y));
+	}
+	float distance(_fXY xy) {
+		return sqrt((xy.x - x) * (xy.x - x) + (xy.y - y) * (xy.y - y));
+	}*/
+} V2;
 
 typedef struct _WH {
 	UINT w;
@@ -207,7 +221,7 @@ public:
 
 		return true;
 	}
-	
+
 	void Clear()
 	{
 		Init();
@@ -330,11 +344,11 @@ public:
 
 		MoveToEx(_hdcMem, UnitStates[0].XY.x, UnitStates[0].XY.y, nullptr);
 		WH wh = { 10, 10 };
-		fXY prevXY = {0.0, 0.0};
+		fXY prevXY = { 0.0, 0.0 };
 		for (size_t i = 0; i < UnitStates.size(); i++)
 		{
 			UnitState unitState = UnitStates[i];
-			fXY xy = {0.0, 0.0};
+			fXY xy = { 0.0, 0.0 };
 			float size = 1.0;
 
 			if (unitState.UnitStateType == UnitStateType::Idle) {
@@ -387,6 +401,8 @@ struct AniInfo {
 
 class Unit {
 public:
+	const V2 v2Right = { 1, 0 };
+
 	char Name[szMax_UnitName];
 	fXY XY;
 	WH WH;
@@ -400,6 +416,10 @@ public:
 
 	bool _isPlaying = false;
 	bool _isPatternPlaying = false;
+	// direction
+	float _radDirection = 0.0;
+	V2 _vNormalDirection = {};
+	float _cosRightDirection = 0.0;
 	// ani
 	time_t _aniTime = 0;
 	UINT _aniIndex = 0;
@@ -419,7 +439,7 @@ public:
 	void Init(HDC hdc) {
 		hBitmapDC = CreateCompatibleDC(hdc);
 	}
-	
+
 	void Update(float _fDeltaTime) {
 		if (_isPlaying) {
 			// update UnitState
@@ -449,13 +469,20 @@ public:
 				float speed = SpeedPerSeconds * _fDeltaTime;
 				if (distance < speed) speed = distance;
 
-				float rad = atan2(distanceXY.y, distanceXY.x);
+				_radDirection = atan2(distanceXY.y, distanceXY.x);
+				_vNormalDirection = { cos(_radDirection) , sin(_radDirection) }; // 각도로 x, y 좌료를 얻었으므로 정규화 되어있다.
+				_cosRightDirection = _vNormalDirection.x * v2Right.x + _vNormalDirection.y * v2Right.y;
 
-				float speedX = speed * cos(rad);
-				float speedY = speed * sin(rad);
-
+				float speedX = speed * _vNormalDirection.x;
+				float speedY = speed * _vNormalDirection.y;
+				/*
+				float speedX = speed * cos(radian);
+				float speedY = speed * sin(radian);
+				*/
 				XY.x += speedX;
 				XY.y += speedY;
+
+				//_radDirection = radian + M_PI_2;
 
 				if (sameXY(curUnitState.XY, XY)) {
 					UnitStatePattern.UpUnitStateIndex();
@@ -478,12 +505,12 @@ public:
 			}
 		}
 	}
-	
+
 	void Render(HDC hdc) {
 		if (!_isPlaying) return;
 
 		// test
-		fWH g_whBottomWndSize = {800, 600};
+		//fWH g_whBottomWndSize = { 800, 600 };
 
 		// 화면 정중앙 좌표
 		//fXY center = { g_whBottomWndSize.w / 2, g_whBottomWndSize.h / 2 };
@@ -506,7 +533,28 @@ public:
 			spriteSize.h,
 
 			RGB(255, 0, 0));
-			//g_BitmapViewInfo.TransparentColor);
+		//g_BitmapViewInfo.TransparentColor);
+
+		// test : draw direction
+		float _directionLength = 50;
+		fXY _directionXY = { _directionLength * _vNormalDirection.x, _directionLength * _vNormalDirection.y };
+		MoveToEx(hdc, XY.x, XY.y, nullptr);
+		LineTo(hdc, XY.x + _directionXY.x, XY.y + _directionXY.y);
+		// test : text radian
+		char szDirection[FLT_MAX_10_EXP];
+		sprintf_s(szDirection, FLT_MAX_10_EXP, "%f", _radDirection);
+		TextOut(hdc, 0, 0, szDirection, FLT_MAX_10_EXP);
+
+		// test : text direction
+		sprintf_s(szDirection, FLT_MAX_10_EXP, "%f", _cosRightDirection);
+		TextOut(hdc, 0, 100, szDirection, FLT_MAX_10_EXP);
+		if (_cosRightDirection > 0) {
+			sprintf_s(szDirection, FLT_MAX_10_EXP, "%s", "right");
+		}
+		else {
+			sprintf_s(szDirection, FLT_MAX_10_EXP, "%s", "left");
+		}
+		TextOut(hdc, 0, 200, szDirection, FLT_MAX_10_EXP);
 	}
 
 	void Play(UnitStateType unitStateType) {
