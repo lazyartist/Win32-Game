@@ -30,9 +30,6 @@
 
 using namespace std;
 
-void RemoveCarriageReturn(char *sz);
-const char * GetFileNameByFullPath(const char *path);
-
 // ===== enum =====
 enum WindowMode{
 	None, Window, FullScreen
@@ -71,6 +68,13 @@ typedef struct _fWH {
 	FLOAT h;
 } fWH;
 // ===== struct ===== end
+
+void RemoveCarriageReturn(char *sz);
+const char * GetFileNameByFullPath(const char *path);
+bool sameXY(fXY xy1, fXY xy2);
+bool operator==(XY xy1, XY xy2);
+fXY operator-(fXY xy1, fXY xy2);
+bool operator==(fXY xy1, fXY xy2);
 
 // ===== class ===== 
 typedef class _SpriteInfo {
@@ -375,20 +379,24 @@ public:
 	char Name[szMax_UnitName];
 	fXY XY;
 	WH WH;
+	float SpeedPerSeconds = 10.0;
 	float Magnification = 1.0;
 	UnitStateType CurUnitStateType;
 	char BitmapPath[MAX_PATH];
 	AniInfo AniInfos[UnitStateType::Count];
 	//vector<AniFilePath> AniInfos;
 	UnitStatePattern UnitStatePattern;
-	float SpeedPerSeconds = 1;
 	//vector<SpriteInfo> SpriteInfosByUnitStateType[sizeof(UnitStateType)];
 	HDC hBitmapDC;
+
 	bool _isPlaying = false;
 	bool _isPatternPlaying = false;
+	// ani
 	time_t _aniTime = 0;
 	UINT _aniIndex = 0;
 	SpriteInfo _curSpriteInfo;
+	// pos
+	time_t _posWaitTime = 0;
 
 	Unit() {
 		for (size_t i = 0; i < UnitStateType::Count; i++)
@@ -403,8 +411,51 @@ public:
 		hBitmapDC = CreateCompatibleDC(hdc);
 	}
 	
-	void Update() {
+	void Update(float _fDeltaTime) {
 		if (_isPlaying) {
+			// update pos
+			//UnitState curUnitState = UnitStates[UnitStateIndex];
+			UnitState curUnitState = UnitStatePattern.GetCurUnitState();
+
+			// 다음 지점까지의 거리
+			fXY distanceXY = curUnitState.XY - XY;
+			float distance = distanceXY.distance();
+			float speed = SpeedPerSeconds * _fDeltaTime;
+			if (distance < speed) speed = distance;
+
+			float rad = atan2(distanceXY.y, distanceXY.x);
+
+			float speedX = speed * cos(rad);
+			float speedY = speed * sin(rad);
+
+			XY.x += speedX;
+			XY.y += speedY;
+
+			if (sameXY(curUnitState.XY, XY)) {
+				if (curUnitState.UnitStateType == UnitStateType::Idle) {
+					if (_posWaitTime == 0) {
+						_posWaitTime = GetTickCount();
+						return;
+					}
+					else {
+						if (GetTickCount() - _posWaitTime >= curUnitState.Time) {
+							//
+						}
+						else {
+							return;
+						}
+					}
+				}
+				else if (curUnitState.UnitStateType == UnitStateType::Walk) {
+					//
+				}
+
+				_posWaitTime = 0;
+
+				UnitStatePattern.UpUnitStateIndex();
+			}
+
+			// update ani
 			time_t time = GetTickCount();
 
 			if (time - _aniTime < _curSpriteInfo.Time) return;
@@ -412,7 +463,8 @@ public:
 			_aniTime = time;
 			++_aniIndex;
 
-			vector<SpriteInfo> &spriteInfos = AniInfos[(int)CurUnitStateType].SpriteInfos;
+			vector<SpriteInfo> &spriteInfos = AniInfos[(int)curUnitState.UnitStateType].SpriteInfos;
+			//vector<SpriteInfo> &spriteInfos = AniInfos[(int)CurUnitStateType].SpriteInfos;
 			if (_aniIndex >= spriteInfos.size()) {
 				_aniIndex = 0;
 			}
@@ -439,9 +491,11 @@ public:
 		UINT h = _curSpriteInfo.Rect.bottom - _curSpriteInfo.Rect.top;
 		TransparentBlt(hdc,
 			//center.x - _curSpriteInfo.Pivot.x,
-			center.x - _curSpriteInfo.Pivot.x * Magnification,
+			//center.x - _curSpriteInfo.Pivot.x * Magnification,
+			XY.x - _curSpriteInfo.Pivot.x * Magnification,
 			//center.y - _curSpriteInfo.Pivot.y,
-			center.y - _curSpriteInfo.Pivot.y * Magnification,
+			//center.y - _curSpriteInfo.Pivot.y * Magnification,
+			XY.y - _curSpriteInfo.Pivot.y * Magnification,
 
 			//spriteSize.w,
 			spriteSize.w * Magnification,

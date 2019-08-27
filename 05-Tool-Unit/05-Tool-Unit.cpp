@@ -229,6 +229,16 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
+		case IDC_EDIT4:
+		{
+			if (HIWORD(wParam) == EN_CHANGE) {
+				char text[FLT_MAX_10_EXP];
+				GetDlgItemText(hDlg, IDC_EDIT4, text, FLT_MAX_10_EXP);
+				g_gfUnit.Unit.SpeedPerSeconds = atof(text);
+			}
+		}
+		break;
+
 		case IDC_BUTTON1: // Load
 		{
 			char filePath[MAX_PATH] = {};
@@ -456,11 +466,14 @@ void SaveUnit(const char *filePath) {
 void UpdateUI() {
 	SetDlgItemText(g_hWnd, IDC_EDIT1, g_gfUnit.Unit.Name);
 
-	SetDlgItemText(g_hWnd, IDC_EDIT2, g_gfUnit.Unit.UnitStatePattern.FileTitle);
-
 	char text[FLT_MAX_10_EXP];
+	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_gfUnit.Unit.SpeedPerSeconds);
+	SetDlgItemText(g_hWnd, IDC_EDIT4, text);
+
 	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_gfUnit.Unit.Magnification);
 	SetDlgItemText(g_hWnd, IDC_EDIT3, text);
+
+	SetDlgItemText(g_hWnd, IDC_EDIT2, g_gfUnit.Unit.UnitStatePattern.FileTitle);
 }
 
 void UpdateBitmap() {

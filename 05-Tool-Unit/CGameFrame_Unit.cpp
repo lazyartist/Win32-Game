@@ -24,7 +24,7 @@ void CGameFrame_Unit::UpdateLogicImpl()
 {
 	//dlog("CGameFrame_Unit::UpdateLogicImpl");
 
-	Unit.Update();
+	Unit.Update(_fDeltaTime);
 }
 
 void CGameFrame_Unit::UpdateRenderImpl()
@@ -49,10 +49,15 @@ void CGameFrame_Unit::LoadUnit(const char *filePath)
 	RemoveCarriageReturn(Unit.Name);
 
 	// Magnification
-	char szMagnification[FLT_MAX_10_EXP];
-	fgets(szMagnification, FLT_MAX_10_EXP, file);
-	RemoveCarriageReturn(szMagnification);
-	Unit.Magnification = atof(szMagnification);
+	char szFloat[FLT_MAX_10_EXP];
+	fgets(szFloat, FLT_MAX_10_EXP, file);
+	RemoveCarriageReturn(szFloat);
+	Unit.Magnification = atof(szFloat);
+
+	// SpeedPerSeconds
+	fgets(szFloat, FLT_MAX_10_EXP, file);
+	RemoveCarriageReturn(szFloat);
+	Unit.SpeedPerSeconds = atof(szFloat);
 	
 	// bitmap file path
 	fgets(Unit.BitmapPath, MAX_PATH, file);
@@ -109,6 +114,9 @@ void CGameFrame_Unit::SaveUnit(const char *filePath)
 
 	// Magnification
 	fprintf_s(file, "%f\n", Unit.Magnification);
+
+	// SpeedPerSeconds
+	fprintf_s(file, "%f\n", Unit.SpeedPerSeconds);
 
 	// bitmap path
 	fprintf_s(file, "%s\n", Unit.BitmapPath);
