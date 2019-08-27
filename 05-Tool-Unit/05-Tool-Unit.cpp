@@ -310,13 +310,6 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 
-		case IDC_BUTTON6:
-		{
-
-		}
-		break;
-
-
 		case IDC_BUTTON9: // Load Bitmap
 		{
 			char filePath[MAX_PATH] = {};
@@ -327,6 +320,24 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		}
 		break;
+
+		case IDC_BUTTON6: // Load .usp
+		{
+			char filePath[MAX_PATH] = {};
+			if (OpenFileDialog(filePath)) {
+				g_gfUnit.Unit.UnitStatePattern.LoadUnitStatePatternFile(filePath);
+				UpdateUI();
+			}
+		}
+		break;
+
+		case IDC_BUTTON7: // Delete .usp
+		{
+			g_gfUnit.Unit.UnitStatePattern.Clear();
+			UpdateUI();
+		}
+		break;
+
 
 		default:
 			break;
@@ -424,15 +435,17 @@ void LoadUnit(const char *filePath)
 {
 	g_gfUnit.LoadUnit(filePath);
 
-	UpdateUI();
-
 	g_gfUnit.Unit.LoadUnitBitmap(g_gfUnit.Unit.BitmapPath);
-	UpdateBitmap();
+
+	g_gfUnit.Unit.UnitStatePattern.LoadUnitStatePatternFile(g_gfUnit.Unit.UnitStatePattern.FilePath);
 
 	for (size_t i = 0; i < UnitStateType::Count; i++)
 	{
 		g_gfUnit.Unit.LoadAniFile((UnitStateType)i, g_gfUnit.Unit.AniInfos[i].FilePath);
 	}
+
+	UpdateUI();
+	UpdateBitmap();
 	UpdateUnitStateAniList();
 }
 
@@ -442,6 +455,12 @@ void SaveUnit(const char *filePath) {
 
 void UpdateUI() {
 	SetDlgItemText(g_hWnd, IDC_EDIT1, g_gfUnit.Unit.Name);
+
+	SetDlgItemText(g_hWnd, IDC_EDIT2, g_gfUnit.Unit.UnitStatePattern.FileTitle);
+
+	char text[FLT_MAX_10_EXP];
+	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_gfUnit.Unit.Magnification);
+	SetDlgItemText(g_hWnd, IDC_EDIT3, text);
 }
 
 void UpdateBitmap() {

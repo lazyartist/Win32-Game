@@ -154,6 +154,8 @@ class UnitStatePattern {
 public:
 	vector<UnitState> UnitStates;
 	UINT UnitStateIndex;
+	char FilePath[MAX_PATH];
+	char FileTitle[MAX_PATH];
 
 	UnitStatePattern() {
 		//
@@ -196,6 +198,14 @@ public:
 
 		return true;
 	}
+	
+	void Clear()
+	{
+		DeleteAllUnitState();
+		UnitStateIndex = 0;
+		FilePath[0] = 0;
+		FileTitle[0] = 0;
+	}
 
 	bool UpUnitState(UINT index)
 	{
@@ -224,6 +234,9 @@ public:
 		file = _fsopen(filePath, "rt", _SH_DENYNO);
 
 		if (file == nullptr) return;
+
+		strcpy_s(FilePath, MAX_PATH, filePath);
+		strcpy_s(FileTitle, MAX_PATH, GetFileNameByFullPath(filePath));
 
 		char szItemCount[szMax_SpriteCount] = {};
 		fgets(szItemCount, szMax_SpriteCount, file);
@@ -292,6 +305,51 @@ public:
 		}
 
 		fclose(file);
+	}
+
+	void RenderUnitState(HDC _hdcMem)
+	{
+		if (UnitStates.size() == 0) return;
+
+		HPEN hLinePen = (HPEN)GetStockObject(BLACK_PEN);
+		HPEN hIdlePen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));;
+		HPEN hWalkPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));;
+		HPEN hSelectedPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
+
+		HPEN hOldPen = (HPEN)SelectObject(_hdcMem, hWalkPen);
+
+		MoveToEx(_hdcMem, UnitStates[0].XY.x, UnitStates[0].XY.y, nullptr);
+		WH wh = { 10, 10 };
+
+		for (size_t i = 0; i < UnitStates.size(); i++)
+		{
+			UnitState unitState = UnitStates[i];
+
+			SelectObject(_hdcMem, hLinePen);
+			LineTo(_hdcMem, unitState.XY.x, unitState.XY.y);
+
+			//if (i == SelectedUnitStateIndex) {
+			if (i == UnitStateIndex) {
+				SelectObject(_hdcMem, hSelectedPen);
+			}
+			else if (unitState.UnitStateType == UnitStateType::Idle) {
+				SelectObject(_hdcMem, hIdlePen);
+			}
+			else if (unitState.UnitStateType == UnitStateType::Walk) {
+				SelectObject(_hdcMem, hWalkPen);
+			}
+
+			Ellipse(_hdcMem, unitState.XY.x - wh.w / 2, unitState.XY.y - wh.h / 2,
+				unitState.XY.x + wh.w / 2, unitState.XY.y + wh.w / 2);
+
+			SelectObject(_hdcMem, hWalkPen);
+		}
+
+		SelectObject(_hdcMem, hOldPen);
+		DeleteObject(hLinePen);
+		DeleteObject(hIdlePen);
+		DeleteObject(hWalkPen);
+		DeleteObject(hSelectedPen);
 	}
 };
 

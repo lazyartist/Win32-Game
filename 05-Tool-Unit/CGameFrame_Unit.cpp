@@ -29,17 +29,7 @@ void CGameFrame_Unit::UpdateLogicImpl()
 
 void CGameFrame_Unit::UpdateRenderImpl()
 {
-
-	//HDC hdcMem = CreateCompatibleDC(_hdcMem);
-	////HBITMAP hOldBitmap = CreateCompatibleBitmap(hdcMem, 0, 0);
-	//AniInfo aniFile = Unit.AniInfos[(int)Unit.CurUnitStateType];
-	//(HBITMAP)SelectObject(hdcMem, aniFile.hBitmap);
-
-	//TransparentBlt(_hdcMem, 0, 0, 100, 100, hdcMem, 0, 0, 100, 100, RGB(255, 0, 0));
-
-	////SelectObject(hdcMem, hOldBitmap);
-
-
+	Unit.UnitStatePattern.RenderUnitState(_hdcMem);
 	Unit.Render(_hdcMem);
 }
 
@@ -57,10 +47,20 @@ void CGameFrame_Unit::LoadUnit(const char *filePath)
 	// name
 	fgets(Unit.Name, szMax_UnitName, file);
 	RemoveCarriageReturn(Unit.Name);
+
+	// Magnification
+	char szMagnification[FLT_MAX_10_EXP];
+	fgets(szMagnification, FLT_MAX_10_EXP, file);
+	RemoveCarriageReturn(szMagnification);
+	Unit.Magnification = atof(szMagnification);
 	
-	// bitmap path
+	// bitmap file path
 	fgets(Unit.BitmapPath, MAX_PATH, file);
 	RemoveCarriageReturn(Unit.BitmapPath);
+
+	// pattern file path
+	fgets(Unit.UnitStatePattern.FilePath, MAX_PATH, file);
+	RemoveCarriageReturn(Unit.UnitStatePattern.FilePath);
 
 	// ani files
 	char szItemCount[szMax_PosLine] = {};
@@ -106,8 +106,15 @@ void CGameFrame_Unit::SaveUnit(const char *filePath)
 
 	// name
 	fprintf_s(file, "%s\n", Unit.Name);
+
+	// Magnification
+	fprintf_s(file, "%f\n", Unit.Magnification);
+
 	// bitmap path
 	fprintf_s(file, "%s\n", Unit.BitmapPath);
+
+	// pattern file
+	fprintf_s(file, "%s\n", Unit.UnitStatePattern.FilePath);
 
 	// ani files
 	int itemCount = UnitStateType::Count;
@@ -116,21 +123,6 @@ void CGameFrame_Unit::SaveUnit(const char *filePath)
 	{
 		fprintf_s(file, "%s\t%s\n", Unit.AniInfos[i].FilePath, Unit.AniInfos[i].FileTitle);
 	}
-
-	/*
-
-
-			char szItemCount[szMax_UnitStateCount] = {};
-			sprintf_s<szMax_UnitStateCount>(szItemCount, "%d\n", itemCount);
-			fputs(szItemCount, file);
-
-			auto iter = UnitStates.begin();
-			while (iter != UnitStates.end())
-			{
-				fprintf_s(file, "%d\t%f\t%f\t%d\n", iter->UnitStateType, iter->XY.x, iter->XY.y, iter->Time);
-
-				++iter;
-			}*/
 
 	fclose(file);
 }
