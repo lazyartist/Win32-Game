@@ -10,6 +10,7 @@
 #define nMax_SpriteCount 999
 #define szMax_SpriteCount 3 + 1
 #define szMax_Pos 6
+#define szMax_UnitState 9 + 1
 #define szMax_PosLine 99
 #define nFrameRate 60 // 모니터 주사율이 60hz인데 60보다 높이면 더 부드럽게 보인다. 왜일까?
 #define nPivotHalfSize 5
@@ -35,7 +36,7 @@ enum WindowMode{
 	None, Window, FullScreen
 };
 enum UnitStateType {
-	Idle, Walk,
+	Idle, MoveTo,
 	Count
 };
 // ===== enum ===== end
@@ -169,6 +170,10 @@ public:
 		//
 	}
 
+	void Init() {
+		UnitStateIndex = 0;
+	}
+
 	UnitState GetCurUnitState() {
 		return UnitStates[UnitStateIndex];
 	}
@@ -205,8 +210,9 @@ public:
 	
 	void Clear()
 	{
+		Init();
+
 		DeleteAllUnitState();
-		UnitStateIndex = 0;
 		FilePath[0] = 0;
 		FileTitle[0] = 0;
 	}
@@ -324,27 +330,38 @@ public:
 
 		MoveToEx(_hdcMem, UnitStates[0].XY.x, UnitStates[0].XY.y, nullptr);
 		WH wh = { 10, 10 };
-
+		fXY prevXY = {0.0, 0.0};
 		for (size_t i = 0; i < UnitStates.size(); i++)
 		{
 			UnitState unitState = UnitStates[i];
+			fXY xy = {0.0, 0.0};
+			float size = 1.0;
 
-			SelectObject(_hdcMem, hLinePen);
-			LineTo(_hdcMem, unitState.XY.x, unitState.XY.y);
+			if (unitState.UnitStateType == UnitStateType::Idle) {
+				SelectObject(_hdcMem, hIdlePen);
 
-			//if (i == SelectedUnitStateIndex) {
+				xy = prevXY;
+				size = 3;
+			}
+			else if (unitState.UnitStateType == UnitStateType::MoveTo) {
+				SelectObject(_hdcMem, hLinePen);
+				LineTo(_hdcMem, unitState.XY.x, unitState.XY.y);
+
+				SelectObject(_hdcMem, hWalkPen);
+
+				xy = unitState.XY;
+				prevXY = unitState.XY;
+				size = 2;
+			}
+
+			Ellipse(_hdcMem, prevXY.x - wh.w / size, prevXY.y - wh.h / size,
+				prevXY.x + wh.w / size, prevXY.y + wh.w / size);
+
 			if (i == UnitStateIndex) {
 				SelectObject(_hdcMem, hSelectedPen);
+				Rectangle(_hdcMem, xy.x - wh.w / 2, xy.y - wh.h / 2,
+					xy.x + wh.w / 2, xy.y + wh.w / 2);
 			}
-			else if (unitState.UnitStateType == UnitStateType::Idle) {
-				SelectObject(_hdcMem, hIdlePen);
-			}
-			else if (unitState.UnitStateType == UnitStateType::Walk) {
-				SelectObject(_hdcMem, hWalkPen);
-			}
-
-			Ellipse(_hdcMem, unitState.XY.x - wh.w / 2, unitState.XY.y - wh.h / 2,
-				unitState.XY.x + wh.w / 2, unitState.XY.y + wh.w / 2);
 
 			SelectObject(_hdcMem, hWalkPen);
 		}
@@ -359,19 +376,13 @@ public:
 
 struct AniInfo {
 	AniInfo() {
-
 	}
 
 	~AniInfo() {
-		//if (hBitmapDC) {
-			//DeleteObject(hBitmapDC);
-		//}
 	}
 	char FilePath[MAX_PATH];
 	char FileTitle[MAX_PATH];
-	//char BitmapPath[MAX_PATH];
 	vector<SpriteInfo> SpriteInfos;
-	//HDC hBitmapDC;
 };
 
 class Unit {
@@ -384,9 +395,7 @@ public:
 	UnitStateType CurUnitStateType;
 	char BitmapPath[MAX_PATH];
 	AniInfo AniInfos[UnitStateType::Count];
-	//vector<AniFilePath> AniInfos;
 	UnitStatePattern UnitStatePattern;
-	//vector<SpriteInfo> SpriteInfosByUnitStateType[sizeof(UnitStateType)];
 	HDC hBitmapDC;
 
 	bool _isPlaying = false;
@@ -413,63 +422,60 @@ public:
 	
 	void Update(float _fDeltaTime) {
 		if (_isPlaying) {
-			// update pos
-			//UnitState curUnitState = UnitStates[UnitStateIndex];
+			// update UnitState
 			UnitState curUnitState = UnitStatePattern.GetCurUnitState();
 
-			// 다음 지점까지의 거리
-			fXY distanceXY = curUnitState.XY - XY;
-			float distance = distanceXY.distance();
-			float speed = SpeedPerSeconds * _fDeltaTime;
-			if (distance < speed) speed = distance;
-
-			float rad = atan2(distanceXY.y, distanceXY.x);
-
-			float speedX = speed * cos(rad);
-			float speedY = speed * sin(rad);
-
-			XY.x += speedX;
-			XY.y += speedY;
-
-			if (sameXY(curUnitState.XY, XY)) {
-				if (curUnitState.UnitStateType == UnitStateType::Idle) {
-					if (_posWaitTime == 0) {
-						_posWaitTime = GetTickCount();
-						return;
+			if (curUnitState.UnitStateType == UnitStateType::Idle) {
+				if (_posWaitTime == 0) {
+					_posWaitTime = GetTickCount();
+					//return;
+				}
+				else {
+					if (GetTickCount() - _posWaitTime >= curUnitState.Time) {
+						// end wait
+						_posWaitTime = 0;
+						UnitStatePattern.UpUnitStateIndex();
 					}
 					else {
-						if (GetTickCount() - _posWaitTime >= curUnitState.Time) {
-							//
-						}
-						else {
-							return;
-						}
+						// wait
+						//return;
 					}
 				}
-				else if (curUnitState.UnitStateType == UnitStateType::Walk) {
-					//
+			}
+			else if (curUnitState.UnitStateType == UnitStateType::MoveTo) {
+				// 다음 지점까지의 거리
+				fXY distanceXY = curUnitState.XY - XY;
+				float distance = distanceXY.distance();
+				float speed = SpeedPerSeconds * _fDeltaTime;
+				if (distance < speed) speed = distance;
+
+				float rad = atan2(distanceXY.y, distanceXY.x);
+
+				float speedX = speed * cos(rad);
+				float speedY = speed * sin(rad);
+
+				XY.x += speedX;
+				XY.y += speedY;
+
+				if (sameXY(curUnitState.XY, XY)) {
+					UnitStatePattern.UpUnitStateIndex();
 				}
-
-				_posWaitTime = 0;
-
-				UnitStatePattern.UpUnitStateIndex();
 			}
 
 			// update ani
 			time_t time = GetTickCount();
+			if (time - _aniTime >= _curSpriteInfo.Time)
+			{
+				_aniTime = time;
+				++_aniIndex;
 
-			if (time - _aniTime < _curSpriteInfo.Time) return;
+				vector<SpriteInfo> &spriteInfos = AniInfos[(int)curUnitState.UnitStateType].SpriteInfos;
+				if (_aniIndex >= spriteInfos.size()) {
+					_aniIndex = 0;
+				}
 
-			_aniTime = time;
-			++_aniIndex;
-
-			vector<SpriteInfo> &spriteInfos = AniInfos[(int)curUnitState.UnitStateType].SpriteInfos;
-			//vector<SpriteInfo> &spriteInfos = AniInfos[(int)CurUnitStateType].SpriteInfos;
-			if (_aniIndex >= spriteInfos.size()) {
-				_aniIndex = 0;
+				_curSpriteInfo = spriteInfos[_aniIndex];
 			}
-
-			_curSpriteInfo = spriteInfos[_aniIndex];
 		}
 	}
 	
@@ -479,27 +485,18 @@ public:
 		// test
 		fWH g_whBottomWndSize = {800, 600};
 
-		//vector<SpriteInfo> &spriteInfos = AniInfos[(int)CurUnitStateType].SpriteInfos;
-		//SpriteInfo _curSpriteInfo = spriteInfos[_aniIndex];
-
 		// 화면 정중앙 좌표
-		fXY center = { g_whBottomWndSize.w / 2, g_whBottomWndSize.h / 2 };
+		//fXY center = { g_whBottomWndSize.w / 2, g_whBottomWndSize.h / 2 };
 
 		// 선택된 스프라이트의 크기
 		fWH spriteSize = { _curSpriteInfo.Rect.right - _curSpriteInfo.Rect.left , _curSpriteInfo.Rect.bottom - _curSpriteInfo.Rect.top };
 		UINT w = _curSpriteInfo.Rect.right - _curSpriteInfo.Rect.left;
 		UINT h = _curSpriteInfo.Rect.bottom - _curSpriteInfo.Rect.top;
 		TransparentBlt(hdc,
-			//center.x - _curSpriteInfo.Pivot.x,
-			//center.x - _curSpriteInfo.Pivot.x * Magnification,
 			XY.x - _curSpriteInfo.Pivot.x * Magnification,
-			//center.y - _curSpriteInfo.Pivot.y,
-			//center.y - _curSpriteInfo.Pivot.y * Magnification,
 			XY.y - _curSpriteInfo.Pivot.y * Magnification,
 
-			//spriteSize.w,
 			spriteSize.w * Magnification,
-			//spriteSize.h,
 			spriteSize.h * Magnification,
 
 			hBitmapDC,
@@ -518,14 +515,14 @@ public:
 		_aniIndex = 0;
 		_aniTime = GetTickCount();
 
-		vector<SpriteInfo> &spriteInfos = AniInfos[(int)CurUnitStateType].SpriteInfos;
-		_curSpriteInfo = spriteInfos[0];
+		// 초기 위치 설정
+		UnitStatePattern.Init();
+		UnitState unitState = UnitStatePattern.GetCurUnitState();
+		XY = unitState.XY;
 	}
 
 	void Stop() {
-		//CurUnitStateType = unitStateType;
 		_isPlaying = false;
-		//_aniIndex = 0;
 	}
 
 	void SetName(const char *name) {

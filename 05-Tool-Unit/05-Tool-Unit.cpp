@@ -27,7 +27,13 @@ HWND g_hUnitStateAniList;
 CGameFrame_Unit g_gfUnit;
 
 //const char *g_szUnitStateTypeAsString[] = { "Idle"  };
-const char *g_szUnitStateTypeAsString[] = { "Idle" , "Walk" };
+const char *g_szUnitStateTypeAsString[] = { "Idle" , "MoveTo" };
+
+char g_szCurDir[MAX_PATH] = {}; // 작업 경로, 프로그램 실행 중 파일 대화상자에서 선택한 곳으로 바뀌기 때문에 프로그램 실행과 동시에 저장해둔다.
+char g_szUnitFilePath[MAX_PATH];
+
+void LoadSettings(const char *filePath);
+void SaveSettings(const char *filePath);
 
 void LoadUnit(const char *filePath);
 void SaveUnit(const char *filePath);
@@ -66,7 +72,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	g_gfUnit.Init(g_hWnd, hWndPicture, 1000 / 90, { 800, 600 }, WindowMode::None);
 
 	//UpdateUI();
-	LoadUnit("X:\\StudySources\\Win32-Game\\02-Tool-CutSprite\\resources\\kirby.unit");
+	LoadSettings("settings.cfg");
+	LoadUnit(g_szUnitFilePath);
+	//LoadUnit("X:\\StudySources\\Win32-Game\\02-Tool-CutSprite\\resources\\kirby.unit");
 
 	MSG msg;
 
@@ -133,6 +141,9 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
+
+	// 프로그램의 작업 경로
+	GetCurrentDirectory(MAX_PATH, g_szCurDir);
 
 	//HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
 	   //CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
@@ -302,7 +313,8 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 				LVNI_SELECTED // 검색 조건
 			);
 
-			if (itemIndex != NoSelectedIndex) {
+			//if (itemIndex != NoSelectedIndex) 
+			{
 				//g_gfUnit.Unit.AniInfos[itemIndex].FilePath;
 
 				//g_gfUnit.Unit.AniInfos[itemIndex].FileTitle[0] = 0;
@@ -441,6 +453,41 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
+void LoadSettings(const char *filePath) {
+	// 프로그램의 작업 경로
+	char curDir[MAX_PATH] = {};
+	GetCurrentDirectory(MAX_PATH, curDir);
+
+	char fullPath[MAX_PATH] = {};
+	sprintf_s(fullPath, "%s\\%s", curDir, filePath);
+
+	FILE *file = nullptr;
+	file = _fsopen(fullPath, "rt", _SH_DENYNO);
+
+	if (file == nullptr) return;
+
+	fgets(g_szUnitFilePath, MAX_PATH, file);
+	RemoveCarriageReturn(g_szUnitFilePath);
+
+	fclose(file);
+}
+
+void SaveSettings(const char *filePath) {
+	char fullPath[MAX_PATH] = {};
+	sprintf_s(fullPath, "%s\\%s", g_szCurDir, filePath);
+
+	FILE *file = nullptr;
+	file = _fsopen(fullPath, "wt", _SH_DENYNO);
+
+	if (file == nullptr) return;
+
+	// image file name
+	fputs(g_szUnitFilePath, file);
+	fputs("\n", file);
+
+	fclose(file);
+}
+
 void LoadUnit(const char *filePath)
 {
 	g_gfUnit.LoadUnit(filePath);
@@ -461,6 +508,9 @@ void LoadUnit(const char *filePath)
 
 void SaveUnit(const char *filePath) {
 	g_gfUnit.SaveUnit(filePath);
+
+	strcpy_s(g_szUnitFilePath, MAX_PATH, filePath);
+	SaveSettings(g_szUnitFilePath);
 }
 
 void UpdateUI() {

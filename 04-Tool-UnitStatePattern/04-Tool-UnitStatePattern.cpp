@@ -18,7 +18,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 
 WH g_whClientSize = { 800, 600 };
 char g_szAniFilePath[MAX_PATH];
-const char *g_szUnitStateTypeAsString[] = { "Idle" , "Walk" };
+const char *g_szUnitStateTypeAsString[] = { "Idle" , "MoveTo" };
 
 HWND g_hWnd;
 HWND g_hDlg;
@@ -410,7 +410,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		UnitState unitState;
 		unitState.XY = { (float)x, (float)y };
 		unitState.Time = 0;
-		unitState.UnitStateType = UnitStateType::Walk;
+		unitState.UnitStateType = UnitStateType::MoveTo;
 
 		g_gfUnitStatePattern.UnitStatePattern.AddUnitState(unitState);
 
@@ -525,9 +525,9 @@ void UpdateUnitStatesList() {
 		item.state;
 		item.stateMask;
 
-		char itemText[szMax_Pos] = {};
+		char itemText[szMax_UnitState] = {};
 		//_itoa_s(unitState->UnitStateType, itemText, 10);
-		strcpy_s(itemText, szMax_Pos, g_szUnitStateTypeAsString[unitState->UnitStateType]);
+		strcpy_s(itemText, szMax_UnitState, g_szUnitStateTypeAsString[unitState->UnitStateType]);
 		item.pszText = itemText;
 		ListView_InsertItem(g_hUnitStateList, &item); // 아이템 추가
 

@@ -67,7 +67,7 @@ void CGameFrame_UnitStatePattern::UpdateLogicImpl()
 					}
 				}
 			}
-			else if (curUnitState.UnitStateType == UnitStateType::Walk) {
+			else if (curUnitState.UnitStateType == UnitStateType::MoveTo) {
 				//
 			}
 
@@ -116,7 +116,9 @@ void CGameFrame_UnitStatePattern::DrawUnitState()
 {
 	if (UnitStatePattern.UnitStates.size() == 0) return;
 
-	HPEN hLinePen = (HPEN)GetStockObject(BLACK_PEN);
+	UnitStatePattern.RenderUnitState(_hdcMem);
+
+	/*HPEN hLinePen = (HPEN)GetStockObject(BLACK_PEN);
 	HPEN hIdlePen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));;
 	HPEN hWalkPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));;
 	HPEN hSelectedPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
@@ -139,7 +141,7 @@ void CGameFrame_UnitStatePattern::DrawUnitState()
 		else if (unitState.UnitStateType == UnitStateType::Idle) {
 			SelectObject(_hdcMem, hIdlePen);
 		}
-		else if (unitState.UnitStateType == UnitStateType::Walk) {
+		else if (unitState.UnitStateType == UnitStateType::MoveTo) {
 			SelectObject(_hdcMem, hWalkPen);
 		}
 
@@ -153,7 +155,7 @@ void CGameFrame_UnitStatePattern::DrawUnitState()
 	DeleteObject(hLinePen);
 	DeleteObject(hIdlePen);
 	DeleteObject(hWalkPen);
-	DeleteObject(hSelectedPen);
+	DeleteObject(hSelectedPen);*/
 }
 
 void CGameFrame_UnitStatePattern::InitUnit()
