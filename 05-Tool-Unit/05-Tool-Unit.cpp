@@ -206,9 +206,25 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDC_EDIT1:
 		{
 			if (HIWORD(wParam) == EN_CHANGE) {
-				char unitName[szMax_UnitName];
-				GetDlgItemText(hDlg, IDC_EDIT1, unitName, szMax_UnitName);
-				g_gfUnit.Unit.SetName(unitName);
+				char text[szMax_UnitName];
+				GetDlgItemText(hDlg, IDC_EDIT1, text, szMax_UnitName);
+				g_gfUnit.Unit.SetName(text);
+			}
+		}
+		break;
+
+		case IDC_EDIT2:
+		{
+			//
+		}
+		break;
+
+		case IDC_EDIT3:
+		{
+			if (HIWORD(wParam) == EN_CHANGE) {
+				char text[szMax_Magnification];
+				GetDlgItemText(hDlg, IDC_EDIT3, text, szMax_Magnification);
+				g_gfUnit.Unit.Magnification = atof(text);
 			}
 		}
 		break;

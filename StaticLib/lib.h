@@ -17,6 +17,7 @@
 #define nMax_SpriteCoordinateCount (4/*sprite*/ + 2/*pivot*/)
 #define nMax_SpriteCoordinateByteSize (sizeof(int) * nMax_SpriteCoordinateCount)
 #define nMax_RectPos 4
+#define szMax_Magnification 3 + 1
 
 #define szMax_XY 30 + 1
 #define szMax_UnitStateLine 99
@@ -316,6 +317,7 @@ public:
 	char Name[szMax_UnitName];
 	fXY XY;
 	WH WH;
+	float Magnification = 1.0;
 	UnitStateType CurUnitStateType;
 	char BitmapPath[MAX_PATH];
 	AniInfo AniInfos[UnitStateType::Count];
@@ -378,15 +380,15 @@ public:
 		UINT w = _curSpriteInfo.Rect.right - _curSpriteInfo.Rect.left;
 		UINT h = _curSpriteInfo.Rect.bottom - _curSpriteInfo.Rect.top;
 		TransparentBlt(hdc,
-			center.x - _curSpriteInfo.Pivot.x,
-			//center.x - _curSpriteInfo.Pivot.x * fMagnification,
-			center.y - _curSpriteInfo.Pivot.y,
-			//center.y - _curSpriteInfo.Pivot.y * fMagnification,
+			//center.x - _curSpriteInfo.Pivot.x,
+			center.x - _curSpriteInfo.Pivot.x * Magnification,
+			//center.y - _curSpriteInfo.Pivot.y,
+			center.y - _curSpriteInfo.Pivot.y * Magnification,
 
-			spriteSize.w,
-			//spriteSize.w * fMagnification,
-			spriteSize.h,
-			//spriteSize.h * fMagnification,
+			//spriteSize.w,
+			spriteSize.w * Magnification,
+			//spriteSize.h,
+			spriteSize.h * Magnification,
 
 			hBitmapDC,
 			_curSpriteInfo.Rect.left,
