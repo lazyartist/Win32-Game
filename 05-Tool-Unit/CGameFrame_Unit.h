@@ -16,13 +16,18 @@ public:
 
 	void LoadUnit(const char *filePath);
 	void SaveUnit(const char *filePath);
-	
+
 	//vector<AniFilePath> AniFilePaths;
 	//vector<char *> AniFilePaths;
 	//vector<char *> AniFilePaths;
 	//vector<char [MAX_PATH]> AniFilePaths;
 	//char AniFilePath[MAX_PATH];
 	Unit Unit;
+
+	Unit *Unit2;
+
+	Unit *Unit3;
+
 
 
 
