@@ -4,40 +4,40 @@
 #include "CGameFrame.cpp"
 
 
-CGameFrame_Unit::CGameFrame_Unit()
+CUnitCreatorGameFrameWork::CUnitCreatorGameFrameWork()
 {
 }
 
 
-CGameFrame_Unit::~CGameFrame_Unit()
+CUnitCreatorGameFrameWork::~CUnitCreatorGameFrameWork()
 {
 }
 
-void CGameFrame_Unit::InitImpl()
+void CUnitCreatorGameFrameWork::InitImpl()
 {
-	//dlog("CGameFrame_Unit");
+	//dlog("CUnitCreatorGameFrameWork");
 	//cUnit.SetName("hihi");
 	cUnit.Init(_hdcMem);
 }
 
-void CGameFrame_Unit::UpdateLogicImpl()
+void CUnitCreatorGameFrameWork::UpdateLogicImpl()
 {
-	//dlog("CGameFrame_Unit::UpdateLogicImpl");
+	//dlog("CUnitCreatorGameFrameWork::UpdateLogicImpl");
 
 	cUnit.Update(_fDeltaTime);
 }
 
-void CGameFrame_Unit::UpdateRenderImpl()
+void CUnitCreatorGameFrameWork::UpdateRenderImpl()
 {
 	cUnit.cUnitStatePattern.RenderUnitState(_hdcMem);
 	cUnit.Render(_hdcMem);
 }
 
-void CGameFrame_Unit::ReleaseImpl()
+void CUnitCreatorGameFrameWork::ReleaseImpl()
 {
 }
 
-void CGameFrame_Unit::LoadUnit(const char *filePath)
+void CUnitCreatorGameFrameWork::LoadUnit(const char *filePath)
 {
 	FILE *file = nullptr;
 	file = _fsopen(filePath, "rt", _SH_DENYNO);
@@ -102,7 +102,7 @@ void CGameFrame_Unit::LoadUnit(const char *filePath)
 	fclose(file);
 }
 
-void CGameFrame_Unit::SaveUnit(const char *filePath)
+void CUnitCreatorGameFrameWork::SaveUnit(const char *filePath)
 {
 	FILE *file = nullptr;
 	file = _fsopen(filePath, "wt", _SH_DENYNO);

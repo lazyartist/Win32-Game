@@ -2,12 +2,12 @@
 #include "lib.h"
 #include "CGameFrame.h"
 
-class CGameFrame_Unit :
-	public CGameFrame
+class CUnitCreatorGameFrameWork :
+	public CGameFrameWorkBase
 {
 public:
-	CGameFrame_Unit();
-	virtual ~CGameFrame_Unit();
+	CUnitCreatorGameFrameWork();
+	virtual ~CUnitCreatorGameFrameWork();
 
 	virtual void InitImpl();
 	virtual void UpdateLogicImpl();

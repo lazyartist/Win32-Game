@@ -3,7 +3,7 @@
 #include "CGameFrame.h"
 
 class CGameFrame_UnitStatePattern :
-	public CGameFrame
+	public CGameFrameWorkBase
 {
 public:
 	CGameFrame_UnitStatePattern();

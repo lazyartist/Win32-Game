@@ -4,17 +4,17 @@
 #include "common.h"
 
 
-CGameFrame::CGameFrame()
+CGameFrameWorkBase::CGameFrameWorkBase()
 {
-	dlog("CGameFrame");
+	dlog("CGameFrameWorkBase");
 }
 
-CGameFrame::~CGameFrame()
+CGameFrameWorkBase::~CGameFrameWorkBase()
 {
-	dlog("~CGameFrame");
+	dlog("~CGameFrameWorkBase");
 }
 
-void CGameFrame::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSize, EWindowMode windowMode)
+void CGameFrameWorkBase::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSize, EWindowMode windowMode)
 {
 	dlog("Init");
 
@@ -56,7 +56,7 @@ void CGameFrame::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSize, 
 	InitImpl();
 }
 
-void CGameFrame::Update()
+void CGameFrameWorkBase::Update()
 {
 	DWORD time = GetTickCount();
 	DWORD nDeltaTime = time - _prevFrameTime;
@@ -94,7 +94,7 @@ void CGameFrame::Update()
 	}
 }
 
-void CGameFrame::UpdateRender()
+void CGameFrameWorkBase::UpdateRender()
 {
 	//dlog("UpdateRender");
 
@@ -129,7 +129,7 @@ void CGameFrame::UpdateRender()
 	BitBlt(_hdc, 0, 0, _whClientSize.w, _whClientSize.h, _hdcMem, 0, 0, SRCCOPY);
 }
 
-void CGameFrame::Release()
+void CGameFrameWorkBase::Release()
 {
 	//dlog("Release");
 
@@ -139,27 +139,27 @@ void CGameFrame::Release()
 	ReleaseImpl();
 }
 
-void CGameFrame::InitImpl()
+void CGameFrameWorkBase::InitImpl()
 {
 	dlog("InitImpl");
 }
 
-void CGameFrame::UpdateLogicImpl()
+void CGameFrameWorkBase::UpdateLogicImpl()
 {
 	//dlog("UpdateLogicImpl");
 }
 
-void CGameFrame::UpdateRenderImpl()
+void CGameFrameWorkBase::UpdateRenderImpl()
 {
 	//dlog("UpdateRenderImpl");
 }
 
-void CGameFrame::ReleaseImpl()
+void CGameFrameWorkBase::ReleaseImpl()
 {
 	dlog("ReleaseImpl");
 }
 
-void CGameFrame::SetFullScreen(bool isFullScreen) {
+void CGameFrameWorkBase::SetFullScreen(bool isFullScreen) {
 	if (isFullScreen) {
 		// 전체화면 스타일로 설정
 		SetWindowLong(_hWnd, GWL_STYLE, WS_POPUP);

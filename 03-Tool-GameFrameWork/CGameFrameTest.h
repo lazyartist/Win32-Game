@@ -2,7 +2,7 @@
 #include "CGameFrame.h"
 
 class CGameFrameTest : 
-	public CGameFrame
+	public CGameFrameWorkBase
 {
 public:
 	CGameFrameTest();

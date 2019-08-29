@@ -1,11 +1,11 @@
 #pragma once
 #include "lib.h"
 
-class CGameFrame
+class CGameFrameWorkBase
 {
 public:
-	CGameFrame();
-	virtual ~CGameFrame();
+	CGameFrameWorkBase();
+	virtual ~CGameFrameWorkBase();
 
 	void Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClient, EWindowMode windowMode);
 	void Update();
