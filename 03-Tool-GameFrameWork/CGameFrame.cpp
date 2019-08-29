@@ -14,7 +14,7 @@ CGameFrame::~CGameFrame()
 	dlog("~CGameFrame");
 }
 
-void CGameFrame::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSize, WindowMode windowMode)
+void CGameFrame::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSize, EWindowMode windowMode)
 {
 	dlog("Init");
 

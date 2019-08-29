@@ -7,7 +7,7 @@ public:
 	CGameFrame();
 	virtual ~CGameFrame();
 
-	void Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClient, WindowMode windowMode);
+	void Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClient, EWindowMode windowMode);
 	void Update();
 	void UpdateRender();
 	void Release();

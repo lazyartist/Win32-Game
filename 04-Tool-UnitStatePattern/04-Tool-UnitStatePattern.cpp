@@ -58,7 +58,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	g_gfUnitStatePattern.Init(g_hWnd, g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, WindowMode::Window);
+	g_gfUnitStatePattern.Init(g_hWnd, g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, EWindowMode::Window);
 
 	SetWindowPositionToCenter(g_hWnd);
 
