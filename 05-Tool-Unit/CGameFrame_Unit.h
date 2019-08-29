@@ -22,11 +22,11 @@ public:
 	//vector<char *> AniFilePaths;
 	//vector<char [MAX_PATH]> AniFilePaths;
 	//char AniFilePath[MAX_PATH];
-	Unit Unit;
+	CUnit cUnit;
 
-	Unit *Unit2;
+	//cUnit *Unit2;
 
-	Unit *Unit3;
+	//cUnit *Unit3;
 
 
 

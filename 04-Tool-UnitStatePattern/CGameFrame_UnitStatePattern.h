@@ -20,15 +20,15 @@ public:
 
 	void PlayStop(bool isPlay);
 
-	UnitStatePattern UnitStatePattern;
-	vector<UnitState> UnitStates;
+	CUnitStatePattern UnitStatePattern;
+	vector<CUnitState> UnitStates;
 	UINT UnitStateIndex;
 	UINT SelectedUnitStateIndex;
 	bool IsPlaying;
 
 private :
-	fXY _xyClientCenter;
-	Unit _unit;
+	SXY _xyClientCenter;
+	CUnit _unit;
 	DWORD _unitIdleTime = 0;
 };
 

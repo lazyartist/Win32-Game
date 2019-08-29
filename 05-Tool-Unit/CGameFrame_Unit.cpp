@@ -16,21 +16,21 @@ CGameFrame_Unit::~CGameFrame_Unit()
 void CGameFrame_Unit::InitImpl()
 {
 	//dlog("CGameFrame_Unit");
-	//Unit.SetName("hihi");
-	Unit.Init(_hdcMem);
+	//cUnit.SetName("hihi");
+	cUnit.Init(_hdcMem);
 }
 
 void CGameFrame_Unit::UpdateLogicImpl()
 {
 	//dlog("CGameFrame_Unit::UpdateLogicImpl");
 
-	Unit.Update(_fDeltaTime);
+	cUnit.Update(_fDeltaTime);
 }
 
 void CGameFrame_Unit::UpdateRenderImpl()
 {
-	Unit.UnitStatePattern.RenderUnitState(_hdcMem);
-	Unit.Render(_hdcMem);
+	cUnit.cUnitStatePattern.RenderUnitState(_hdcMem);
+	cUnit.Render(_hdcMem);
 }
 
 void CGameFrame_Unit::ReleaseImpl()
@@ -45,27 +45,27 @@ void CGameFrame_Unit::LoadUnit(const char *filePath)
 	if (file == nullptr) return;
 
 	// name
-	fgets(Unit.Name, szMax_UnitName, file);
-	RemoveCarriageReturn(Unit.Name);
+	fgets(cUnit.szName, szMax_UnitName, file);
+	RemoveCarriageReturn(cUnit.szName);
 
-	// Magnification
+	// fMagnification
 	char szFloat[FLT_MAX_10_EXP];
 	fgets(szFloat, FLT_MAX_10_EXP, file);
 	RemoveCarriageReturn(szFloat);
-	Unit.Magnification = atof(szFloat);
+	cUnit.fMagnification = atof(szFloat);
 
-	// SpeedPerSeconds
+	// fSpeedPerSeconds
 	fgets(szFloat, FLT_MAX_10_EXP, file);
 	RemoveCarriageReturn(szFloat);
-	Unit.SpeedPerSeconds = atof(szFloat);
+	cUnit.fSpeedPerSeconds = atof(szFloat);
 	
 	// bitmap file path
-	fgets(Unit.BitmapPath, MAX_PATH, file);
-	RemoveCarriageReturn(Unit.BitmapPath);
+	fgets(cUnit.szBitmapPath, MAX_PATH, file);
+	RemoveCarriageReturn(cUnit.szBitmapPath);
 
 	// pattern file path
-	fgets(Unit.UnitStatePattern.FilePath, MAX_PATH, file);
-	RemoveCarriageReturn(Unit.UnitStatePattern.FilePath);
+	fgets(cUnit.cUnitStatePattern.szFilePath, MAX_PATH, file);
+	RemoveCarriageReturn(cUnit.cUnitStatePattern.szFilePath);
 
 	// ani files
 	char szItemCount[szMax_PosLine] = {};
@@ -87,7 +87,7 @@ void CGameFrame_Unit::LoadUnit(const char *filePath)
 
 		nextToken = itemLine;
 
-		AniInfo aniInfo;
+		SAniInfo aniInfo;
 
 		token = strtok_s(nullptr, "\t", &nextToken);
 		strcpy_s(aniInfo.FilePath, MAX_PATH, token);
@@ -95,7 +95,7 @@ void CGameFrame_Unit::LoadUnit(const char *filePath)
 		token = strtok_s(nullptr, "\t", &nextToken);
 		strcpy_s(aniInfo.FileTitle, MAX_PATH, token);
 
-		Unit.AniInfos[i] = aniInfo;
+		cUnit.arAniInfos[i] = aniInfo;
 	}
 
 
@@ -110,26 +110,26 @@ void CGameFrame_Unit::SaveUnit(const char *filePath)
 	if (file == nullptr) return;
 
 	// name
-	fprintf_s(file, "%s\n", Unit.Name);
+	fprintf_s(file, "%s\n", cUnit.szName);
 
-	// Magnification
-	fprintf_s(file, "%f\n", Unit.Magnification);
+	// fMagnification
+	fprintf_s(file, "%f\n", cUnit.fMagnification);
 
-	// SpeedPerSeconds
-	fprintf_s(file, "%f\n", Unit.SpeedPerSeconds);
+	// fSpeedPerSeconds
+	fprintf_s(file, "%f\n", cUnit.fSpeedPerSeconds);
 
 	// bitmap path
-	fprintf_s(file, "%s\n", Unit.BitmapPath);
+	fprintf_s(file, "%s\n", cUnit.szBitmapPath);
 
 	// pattern file
-	fprintf_s(file, "%s\n", Unit.UnitStatePattern.FilePath);
+	fprintf_s(file, "%s\n", cUnit.cUnitStatePattern.szFilePath);
 
 	// ani files
-	int itemCount = UnitStateType::Count;
+	int itemCount = EUnitStateType::Count;
 	fprintf_s(file, "%d\n", itemCount);
 	for (size_t i = 0; i < itemCount; i++)
 	{
-		fprintf_s(file, "%s\t%s\n", Unit.AniInfos[i].FilePath, Unit.AniInfos[i].FileTitle);
+		fprintf_s(file, "%s\t%s\n", cUnit.arAniInfos[i].FilePath, cUnit.arAniInfos[i].FileTitle);
 	}
 
 	fclose(file);

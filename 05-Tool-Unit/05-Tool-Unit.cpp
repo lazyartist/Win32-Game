@@ -1,4 +1,4 @@
-﻿// 05-Tool-Unit.cpp : 응용 프로그램에 대한 진입점을 정의합니다.
+﻿// 05-Tool-cUnit.cpp : 응용 프로그램에 대한 진입점을 정의합니다.
 //
 
 #include "stdafx.h"
@@ -180,7 +180,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 		// ===== List에 컬럼 추가 =====
 		// List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.
-		char colText0[] = "UnitStateType";
+		char colText0[] = "EUnitStateType";
 		char colText1[] = "Ani File";
 
 		LVCOLUMN col = {};
@@ -219,7 +219,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			if (HIWORD(wParam) == EN_CHANGE) {
 				char text[szMax_UnitName];
 				GetDlgItemText(hDlg, IDC_EDIT1, text, szMax_UnitName);
-				g_gfUnit.Unit.SetName(text);
+				g_gfUnit.cUnit.SetName(text);
 			}
 		}
 		break;
@@ -235,7 +235,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			if (HIWORD(wParam) == EN_CHANGE) {
 				char text[szMax_Magnification];
 				GetDlgItemText(hDlg, IDC_EDIT3, text, szMax_Magnification);
-				g_gfUnit.Unit.Magnification = atof(text);
+				g_gfUnit.cUnit.fMagnification = atof(text);
 			}
 		}
 		break;
@@ -245,7 +245,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			if (HIWORD(wParam) == EN_CHANGE) {
 				char text[FLT_MAX_10_EXP];
 				GetDlgItemText(hDlg, IDC_EDIT4, text, FLT_MAX_10_EXP);
-				g_gfUnit.Unit.SpeedPerSeconds = atof(text);
+				g_gfUnit.cUnit.fSpeedPerSeconds = atof(text);
 			}
 		}
 		break;
@@ -279,7 +279,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 				char filePath[MAX_PATH] = {};
 				char fileTitle[MAX_PATH] = {};
 				if (OpenFileDialog(filePath, fileTitle)) {
-					g_gfUnit.Unit.LoadAniFile((UnitStateType)itemIndex, filePath);
+					g_gfUnit.cUnit.LoadAniFile((EUnitStateType)itemIndex, filePath);
 
 					UpdateUnitStateAniList();
 				};
@@ -297,8 +297,8 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 			);
 
 			if (itemIndex != NoSelectedIndex) {
-				g_gfUnit.Unit.AniInfos[itemIndex].FilePath[0] = 0;
-				g_gfUnit.Unit.AniInfos[itemIndex].FileTitle[0] = 0;
+				g_gfUnit.cUnit.arAniInfos[itemIndex].FilePath[0] = 0;
+				g_gfUnit.cUnit.arAniInfos[itemIndex].FileTitle[0] = 0;
 
 				UpdateUnitStateAniList();
 			}
@@ -315,11 +315,11 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 			//if (itemIndex != NoSelectedIndex) 
 			{
-				//g_gfUnit.Unit.AniInfos[itemIndex].FilePath;
+				//g_gfUnit.cUnit.arAniInfos[itemIndex].szFilePath;
 
-				//g_gfUnit.Unit.AniInfos[itemIndex].FileTitle[0] = 0;
+				//g_gfUnit.cUnit.arAniInfos[itemIndex].szFileTitle[0] = 0;
 
-				g_gfUnit.Unit.Play((UnitStateType)itemIndex);
+				g_gfUnit.cUnit.Play((EUnitStateType)itemIndex);
 
 				//UpdateUnitStateAniList();
 			}
@@ -328,7 +328,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON10: // Stop Ani
 		{
-			g_gfUnit.Unit.Stop();
+			g_gfUnit.cUnit.Stop();
 		}
 		break;
 
@@ -336,7 +336,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
-				g_gfUnit.Unit.LoadUnitBitmap(filePath);
+				g_gfUnit.cUnit.LoadUnitBitmap(filePath);
 
 				UpdateBitmap();
 			}
@@ -347,7 +347,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
-				g_gfUnit.Unit.UnitStatePattern.LoadUnitStatePatternFile(filePath);
+				g_gfUnit.cUnit.cUnitStatePattern.LoadUnitStatePatternFile(filePath);
 				UpdateUI();
 			}
 		}
@@ -355,7 +355,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON7: // Delete .usp
 		{
-			g_gfUnit.Unit.UnitStatePattern.Clear();
+			g_gfUnit.cUnit.cUnitStatePattern.Clear();
 			UpdateUI();
 		}
 		break;
@@ -492,13 +492,13 @@ void LoadUnit(const char *filePath)
 {
 	g_gfUnit.LoadUnit(filePath);
 
-	g_gfUnit.Unit.LoadUnitBitmap(g_gfUnit.Unit.BitmapPath);
+	g_gfUnit.cUnit.LoadUnitBitmap(g_gfUnit.cUnit.szBitmapPath);
 
-	g_gfUnit.Unit.UnitStatePattern.LoadUnitStatePatternFile(g_gfUnit.Unit.UnitStatePattern.FilePath);
+	g_gfUnit.cUnit.cUnitStatePattern.LoadUnitStatePatternFile(g_gfUnit.cUnit.cUnitStatePattern.szFilePath);
 
-	for (size_t i = 0; i < UnitStateType::Count; i++)
+	for (size_t i = 0; i < EUnitStateType::Count; i++)
 	{
-		g_gfUnit.Unit.LoadAniFile((UnitStateType)i, g_gfUnit.Unit.AniInfos[i].FilePath);
+		g_gfUnit.cUnit.LoadAniFile((EUnitStateType)i, g_gfUnit.cUnit.arAniInfos[i].FilePath);
 	}
 
 	UpdateUI();
@@ -514,22 +514,22 @@ void SaveUnit(const char *filePath) {
 }
 
 void UpdateUI() {
-	SetDlgItemText(g_hWnd, IDC_EDIT1, g_gfUnit.Unit.Name);
+	SetDlgItemText(g_hWnd, IDC_EDIT1, g_gfUnit.cUnit.szName);
 
 	char text[FLT_MAX_10_EXP];
-	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_gfUnit.Unit.SpeedPerSeconds);
+	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_gfUnit.cUnit.fSpeedPerSeconds);
 	SetDlgItemText(g_hWnd, IDC_EDIT4, text);
 
-	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_gfUnit.Unit.Magnification);
+	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_gfUnit.cUnit.fMagnification);
 	SetDlgItemText(g_hWnd, IDC_EDIT3, text);
 
-	SetDlgItemText(g_hWnd, IDC_EDIT2, g_gfUnit.Unit.UnitStatePattern.FileTitle);
+	SetDlgItemText(g_hWnd, IDC_EDIT2, g_gfUnit.cUnit.cUnitStatePattern.szFileTitle);
 }
 
 void UpdateBitmap() {
 	HWND hWndPic2 = GetDlgItem(g_hWnd, IDC_PIC2);
 	HDC hdc = GetDC(hWndPic2);
-	TransparentBlt(hdc, 0, 0, 100, 100, g_gfUnit.Unit.hBitmapDC, 0, 0, 100, 100, RGB(255, 0, 0));
+	TransparentBlt(hdc, 0, 0, 100, 100, g_gfUnit.cUnit.hBitmapDC, 0, 0, 100, 100, RGB(255, 0, 0));
 }
 
 void UpdateUnitStateAniList() {
@@ -540,7 +540,7 @@ void UpdateUnitStateAniList() {
 	item.state;
 	item.stateMask;
 
-	for (size_t i = 0; i < UnitStateType::Count; i++)
+	for (size_t i = 0; i < EUnitStateType::Count; i++)
 	{
 		item.iItem = i;
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
@@ -552,8 +552,8 @@ void UpdateUnitStateAniList() {
 
 		//item.pszText = itemText;
 		//item.iSubItem = 1;
-		//strcpy_s(itemText, MAX_PATH, g_gfUnit.Unit.AniInfos[i].FileTitle);
-		ListView_SetItemText(g_hUnitStateAniList, i, 1, g_gfUnit.Unit.AniInfos[i].FileTitle); // 아이템 추가0
+		//strcpy_s(itemText, MAX_PATH, g_gfUnit.cUnit.arAniInfos[i].szFileTitle);
+		ListView_SetItemText(g_hUnitStateAniList, i, 1, g_gfUnit.cUnit.arAniInfos[i].FileTitle); // 아이템 추가0
 		//ListView_SetItemText(g_hUnitStateAniList, i, 1, &item); // 아이템 추가0
 	}
 }
@@ -568,9 +568,9 @@ void UpdateUnitStateAniList() {
 //	item.state;
 //	item.stateMask;
 //
-//	for (size_t i = 0; i < UnitStateType::Count; i++)
+//	for (size_t i = 0; i < EUnitStateType::Count; i++)
 //	{
-//		item.pszText = g_gfUnit.Unit.AniInfos[i].FileTitle;
+//		item.pszText = g_gfUnit.cUnit.arAniInfos[i].szFileTitle;
 //		ListView_InsertItem(g_hAniFileList, &item); // 아이템 추가0
 //	}
 //}

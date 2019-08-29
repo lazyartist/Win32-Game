@@ -53,7 +53,7 @@ enum MouseModeType
 // ===== struct =====
 typedef struct _BitmapViewInfo {
 	float Magnification = 2.0;
-	//float Magnification = 60.0;
+	//float fMagnification = 60.0;
 	//bool IsTransparentColorPickMode;
 	bool IsMoveMode;
 	COLORREF TransparentColor;
@@ -62,85 +62,85 @@ typedef struct _BitmapViewInfo {
 //typedef struct _XY {
 //	INT x;
 //	INT y;
-//} XY;
+//} sXY;
 //
 //typedef struct _WH {
 //	UINT w;
 //	UINT h;
-//} WH;
+//} sWH;
 
-//typedef struct _SpriteInfo {
-//	UINT Time = 0;
-//	INT Coordinates[nMax_SpriteCoordinateCount];
-//	RECT Rect;
-//	XY Pivot;
-//	//RECT Collisions[nMax_SpriteCollision];
-//	vector<RECT> Collisions;
-//	UINT CollisionCount;
+//typedef struct CSpriteInfo_ {
+//	UINT iTime = 0;
+//	INT ariCoordinates[nMax_SpriteCoordinateCount];
+//	RECT sRect;
+//	sXY sPivot;
+//	//RECT vecsCollisions[nMax_SpriteCollision];
+//	vector<RECT> vecsCollisions;
+//	UINT iCollisionCount;
 //
 //	void SetCoordinates(INT coordinates[], UINT count) {
-//		memcpy(Coordinates, coordinates, count);
+//		memcpy(ariCoordinates, coordinates, count);
 //
 //		int i = 0;
-//		Rect.left = Coordinates[i++];
-//		Rect.top = Coordinates[i++];
-//		Rect.right = Coordinates[i++];
-//		Rect.bottom = Coordinates[i++];
-//		Pivot.x = Coordinates[i++];
-//		Pivot.y = Coordinates[i++];
+//		sRect.left = ariCoordinates[i++];
+//		sRect.top = ariCoordinates[i++];
+//		sRect.right = ariCoordinates[i++];
+//		sRect.bottom = ariCoordinates[i++];
+//		sPivot.x = ariCoordinates[i++];
+//		sPivot.y = ariCoordinates[i++];
 //	}
 //	void SetPivot(INT x, INT y) {
 //		int i = 0;
-//		Rect.left = Coordinates[i++];
-//		Rect.top = Coordinates[i++];
-//		Rect.right = Coordinates[i++];
-//		Rect.bottom = Coordinates[i++];
-//		Coordinates[4] = x;
-//		Coordinates[5] = y;
-//		Pivot.x = x;
-//		Pivot.y = y;
+//		sRect.left = ariCoordinates[i++];
+//		sRect.top = ariCoordinates[i++];
+//		sRect.right = ariCoordinates[i++];
+//		sRect.bottom = ariCoordinates[i++];
+//		ariCoordinates[4] = x;
+//		ariCoordinates[5] = y;
+//		sPivot.x = x;
+//		sPivot.y = y;
 //	}
 //	void ResetCollisionCount() {
-//		CollisionCount = 0;
+//		iCollisionCount = 0;
 //	}
 //	void AddCollision(int collisionPos[], int count) {
-//		if (CollisionCount >= nMax_SpriteCollision) {
+//		if (iCollisionCount >= nMax_SpriteCollision) {
 //			return;
 //		}
 //
 //		RECT collision = { collisionPos[0] , collisionPos[1] , collisionPos[2] , collisionPos[3] };
-//		//Collisions[CollisionCount++] = collision;
+//		//vecsCollisions[iCollisionCount++] = collision;
 //
-//		++CollisionCount;
-//		Collisions.push_back(collision);
+//		++iCollisionCount;
+//		vecsCollisions.push_back(collision);
 //	}
 //	void RemoveCollision(int index) {
-//		if (index < 0 || index >= CollisionCount) {
+//		if (index < 0 || index >= iCollisionCount) {
 //			return;
 //		}
 //
-//		//auto iter = Collisions.begin();
-//		vector<RECT>::iterator iter = Collisions.begin();
-//		Collisions.erase(iter + index);
-//		--CollisionCount;
+//		//auto iter = vecsCollisions.begin();
+//		vector<RECT>::iterator iter = vecsCollisions.begin();
+//		vecsCollisions.erase(iter + index);
+//		--iCollisionCount;
 //	}
 //	void RemoveAllCollisions() {
-//		if (CollisionCount == 0) {
+//		if (iCollisionCount == 0) {
 //			return;
 //		}
 //
-//		Collisions.clear();
-//		CollisionCount = 0;
+//		vecsCollisions.clear();
+//		iCollisionCount = 0;
 //	}
-//} SpriteInfo;
+//} CSpriteInfo;
 // ===== struct ===== end
 
 
 //// ===== function =====
-//inline WH ScreenRectToWH(RECT rect) {
+//inline sWH ScreenRectToWH(RECT rect) {
 //	int w = rect.right - rect.left;
 //	int h = rect.bottom - rect.top;
-//	WH wh = { w, h };
+//	sWH wh = { w, h };
 //
 //	return wh;
 //}
@@ -212,14 +212,14 @@ typedef struct _BitmapViewInfo {
 //	return rect;
 //}
 //
-//inline XY operator-(XY xy, POINT pnt) {
+//inline sXY operator-(sXY xy, POINT pnt) {
 //	xy.x -= pnt.x;
 //	xy.y -= pnt.y;
 //
 //	return xy;
 //}
 //
-//inline XY operator*(XY xy, float v) {
+//inline sXY operator*(sXY xy, float v) {
 //	xy.x *= v;
 //	xy.y *= v;
 //

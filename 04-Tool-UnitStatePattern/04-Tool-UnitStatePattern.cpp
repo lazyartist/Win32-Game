@@ -1,4 +1,4 @@
-﻿// 04-Tool-UnitStatePattern.cpp : 응용 프로그램에 대한 진입점을 정의합니다.
+﻿// 04-Tool-CUnitStatePattern.cpp : 응용 프로그램에 대한 진입점을 정의합니다.
 //
 #include <list> 
 #include <vector> 
@@ -407,10 +407,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int x = GET_X_LPARAM(lParam);
 		int y = GET_Y_LPARAM(lParam);
 
-		UnitState unitState;
-		unitState.XY = { (float)x, (float)y };
-		unitState.Time = 0;
-		unitState.UnitStateType = UnitStateType::MoveTo;
+		CUnitState unitState;
+		unitState.sXY = { (float)x, (float)y };
+		unitState.iTime = 0;
+		unitState.eUnitStateType = EUnitStateType::MoveTo;
 
 		g_gfUnitStatePattern.UnitStatePattern.AddUnitState(unitState);
 
@@ -423,10 +423,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int x = GET_X_LPARAM(lParam);
 		int y = GET_Y_LPARAM(lParam);
 
-		UnitState unitState;
-		unitState.XY = { (float)x, (float)y };
-		unitState.Time = 1000;
-		unitState.UnitStateType = UnitStateType::Idle;
+		CUnitState unitState;
+		unitState.sXY = { (float)x, (float)y };
+		unitState.iTime = 1000;
+		unitState.eUnitStateType = EUnitStateType::Idle;
 
 		g_gfUnitStatePattern.UnitStatePattern.AddUnitState(unitState);
 
@@ -513,11 +513,11 @@ void UpdateSubWndPosition() {
 void UpdateUnitStatesList() {
 	ListView_DeleteAllItems(g_hUnitStateList);
 
-	UINT spriteCount = g_gfUnitStatePattern.UnitStatePattern.UnitStates.size();
-	//UINT spriteCount = g_gfUnitStatePattern.UnitStates.size();
+	UINT spriteCount = g_gfUnitStatePattern.UnitStatePattern.vecCUnitState.size();
+	//UINT spriteCount = g_gfUnitStatePattern.vecCUnitState.size();
 	for (size_t i = 0; i < spriteCount; i++)
 	{
-		UnitState *unitState = &g_gfUnitStatePattern.UnitStatePattern.UnitStates[i];
+		CUnitState *unitState = &g_gfUnitStatePattern.UnitStatePattern.vecCUnitState[i];
 		LVITEM item = {};
 		item.mask = LVIF_TEXT;
 		item.iItem = i;
@@ -526,20 +526,20 @@ void UpdateUnitStatesList() {
 		item.stateMask;
 
 		char itemText[szMax_UnitState] = {};
-		//_itoa_s(unitState->UnitStateType, itemText, 10);
-		strcpy_s(itemText, szMax_UnitState, g_szUnitStateTypeAsString[unitState->UnitStateType]);
+		//_itoa_s(unitState->EUnitStateType, itemText, 10);
+		strcpy_s(itemText, szMax_UnitState, g_szUnitStateTypeAsString[unitState->eUnitStateType]);
 		item.pszText = itemText;
 		ListView_InsertItem(g_hUnitStateList, &item); // 아이템 추가
 
 		//ListView_SetItemText(g_hUnitStateList, i, 0, itemText);
 
-		_itoa_s(unitState->XY.x, itemText, 10);
+		_itoa_s(unitState->sXY.x, itemText, 10);
 		ListView_SetItemText(g_hUnitStateList, i, 1, itemText);
 
-		_itoa_s(unitState->XY.y, itemText, 10);
+		_itoa_s(unitState->sXY.y, itemText, 10);
 		ListView_SetItemText(g_hUnitStateList, i, 2, itemText);
 
-		_itoa_s(unitState->Time, itemText, 10);
+		_itoa_s(unitState->iTime, itemText, 10);
 		ListView_SetItemText(g_hUnitStateList, i, 3, itemText);
 	}
 }

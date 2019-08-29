@@ -43,8 +43,8 @@ bool g_bIsRBDrag = false;
 RECT g_rectRBDrag = { 0, 0, 0, 0 };
 POINT g_pntScrollPosWhenRButtonDown = { 0, 0 };
 
-vector<SpriteInfo> g_vSpriteInfos;
-SpriteInfo g_SpriteInfo;
+vector<CSpriteInfo> g_vSpriteInfos;
+CSpriteInfo g_SpriteInfo;
 INT g_SpriteInfoIndex = -1;
 
 HWND g_hMainWnd;                                  // 메인 윈도우
@@ -99,8 +99,8 @@ void SaveSettings(const char *filePath);
 void SaveAniFile(const char *filePath);
 void LoadAniFile(const char *filePath);
 void LoadSpriteForMainWnd();
-SpriteInfo GetSpriteInfo(int index);
-void AddSpriteInfo(INT index, SpriteInfo *spriteInfo);
+CSpriteInfo GetSpriteInfo(int index);
+void AddSpriteInfo(INT index, CSpriteInfo *spriteInfo);
 void SetPivots(HWND hDlg);
 void UpdateSpriteList();
 void UpdateCollisionList();
@@ -389,11 +389,11 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			int y = (GET_Y_LPARAM(lParam) + g_pntScrollPos.y) / g_BitmapViewInfo.Magnification;
 
 			// set pivot
-			x -= g_SpriteInfo.Rect.left;
-			y -= g_SpriteInfo.Rect.top;
+			x -= g_SpriteInfo.sRect.left;
+			y -= g_SpriteInfo.sRect.top;
 
-			g_SpriteInfo.Pivot.x = x;
-			g_SpriteInfo.Pivot.y = y;
+			g_SpriteInfo.sPivot.x = x;
+			g_SpriteInfo.sPivot.y = y;
 
 			char szX[szMax_Pos];
 			char szY[szMax_Pos];
@@ -533,7 +533,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		UINT pixelOffset = fMagnification - 1;
 		char szItem[szMax_Pos];
 		RECT spriteRect;
-		SpriteInfo spriteInfo;
+		CSpriteInfo spriteInfo;
 
 		int itemCount = g_vSpriteInfos.size();
 		int selectedListItemIndex = ListView_GetNextItem(
@@ -548,7 +548,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		for (size_t i = 0; i < itemCount; i++)
 		{
 			spriteInfo = GetSpriteInfo(i);
-			spriteRect = spriteInfo.Rect;
+			spriteRect = spriteInfo.sRect;
 
 			// 선택된 Sprite는 외곽선의 색상을 다르게한다.
 			if (selectedListItemIndex == i) {
@@ -567,7 +567,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			// sprite pivot
 			SetROP2(g_hBufferMemDC_MainWnd, R2_NOTXORPEN); // 외곽은 반전색, 내부는 비어있는 사각형
-			XY xyPivot = { spriteInfo.Rect.left + spriteInfo.Pivot.x, spriteInfo.Rect.top + spriteInfo.Pivot.y };
+			XY xyPivot = { spriteInfo.sRect.left + spriteInfo.sPivot.x, spriteInfo.sRect.top + spriteInfo.sPivot.y };
 			xyPivot = xyPivot * fMagnification;
 			xyPivot = xyPivot - g_pntScrollPos;
 			MoveToEx(g_hBufferMemDC_MainWnd, xyPivot.x - nPivotHalfSize, xyPivot.y, nullptr);
@@ -580,10 +580,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			if (true) {
 				(HPEN)SelectObject(g_hBufferMemDC_MainWnd, hPen);
 
-				for (size_t ii = 0; ii < spriteInfo.CollisionCount; ii++)
+				for (size_t ii = 0; ii < spriteInfo.iCollisionCount; ii++)
 				{
 					// collision rect
-					RECT collisionRect = spriteInfo.Collisions[ii];
+					RECT collisionRect = spriteInfo.vecsCollisions[ii];
 					collisionRect = collisionRect * fMagnification;
 					//collisionRect = collisionRect - g_pntScrollPos;
 					//Rectangle(g_hBufferMemDC, collisionRect.left, collisionRect.top, collisionRect.right + 1 + pixelOffset, collisionRect.bottom + 1 + pixelOffset);
@@ -753,7 +753,7 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 	{
 		DWORD g_nAniTime = GetTickCount();
 
-		if (!g_bAniPlay || (g_nAniTime - g_nAniPrevTime) < g_SpriteInfo.Time) {
+		if (!g_bAniPlay || (g_nAniTime - g_nAniPrevTime) < g_SpriteInfo.iTime) {
 			break;
 		}
 		g_nAniPrevTime = g_nAniTime;
@@ -782,19 +782,19 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 		XY center = { g_whBottomWndSize.x / 2, g_whBottomWndSize.y / 2 };
 
 		// 선택된 스프라이트의 크기
-		WH spriteSize = { g_SpriteInfo.Rect.right - g_SpriteInfo.Rect.left , g_SpriteInfo.Rect.bottom - g_SpriteInfo.Rect.top };
-		UINT w = g_SpriteInfo.Rect.right - g_SpriteInfo.Rect.left;
-		UINT h = g_SpriteInfo.Rect.bottom - g_SpriteInfo.Rect.top;
+		WH spriteSize = { g_SpriteInfo.sRect.right - g_SpriteInfo.sRect.left , g_SpriteInfo.sRect.bottom - g_SpriteInfo.sRect.top };
+		UINT w = g_SpriteInfo.sRect.right - g_SpriteInfo.sRect.left;
+		UINT h = g_SpriteInfo.sRect.bottom - g_SpriteInfo.sRect.top;
 		TransparentBlt(g_hBufferMemDC_BottomWnd,
-			center.x - g_SpriteInfo.Pivot.x * fMagnification,
-			center.y - g_SpriteInfo.Pivot.y * fMagnification,
+			center.x - g_SpriteInfo.sPivot.x * fMagnification,
+			center.y - g_SpriteInfo.sPivot.y * fMagnification,
 
 			spriteSize.w * fMagnification,
 			spriteSize.h * fMagnification,
 
 			g_hBitmapSrcDC,
-			g_SpriteInfo.Rect.left,
-			g_SpriteInfo.Rect.top,
+			g_SpriteInfo.sRect.left,
+			g_SpriteInfo.sRect.top,
 			spriteSize.w,
 			spriteSize.h,
 
@@ -1058,7 +1058,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				);
 
 				if (collisionListItemIndex != NoSelectedIndex) {
-					SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
+					CSpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
 					spriteInfo.RemoveCollision(collisionListItemIndex);
 
 					g_SpriteInfo = spriteInfo;
@@ -1079,7 +1079,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			);
 
 			if (spriteListItemIndex != NoSelectedIndex) {
-				SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
+				CSpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
 				spriteInfo.RemoveAllCollisions();
 
 				g_SpriteInfo = spriteInfo;
@@ -1089,7 +1089,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		}
 		break;
 
-		case IDC_BUTTON12: // Time 설정
+		case IDC_BUTTON12: // iTime 설정
 		{
 			HWND hEditTime = GetDlgItem(hDlg, IDC_EDIT4);
 			char szTime[szMax_Pos] = {};
@@ -1105,8 +1105,8 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 			UINT spriteCount = g_vSpriteInfos.size();
 			for (size_t i = 0; i < spriteCount; i++)
 			{
-				SpriteInfo &spriteInfo = g_vSpriteInfos[i];
-				spriteInfo.Time = time;
+				CSpriteInfo &spriteInfo = g_vSpriteInfos[i];
+				spriteInfo.iTime = time;
 
 				ListView_SetItemText(g_hSpriteList, i, 0, szTime);
 			}
@@ -1117,7 +1117,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				LVNI_SELECTED // 검색 조건
 			);
 			if (spriteListItemIndex != NoSelectedIndex) {
-				SpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
+				CSpriteInfo &spriteInfo = g_vSpriteInfos[spriteListItemIndex];
 				g_SpriteInfo = spriteInfo;
 			}
 
@@ -1139,7 +1139,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		}
 		break;
 
-		case IDC_BUTTON14: // Pivot 변경
+		case IDC_BUTTON14: // sPivot 변경
 		{
 			SetPivots(hDlg);
 			UpdateSpriteList();
@@ -1337,8 +1337,8 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 					char szX[szMax_Pos];
 					char szY[szMax_Pos];
-					_itoa_s(g_SpriteInfo.Pivot.x, szX, szMax_Pos, 10);
-					_itoa_s(g_SpriteInfo.Pivot.y, szY, szMax_Pos, 10);
+					_itoa_s(g_SpriteInfo.sPivot.x, szX, szMax_Pos, 10);
+					_itoa_s(g_SpriteInfo.sPivot.y, szY, szMax_Pos, 10);
 
 					SetDlgItemText(hDlg, IDC_EDIT2, szX);
 					SetDlgItemText(hDlg, IDC_EDIT3, szY);
@@ -1421,17 +1421,17 @@ void UpdateSubWndPosition() {
 void AddRectToSpriteList(RECT rect) {
 	int itemCount = ListView_GetItemCount(g_hSpriteList);
 
-	SpriteInfo spriteInfo;
+	CSpriteInfo spriteInfo;
 	INT coordinates[nMax_SpriteCoordinateCount] = { rect.left, rect.top, rect.right, rect.bottom, 0, };
 
-	spriteInfo.Time = 200;
+	spriteInfo.iTime = 200;
 
 	// rect, pivot
 	spriteInfo.SetCoordinates(coordinates, nMax_SpriteCoordinateByteSize);
 	spriteInfo.ResetCollisionCount();
 
 	// collision
-	int collision[nMax_RectPos] = { 0, 0, spriteInfo.Rect.right - spriteInfo.Rect.left, spriteInfo.Rect.bottom - spriteInfo.Rect.top };
+	int collision[nMax_RectPos] = { 0, 0, spriteInfo.sRect.right - spriteInfo.sRect.left, spriteInfo.sRect.bottom - spriteInfo.sRect.top };
 	spriteInfo.AddCollision(collision, nMax_RectPos);
 
 	AddSpriteInfo(itemCount, &spriteInfo);
@@ -1439,10 +1439,10 @@ void AddRectToSpriteList(RECT rect) {
 
 void AddRectToCollisionList(RECT rect) {
 	//int itemCount = ListView_GetItemCount(g_hCollisionList);
-	SpriteInfo &spriteInfo = g_vSpriteInfos[g_SpriteInfoIndex];
+	CSpriteInfo &spriteInfo = g_vSpriteInfos[g_SpriteInfoIndex];
 
 	// collision
-	int collision[nMax_RectPos] = { rect.left - g_SpriteInfo.Rect.left, rect.top - g_SpriteInfo.Rect.top, rect.right - rect.left, rect.bottom - rect.top };
+	int collision[nMax_RectPos] = { rect.left - g_SpriteInfo.sRect.left, rect.top - g_SpriteInfo.sRect.top, rect.right - rect.left, rect.bottom - rect.top };
 	spriteInfo.AddCollision(collision, nMax_RectPos);
 
 	g_SpriteInfo = spriteInfo;
@@ -1516,12 +1516,12 @@ void LoadAniFile(const char *filePath) {
 
 		if (strnlen_s(itemLine, szMax_PosLine) == 0) continue;
 
-		SpriteInfo spriteInfo;
+		CSpriteInfo spriteInfo;
 		{
 			nextToken = itemLine;
 
 			token = strtok_s(nullptr, "\t", &nextToken);
-			spriteInfo.Time = atoi(token);
+			spriteInfo.iTime = atoi(token);
 
 			// rect, pivot
 			int coordinates[nMax_SpriteCoordinateCount] = {  };
@@ -1628,7 +1628,7 @@ void LoadSpriteForMainWnd() {
 	InvalidateRect(g_hBottomWnd, nullptr, true);
 }
 
-void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {
+void AddSpriteInfo(INT index, CSpriteInfo *spriteInfo) {
 	g_vSpriteInfos.push_back(*spriteInfo);
 
 	UpdateSpriteList();
@@ -1644,13 +1644,13 @@ void AddSpriteInfo(INT index, SpriteInfo *spriteInfo) {
 	//item.pszText = itemText;
 	//ListView_InsertItem(g_hSpriteList, &item); // 아이템 추가
 
-	//_itoa_s(spriteInfo->Time, itemText, 10);
+	//_itoa_s(spriteInfo->iTime, itemText, 10);
 	//ListView_SetItemText(g_hSpriteList, index, 0, itemText);
 
 	//UINT subitemCount = 1;
 	//for (size_t i = 0; i < nMax_SpriteCoordinateCount; i++)
 	//{
-	//	_itoa_s(spriteInfo->Coordinates[i], itemText, 10);
+	//	_itoa_s(spriteInfo->ariCoordinates[i], itemText, 10);
 	//	ListView_SetItemText(g_hSpriteList, index, i + subitemCount, itemText);
 	//}
 }
@@ -1675,16 +1675,16 @@ void SaveAniFile(const char *filePath) {
 	while (iter != g_vSpriteInfos.end())
 	{
 		// time
-		fprintf_s(file, "%d", iter->Time);
+		fprintf_s(file, "%d", iter->iTime);
 
 		// rect, pivot
-		fprintf_s(file, "\t%d\t%d\t%d\t%d\t%d\t%d", iter->Rect.left, iter->Rect.top, iter->Rect.right, iter->Rect.bottom, iter->Pivot.x, iter->Pivot.y);
+		fprintf_s(file, "\t%d\t%d\t%d\t%d\t%d\t%d", iter->sRect.left, iter->sRect.top, iter->sRect.right, iter->sRect.bottom, iter->sPivot.x, iter->sPivot.y);
 
 		// collision
-		fprintf_s(file, "\t%d", iter->CollisionCount);
-		for (size_t i = 0; i < iter->CollisionCount; i++)
+		fprintf_s(file, "\t%d", iter->iCollisionCount);
+		for (size_t i = 0; i < iter->iCollisionCount; i++)
 		{
-			RECT &collision = iter->Collisions[i];
+			RECT &collision = iter->vecsCollisions[i];
 			fprintf_s(file, "\t%d\t%d\t%d\t%d", collision.left, collision.top, collision.right, collision.bottom);
 		}
 		fprintf_s(file, "\n");
@@ -1711,7 +1711,7 @@ void SaveSettings(const char *filePath) {
 	fclose(file);
 }
 
-SpriteInfo GetSpriteInfo(int index) {
+CSpriteInfo GetSpriteInfo(int index) {
 	return g_vSpriteInfos[index];
 }
 
@@ -1724,29 +1724,29 @@ void SetPivots(HWND hDlg) {
 	UINT spriteCount = g_vSpriteInfos.size();
 	for (size_t i = 0; i < spriteCount; i++)
 	{
-		SpriteInfo &spriteInfo = g_vSpriteInfos[i];
-		UINT w = spriteInfo.Rect.right - spriteInfo.Rect.left;
-		UINT h = spriteInfo.Rect.bottom - spriteInfo.Rect.top;
+		CSpriteInfo &spriteInfo = g_vSpriteInfos[i];
+		UINT w = spriteInfo.sRect.right - spriteInfo.sRect.left;
+		UINT h = spriteInfo.sRect.bottom - spriteInfo.sRect.top;
 
 		if (strcmp(szPivotType, "LT") == 0) {
-			spriteInfo.Pivot.x = 0;
-			spriteInfo.Pivot.y = 0;
+			spriteInfo.sPivot.x = 0;
+			spriteInfo.sPivot.y = 0;
 		}
 		else if (strcmp(szPivotType, "RT") == 0) {
-			spriteInfo.Pivot.x = w;
-			spriteInfo.Pivot.y = 0;
+			spriteInfo.sPivot.x = w;
+			spriteInfo.sPivot.y = 0;
 		}
 		else if (strcmp(szPivotType, "LB") == 0) {
-			spriteInfo.Pivot.x = 0;
-			spriteInfo.Pivot.y = h;
+			spriteInfo.sPivot.x = 0;
+			spriteInfo.sPivot.y = h;
 		}
 		else if (strcmp(szPivotType, "RB") == 0) {
-			spriteInfo.Pivot.x = w;
-			spriteInfo.Pivot.y = h;
+			spriteInfo.sPivot.x = w;
+			spriteInfo.sPivot.y = h;
 		}
 		else if (strcmp(szPivotType, "CC") == 0) {
-			spriteInfo.Pivot.x = w / 2;
-			spriteInfo.Pivot.y = h / 2;
+			spriteInfo.sPivot.x = w / 2;
+			spriteInfo.sPivot.y = h / 2;
 		}
 	}
 }
@@ -1757,7 +1757,7 @@ void UpdateSpriteList() {
 	UINT spriteCount = g_vSpriteInfos.size();
 	for (size_t i = 0; i < spriteCount; i++)
 	{
-		SpriteInfo *spriteInfo = &g_vSpriteInfos[i];
+		CSpriteInfo *spriteInfo = &g_vSpriteInfos[i];
 		LVITEM item = {};
 		item.mask = LVIF_TEXT;
 		item.iItem = i;
@@ -1769,13 +1769,13 @@ void UpdateSpriteList() {
 		item.pszText = itemText;
 		ListView_InsertItem(g_hSpriteList, &item); // 아이템 추가
 
-		_itoa_s(spriteInfo->Time, itemText, 10);
+		_itoa_s(spriteInfo->iTime, itemText, 10);
 		ListView_SetItemText(g_hSpriteList, i, 0, itemText);
 
 		UINT subitemCount = 1;
 		for (size_t jj = 0; jj < nMax_SpriteCoordinateCount; jj++)
 		{
-			_itoa_s(spriteInfo->Coordinates[jj], itemText, 10);
+			_itoa_s(spriteInfo->ariCoordinates[jj], itemText, 10);
 			ListView_SetItemText(g_hSpriteList, i, jj + subitemCount, itemText);
 		}
 	}
@@ -1792,7 +1792,7 @@ void UpdateCollisionList() {
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
 		item.state;
 		item.stateMask;
-		for (size_t i = 0; i < g_SpriteInfo.CollisionCount; i++)
+		for (size_t i = 0; i < g_SpriteInfo.iCollisionCount; i++)
 		{
 			item.iItem = i;
 
@@ -1800,7 +1800,7 @@ void UpdateCollisionList() {
 			item.pszText = itemText;
 			ListView_InsertItem(g_hCollisionList, &item); // 아이템 추가
 
-			pCollisionRect = &g_SpriteInfo.Collisions[i];
+			pCollisionRect = &g_SpriteInfo.vecsCollisions[i];
 
 			_itoa_s(pCollisionRect->left, itemText, 10);
 			ListView_SetItemText(g_hCollisionList, i, 0, itemText);

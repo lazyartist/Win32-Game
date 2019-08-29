@@ -35,13 +35,13 @@ void CGameFrame_UnitStatePattern::UpdateLogicImpl()
 
 	if (IsPlaying) {
 
-		//UnitState curUnitState = UnitStates[UnitStateIndex];
-		UnitState curUnitState = UnitStatePattern.GetCurUnitState();
+		//CUnitState curUnitState = vecCUnitState[iUnitStateIndex];
+		CUnitState curUnitState = UnitStatePattern.GetCurUnitState();
 
 		// 다음 지점까지의 거리
-		fXY distanceXY = curUnitState.XY - _unit.XY;
+		SXY distanceXY = curUnitState.sXY - _unit.sXY;
 		float distance = distanceXY.distance();
-		float speed = _unit.SpeedPerSeconds * _fDeltaTime;
+		float speed = _unit.fSpeedPerSeconds * _fDeltaTime;
 		if (distance < speed) speed = distance;
 
 		float rad = atan2(distanceXY.y, distanceXY.x);
@@ -49,17 +49,17 @@ void CGameFrame_UnitStatePattern::UpdateLogicImpl()
 		float speedX = speed * cos(rad);
 		float speedY = speed * sin(rad);
 
-		_unit.XY.x += speedX;
-		_unit.XY.y += speedY;
+		_unit.sXY.x += speedX;
+		_unit.sXY.y += speedY;
 
-		if (sameXY(curUnitState.XY, _unit.XY)) {
-			if (curUnitState.UnitStateType == UnitStateType::Idle) {
+		if (sameXY(curUnitState.sXY, _unit.sXY)) {
+			if (curUnitState.eUnitStateType == EUnitStateType::Idle) {
 				if (_unitIdleTime == 0) {
 					_unitIdleTime = GetTickCount();
 					return;
 				}
 				else {
-					if (GetTickCount() - _unitIdleTime >= curUnitState.Time) {
+					if (GetTickCount() - _unitIdleTime >= curUnitState.iTime) {
 						//
 					}
 					else {
@@ -67,7 +67,7 @@ void CGameFrame_UnitStatePattern::UpdateLogicImpl()
 					}
 				}
 			}
-			else if (curUnitState.UnitStateType == UnitStateType::MoveTo) {
+			else if (curUnitState.eUnitStateType == EUnitStateType::MoveTo) {
 				//
 			}
 
@@ -106,15 +106,15 @@ void CGameFrame_UnitStatePattern::DrawUnit()
 	HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));
 	HPEN hOldPen = (HPEN)SelectObject(_hdcMem, hPen);
 
-	Ellipse(_hdcMem, _unit.XY.x - _unit.WH.w / 2, _unit.XY.y - _unit.WH.h / 2,
-		_unit.XY.x + _unit.WH.w / 2, _unit.XY.y + _unit.WH.w / 2);
+	Ellipse(_hdcMem, _unit.sXY.x - _unit.sWH.w / 2, _unit.sXY.y - _unit.sWH.h / 2,
+		_unit.sXY.x + _unit.sWH.w / 2, _unit.sXY.y + _unit.sWH.w / 2);
 
 	DeleteObject(SelectObject(_hdcMem, hOldPen));
 }
 
 void CGameFrame_UnitStatePattern::DrawUnitState()
 {
-	if (UnitStatePattern.UnitStates.size() == 0) return;
+	if (UnitStatePattern.vecCUnitState.size() == 0) return;
 
 	UnitStatePattern.RenderUnitState(_hdcMem);
 
@@ -125,28 +125,28 @@ void CGameFrame_UnitStatePattern::DrawUnitState()
 
 	HPEN hOldPen = (HPEN)SelectObject(_hdcMem, hWalkPen);
 
-	MoveToEx(_hdcMem, UnitStatePattern.UnitStates[0].XY.x, UnitStatePattern.UnitStates[0].XY.y, nullptr);
-	WH wh = { 10, 10 };
+	MoveToEx(_hdcMem, CUnitStatePattern.vecCUnitState[0].sXY.x, CUnitStatePattern.vecCUnitState[0].sXY.y, nullptr);
+	sWH wh = { 10, 10 };
 
-	for (size_t i = 0; i < UnitStatePattern.UnitStates.size(); i++)
+	for (size_t i = 0; i < CUnitStatePattern.vecCUnitState.size(); i++)
 	{
-		UnitState unitState = UnitStatePattern.UnitStates[i];
+		CUnitState unitState = CUnitStatePattern.vecCUnitState[i];
 
 		SelectObject(_hdcMem, hLinePen);
-		LineTo(_hdcMem, unitState.XY.x, unitState.XY.y);
+		LineTo(_hdcMem, unitState.sXY.x, unitState.sXY.y);
 
 		if (i == SelectedUnitStateIndex) {
 			SelectObject(_hdcMem, hSelectedPen);
 		}
-		else if (unitState.UnitStateType == UnitStateType::Idle) {
+		else if (unitState.EUnitStateType == EUnitStateType::Idle) {
 			SelectObject(_hdcMem, hIdlePen);
 		}
-		else if (unitState.UnitStateType == UnitStateType::MoveTo) {
+		else if (unitState.EUnitStateType == EUnitStateType::MoveTo) {
 			SelectObject(_hdcMem, hWalkPen);
 		}
 
-		Ellipse(_hdcMem, unitState.XY.x - wh.w / 2, unitState.XY.y - wh.h / 2,
-			unitState.XY.x + wh.w / 2, unitState.XY.y + wh.w / 2);
+		Ellipse(_hdcMem, unitState.sXY.x - wh.w / 2, unitState.sXY.y - wh.h / 2,
+			unitState.sXY.x + wh.w / 2, unitState.sXY.y + wh.w / 2);
 
 		SelectObject(_hdcMem, hWalkPen);
 	}
@@ -160,9 +160,9 @@ void CGameFrame_UnitStatePattern::DrawUnitState()
 
 void CGameFrame_UnitStatePattern::InitUnit()
 {
-	_unit.SpeedPerSeconds = 500;
-	_unit.XY = _xyClientCenter;
-	_unit.WH = { 30, 30 };
+	_unit.fSpeedPerSeconds = 500;
+	_unit.sXY = _xyClientCenter;
+	_unit.sWH = { 30, 30 };
 
 	UnitStateIndex = 0;
 	SelectedUnitStateIndex = NoSelectedIndex;
@@ -171,7 +171,7 @@ void CGameFrame_UnitStatePattern::InitUnit()
 void CGameFrame_UnitStatePattern::PlayStop(bool isPlay)
 {
 	if (isPlay) {
-		if (UnitStatePattern.UnitStates.size() == 0) return;
+		if (UnitStatePattern.vecCUnitState.size() == 0) return;
 
 		IsPlaying = true;
 		InitUnit();
