@@ -1,37 +1,26 @@
 ﻿#include "stdafx.h"
 #include "05-Tool-Unit.h"
-#include "CGameFrame_Unit.h"
+#include "CUnitCreatorGameFrameWork.h"
 #include "lib.h"
 #include "Commctrl.h"
 
-#define MAX_LOADSTRING 100
-
-// 전역 변수:
-HINSTANCE hInst;                                // 현재 인스턴스입니다.
-WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
-WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
+HINSTANCE g_hInstance;
 const char *g_szUnitStateTypeAsString[] = { "Idle" , "MoveTo" };
-
-// 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 HWND g_hWnd;
 HWND g_hUnitStateAniList;
 CUnitCreatorGameFrameWork g_cUnitCreator;
-
 char g_szCurDir[MAX_PATH] = {}; // 작업 경로, 프로그램 실행 중 파일 대화상자에서 선택한 곳으로 바뀌기 때문에 프로그램 실행과 동시에 저장해둔다.
 char g_szUnitFilePath[MAX_PATH];
 
 BOOL InitInstance(HINSTANCE, int);
-
+INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 void LoadSettings(const char *filePath);
 void SaveSettings(const char *filePath);
 void LoadUnit(const char *filePath);
 void SaveUnit(const char *filePath);
-
 void UpdateUI();
 void UpdateBitmap();
 void UpdateUnitStateAniList();
-
-INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -40,13 +29,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	// TODO: 여기에 코드를 입력합니다.
-
-	// 전역 문자열을 초기화합니다.
-	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-	LoadStringW(hInstance, IDC_MY05TOOLUNIT, szWindowClass, MAX_LOADSTRING);
-
-	// 응용 프로그램 초기화를 수행합니다:
 	if (!InitInstance(hInstance, nCmdShow)) {
 		return FALSE;
 	}
@@ -58,8 +40,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	LoadUnit(g_szUnitFilePath);
 
 	MSG msg;
-
-	// 기본 메시지 루프입니다:
 	while (true) {
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
 			if (msg.message == WM_QUIT) {
@@ -74,9 +54,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	return (int)msg.wParam;
 }
-
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
-	hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
+	g_hInstance = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 	// 프로그램의 작업 경로 저장
 	GetCurrentDirectory(MAX_PATH, g_szCurDir);
 	// 다이얼로그 윈도우 생성
@@ -88,7 +67,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 	}
 	return TRUE;
 }
-
 INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 	UNREFERENCED_PARAMETER(lParam);
 	switch (message) {
@@ -97,16 +75,16 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		g_hUnitStateAniList = GetDlgItem(hDlg, IDC_LIST1);
 		// ===== List 설정 =====
 		// 컬럼 추가(List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.)
-		char colText0[] = "EUnitStateType";
-		char colText1[] = "Ani File";
-		LVCOLUMN col = {};
-		col.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
-		col.fmt = LVCFMT_LEFT;
-		col.cx = 100;
-		col.pszText = colText0;
-		ListView_InsertColumn(g_hUnitStateAniList, 0, &col); // 컬럼 추가0
-		col.pszText = colText1;
-		ListView_InsertColumn(g_hUnitStateAniList, 1, &col); // 컬럼 추가1
+		char szColumnText0[] = "EUnitStateType";
+		char szColumnText1[] = "Ani File";
+		LVCOLUMN column = {};
+		column.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+		column.fmt = LVCFMT_LEFT;
+		column.cx = 100;
+		column.pszText = szColumnText0;
+		ListView_InsertColumn(g_hUnitStateAniList, 0, &column); // 컬럼 추가0
+		column.pszText = szColumnText1;
+		ListView_InsertColumn(g_hUnitStateAniList, 1, &column); // 컬럼 추가1
 		// 줄 전체가 클릭되도록 설정(기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨)
 		ListView_SetExtendedListViewStyle(
 			g_hUnitStateAniList,
@@ -266,7 +244,6 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 	}
 	return (INT_PTR)FALSE;
 }
-
 void LoadSettings(const char *filePath) {
 	// 프로그램의 작업 경로
 	char curDir[MAX_PATH] = {};
@@ -285,7 +262,6 @@ void LoadSettings(const char *filePath) {
 
 	fclose(file);
 }
-
 void SaveSettings(const char *filePath) {
 	char fullPath[MAX_PATH] = {};
 	sprintf_s(fullPath, "%s\\%s", g_szCurDir, filePath);
@@ -301,31 +277,18 @@ void SaveSettings(const char *filePath) {
 
 	fclose(file);
 }
-
 void LoadUnit(const char *filePath) {
-	// load .unit
 	g_cUnitCreator.LoadUnit(filePath);
-	// load bitmap
-	g_cUnitCreator.cUnit.LoadUnitBitmap(g_cUnitCreator.cUnit.szBitmapPath);
-	// load .usp
-	g_cUnitCreator.cUnit.cUnitStatePattern.LoadUnitStatePatternFile(g_cUnitCreator.cUnit.cUnitStatePattern.szFilePath);
-	// load .ani
-	for (size_t i = 0; i < EUnitStateType::Count; i++) {
-		g_cUnitCreator.cUnit.LoadAniFile((EUnitStateType)i, g_cUnitCreator.cUnit.arAniInfos[i].FilePath);
-	}
-	// update
 	UpdateUI();
 	UpdateBitmap();
 	UpdateUnitStateAniList();
 }
-
 void SaveUnit(const char *filePath) {
 	g_cUnitCreator.SaveUnit(filePath);
 
 	strcpy_s(g_szUnitFilePath, MAX_PATH, filePath);
 	SaveSettings(g_szUnitFilePath);
 }
-
 void UpdateUI() {
 	// name
 	SetDlgItemText(g_hWnd, IDC_EDIT1, g_cUnitCreator.cUnit.szName);
@@ -339,13 +302,11 @@ void UpdateUI() {
 	// file title
 	SetDlgItemText(g_hWnd, IDC_EDIT2, g_cUnitCreator.cUnit.cUnitStatePattern.szFileTitle);
 }
-
 void UpdateBitmap() {
 	HWND hWndPic2 = GetDlgItem(g_hWnd, IDC_PIC2);
 	HDC hdc = GetDC(hWndPic2);
 	TransparentBlt(hdc, 0, 0, 100, 100, g_cUnitCreator.cUnit.hBitmapDC, 0, 0, 100, 100, RGB(255, 0, 0));
 }
-
 void UpdateUnitStateAniList() {
 	ListView_DeleteAllItems(g_hUnitStateAniList);
 
@@ -353,11 +314,9 @@ void UpdateUnitStateAniList() {
 	item.mask = LVIF_TEXT;
 	item.state;
 	item.stateMask;
-
 	for (size_t i = 0; i < EUnitStateType::Count; i++) {
 		item.iItem = i;
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
-
 		char itemText[MAX_PATH];
 		strcpy_s(itemText, MAX_PATH, g_szUnitStateTypeAsString[i]);
 		item.pszText = itemText;

@@ -27,7 +27,7 @@
     <ClInclude Include="05-Tool-Unit.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CGameFrame_Unit.h">
+    <ClInclude Include="CUnitCreatorGameFrameWork.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,7 +38,7 @@
     <ClCompile Include="05-Tool-Unit.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CGameFrame_Unit.cpp">
+    <ClCompile Include="CUnitCreatorGameFrameWork.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

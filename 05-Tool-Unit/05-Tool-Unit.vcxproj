@@ -151,14 +151,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="05-Tool-Unit.h" />
-    <ClInclude Include="CGameFrame_Unit.h" />
+    <ClInclude Include="CUnitCreatorGameFrameWork.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="05-Tool-Unit.cpp" />
-    <ClCompile Include="CGameFrame_Unit.cpp" />
+    <ClCompile Include="CUnitCreatorGameFrameWork.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
