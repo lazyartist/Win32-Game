@@ -3,7 +3,6 @@
 #include "CUnitCreatorGameFrameWork.h"
 #include "CGameFrame.cpp"
 
-
 CUnitCreatorGameFrameWork::CUnitCreatorGameFrameWork() {
 }
 CUnitCreatorGameFrameWork::~CUnitCreatorGameFrameWork() {
@@ -12,6 +11,35 @@ void CUnitCreatorGameFrameWork::InitImpl() {
 	cUnit.Init(_hdcMem);
 }
 void CUnitCreatorGameFrameWork::UpdateLogicImpl() {
+	CUnitState cUnitState;
+	cUnitState.eUnitStateType = EUnitStateType::EUnitStateType_None;
+	cUnitState.sXY = cUnit.sXY;
+	if(GetAsyncKeyState(VK_LEFT) & 0x8000) {
+		cUnitState.eUnitStateType = EUnitStateType::MoveTo;
+		cUnitState.sXY.Add(-10, 0);
+	}
+	if (GetAsyncKeyState(VK_RIGHT) & 0x8000) {
+		cUnitState.eUnitStateType = EUnitStateType::MoveTo;
+		cUnitState.sXY.Add(10, 0);
+	}
+	if (GetAsyncKeyState(VK_UP) & 0x8000) {
+		cUnitState.eUnitStateType = EUnitStateType::MoveTo;
+		cUnitState.sXY.Add(0, -10);
+	}
+	if (GetAsyncKeyState(VK_DOWN) & 0x8000) {
+		cUnitState.eUnitStateType = EUnitStateType::MoveTo;
+		cUnitState.sXY.Add(0, 10);
+	}
+
+	if (cUnitState.eUnitStateType != EUnitStateType::EUnitStateType_None) {
+		cUnit.cUnitStatePattern.Clear();
+		cUnit.cUnitStatePattern.vecCUnitState.push_back(cUnitState);
+
+		cUnitState.eUnitStateType = EUnitStateType::Idle;
+		cUnitState.iTime = INT_MAX;
+		cUnit.cUnitStatePattern.vecCUnitState.push_back(cUnitState);
+	}
+
 	cUnit.Update(_fDeltaTime);
 }
 void CUnitCreatorGameFrameWork::UpdateRenderImpl() {

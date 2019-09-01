@@ -151,6 +151,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="05-Tool-Unit.h" />
+    <ClInclude Include="CController.h" />
     <ClInclude Include="CUnitCreatorGameFrameWork.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
@@ -158,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="05-Tool-Unit.cpp" />
+    <ClCompile Include="CController.cpp" />
     <ClCompile Include="CUnitCreatorGameFrameWork.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

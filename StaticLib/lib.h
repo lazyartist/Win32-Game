@@ -43,7 +43,8 @@ enum EWindowMode {
 	None, Window, FullScreen
 };
 enum EUnitStateType {
-	Idle, MoveTo,
+	EUnitStateType_None = -1,
+	Idle = 0, MoveTo,
 	Count
 };
 // ===== enum ===== end
@@ -71,6 +72,11 @@ public:
 	float x;
 	float y;
 
+	SXY& Add(float x, float y) {
+		this->x += x;
+		this->y += y;
+		return (*this);
+	}
 	float distance() {
 		return sqrt((x) * (x)+(y) * (y));
 	}
@@ -369,7 +375,7 @@ public:
 	HDC hBitmapDC;
 
 private:
-	bool _bPlaying = false;
+	//bool _bPlaying = false;
 	bool _bPatternPlaying = false;
 	// direction
 	float _fDirectionRadian = 0.0;
@@ -395,66 +401,64 @@ public:
 		hBitmapDC = CreateCompatibleDC(hdc);
 	}
 	void Update(float _fDeltaTime) {
-		if (_bPlaying) {
-			// update CUnitState
-			CUnitState curUnitState = cUnitStatePattern.GetCurUnitState();
+		// update CUnitState
+		CUnitState curUnitState = cUnitStatePattern.GetCurUnitState();
 
-			if (curUnitState.eUnitStateType == EUnitStateType::Idle) {
-				if (_iWaitTimeOnPosition == 0) {
-					_iWaitTimeOnPosition = GetTickCount();
-					//return;
-				}
-				else {
-					if (GetTickCount() - _iWaitTimeOnPosition >= curUnitState.iTime) {
-						// end wait
-						_iWaitTimeOnPosition = 0;
-						cUnitStatePattern.UpUnitStateIndex();
-					}
-					else {
-						// wait
-						//return;
-					}
-				}
+		if (curUnitState.eUnitStateType == EUnitStateType::Idle) {
+			if (_iWaitTimeOnPosition == 0) {
+				_iWaitTimeOnPosition = GetTickCount();
+				//return;
 			}
-			else if (curUnitState.eUnitStateType == EUnitStateType::MoveTo) {
-				// 다음 지점까지의 거리
-				SXY distanceXY = curUnitState.sXY - sXY;
-				float distance = distanceXY.distance();
-				float speed = fSpeedPerSeconds * _fDeltaTime;
-
-				if (distance < speed) {
-					speed = distance;
-				}
-
-				_fDirectionRadian = atan2(distanceXY.y, distanceXY.x);
-				_v2NormalDirection = { cos(_fDirectionRadian) , sin(_fDirectionRadian) }; // 각도로 x, y 좌료를 얻었으므로 정규화 되어있다.
-				_fDirectionWithCosRight = _v2NormalDirection.x * kV2Right.x + _v2NormalDirection.y * kV2Right.y;
-
-				float speedX = speed * _v2NormalDirection.x;
-				float speedY = speed * _v2NormalDirection.y;
-				sXY.x += speedX;
-				sXY.y += speedY;
-
-				if (sameXY(curUnitState.sXY, sXY)) {
+			else {
+				if (GetTickCount() - _iWaitTimeOnPosition >= curUnitState.iTime) {
+					// end wait
+					_iWaitTimeOnPosition = 0;
 					cUnitStatePattern.UpUnitStateIndex();
 				}
+				else {
+					// wait
+					//return;
+				}
+			}
+		}
+		else if (curUnitState.eUnitStateType == EUnitStateType::MoveTo) {
+			// 다음 지점까지의 거리
+			SXY distanceXY = curUnitState.sXY - sXY;
+			float distance = distanceXY.distance();
+			float speed = fSpeedPerSeconds * _fDeltaTime;
+
+			if (distance < speed) {
+				speed = distance;
 			}
 
-			// update ani
-			time_t time = GetTickCount();
-			if (time - _iAniTime >= _cCurSpriteInfo.iTime) {
-				_iAniTime = time;
-				++_iAniIndex;
-				vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
-				if (_iAniIndex >= spriteInfos.size()) {
-					_iAniIndex = 0;
-				}
-				_cCurSpriteInfo = spriteInfos[_iAniIndex];
+			_fDirectionRadian = atan2(distanceXY.y, distanceXY.x);
+			_v2NormalDirection = { cos(_fDirectionRadian) , sin(_fDirectionRadian) }; // 각도로 x, y 좌료를 얻었으므로 정규화 되어있다.
+			_fDirectionWithCosRight = _v2NormalDirection.x * kV2Right.x + _v2NormalDirection.y * kV2Right.y;
+
+			float speedX = speed * _v2NormalDirection.x;
+			float speedY = speed * _v2NormalDirection.y;
+			sXY.x += speedX;
+			sXY.y += speedY;
+
+			if (sameXY(curUnitState.sXY, sXY)) {
+				cUnitStatePattern.UpUnitStateIndex();
 			}
+		}
+
+		// update ani
+		time_t time = GetTickCount();
+		if (time - _iAniTime >= _cCurSpriteInfo.iTime) {
+			_iAniTime = time;
+			++_iAniIndex;
+			vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
+			if (_iAniIndex >= spriteInfos.size()) {
+				_iAniIndex = 0;
+			}
+			_cCurSpriteInfo = spriteInfos[_iAniIndex];
 		}
 	}
 	void Render(HDC hdc) {
-		if (!_bPlaying) return;
+		//if (!_bPlaying) return;
 		// test
 		//fWH g_whBottomWndSize = { 800, 600 };
 		// 화면 정중앙 좌표
@@ -498,9 +502,9 @@ public:
 		}
 		TextOut(hdc, 0, 200, szDirection, FLT_MAX_10_EXP);
 	}
-	void Play(EUnitStateType unitStateType) {
+	void Clear(EUnitStateType unitStateType) {
 		eCurUnitStateType = unitStateType;
-		_bPlaying = true;
+		//_bPlaying = true;
 		_iAniIndex = 0;
 		_iAniTime = GetTickCount();
 		// 초기 위치 설정
@@ -508,9 +512,9 @@ public:
 		CUnitState unitState = cUnitStatePattern.GetCurUnitState();
 		sXY = unitState.sXY;
 	}
-	void Stop() {
-		_bPlaying = false;
-	}
+	//void Stop() {
+	//	_bPlaying = false;
+	//}
 	void SetName(const char *name) {
 		strcpy_s(szName, szMax_UnitName, name);
 	}

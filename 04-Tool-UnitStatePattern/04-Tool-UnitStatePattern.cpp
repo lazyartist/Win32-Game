@@ -217,7 +217,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Stop");
 			}
 			else {
-				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Play");
+				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Clear");
 				g_gfUnitStatePattern.InitUnit();
 			}
 		}

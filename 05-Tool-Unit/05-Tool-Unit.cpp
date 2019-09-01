@@ -39,6 +39,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	LoadSettings("settings.cfg");
 	LoadUnit(g_szUnitFilePath);
 
+	g_cUnitCreator.PlayStop(true);
+
 	MSG msg;
 	while (true) {
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
@@ -186,17 +188,20 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 		case IDC_BUTTON5: // Play Ani
 		{
-			UINT itemIndex = ListView_GetNextItem(
-				g_hUnitStateAniList, // 윈도우 핸들
-				-1, // 검색을 시작할 인덱스
-				LVNI_SELECTED // 검색 조건
-			);
-			g_cUnitCreator.cUnit.Play((EUnitStateType)itemIndex);
+			//UINT itemIndex = ListView_GetNextItem(
+			//	g_hUnitStateAniList, // 윈도우 핸들
+			//	-1, // 검색을 시작할 인덱스
+			//	LVNI_SELECTED // 검색 조건
+			//);
+			//g_cUnitCreator.cUnit.Clear((EUnitStateType)itemIndex);
+			g_cUnitCreator.PlayStop(true);
+			g_cUnitCreator.cUnit.Clear(EUnitStateType::Idle);
 		}
 		break;
 		case IDC_BUTTON10: // Stop Ani
 		{
-			g_cUnitCreator.cUnit.Stop();
+			g_cUnitCreator.PlayStop(false);
+			//g_cUnitCreator.cUnit.Stop();
 		}
 		break;
 		case IDC_BUTTON9: // Load Bitmap
@@ -254,13 +259,13 @@ void LoadSettings(const char *filePath) {
 
 	FILE *file = nullptr;
 	file = _fsopen(fullPath, "rt", _SH_DENYNO);
+	if (file != nullptr) {
+		fgets(g_szUnitFilePath, MAX_PATH, file);
+		RemoveCarriageReturn(g_szUnitFilePath);
 
-	if (file == nullptr) return;
+		fclose(file);
+	}
 
-	fgets(g_szUnitFilePath, MAX_PATH, file);
-	RemoveCarriageReturn(g_szUnitFilePath);
-
-	fclose(file);
 }
 void SaveSettings(const char *filePath) {
 	char fullPath[MAX_PATH] = {};
@@ -268,14 +273,13 @@ void SaveSettings(const char *filePath) {
 
 	FILE *file = nullptr;
 	file = _fsopen(fullPath, "wt", _SH_DENYNO);
+	if (file != nullptr) {
+		// image file name
+		fputs(g_szUnitFilePath, file);
+		fputs("\n", file);
 
-	if (file == nullptr) return;
-
-	// image file name
-	fputs(g_szUnitFilePath, file);
-	fputs("\n", file);
-
-	fclose(file);
+		fclose(file);
+	}
 }
 void LoadUnit(const char *filePath) {
 	g_cUnitCreator.LoadUnit(filePath);

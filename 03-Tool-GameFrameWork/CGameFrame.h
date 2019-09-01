@@ -11,6 +11,7 @@ public:
 	void Update();
 	void UpdateRender();
 	void Release();
+	void PlayStop(bool bPlay);
 
 	// implement derived class
 	virtual void InitImpl();
@@ -37,5 +38,6 @@ protected:
 	UINT _fpsPrevCount;
 	UINT _fpsCount;
 	DWORD _prevSecondTime;
+	bool _bPlaying;
 };
 

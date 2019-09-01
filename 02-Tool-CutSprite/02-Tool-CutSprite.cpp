@@ -1126,7 +1126,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 		}
 		break;
 
-		case IDC_BUTTON13: // Play
+		case IDC_BUTTON13: // Clear
 		{
 			g_bAniPlay = !g_bAniPlay;
 
@@ -1134,7 +1134,7 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				SetDlgItemText(hDlg, IDC_BUTTON13, "Stop");
 			}
 			else {
-				SetDlgItemText(hDlg, IDC_BUTTON13, "Play");
+				SetDlgItemText(hDlg, IDC_BUTTON13, "Clear");
 			}
 		}
 		break;

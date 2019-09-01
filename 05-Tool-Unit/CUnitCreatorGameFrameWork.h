@@ -1,6 +1,7 @@
 #pragma once
 #include "lib.h"
 #include "CGameFrame.h"
+#include "CController.h"
 
 class CUnitCreatorGameFrameWork :
 	public CGameFrameWorkBase
@@ -18,4 +19,5 @@ public:
 	void SaveUnit(const char *filePath);
 
 	CUnit cUnit;
+	CController cController;
 };

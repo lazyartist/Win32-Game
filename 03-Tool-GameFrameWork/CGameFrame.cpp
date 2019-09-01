@@ -4,18 +4,15 @@
 #include "common.h"
 
 
-CGameFrameWorkBase::CGameFrameWorkBase()
-{
+CGameFrameWorkBase::CGameFrameWorkBase() {
 	dlog("CGameFrameWorkBase");
 }
 
-CGameFrameWorkBase::~CGameFrameWorkBase()
-{
+CGameFrameWorkBase::~CGameFrameWorkBase() {
 	dlog("~CGameFrameWorkBase");
 }
 
-void CGameFrameWorkBase::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSize, EWindowMode windowMode)
-{
+void CGameFrameWorkBase::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSize, EWindowMode windowMode) {
 	dlog("Init");
 
 	_hWnd = hWnd;
@@ -39,8 +36,7 @@ void CGameFrameWorkBase::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClie
 
 	_hClientAreaPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
 
-	switch (windowMode)
-	{
+	switch (windowMode) {
 	case None:
 		break;
 	case Window:
@@ -56,8 +52,7 @@ void CGameFrameWorkBase::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClie
 	InitImpl();
 }
 
-void CGameFrameWorkBase::Update()
-{
+void CGameFrameWorkBase::Update() {
 	DWORD time = GetTickCount();
 	DWORD nDeltaTime = time - _prevFrameTime;
 	if (nDeltaTime >= _frameTime) {
@@ -71,8 +66,10 @@ void CGameFrameWorkBase::Update()
 
 		_fpsCount++;
 
-		UpdateLogicImpl();
-		UpdateRender();
+		if (_bPlaying) {
+			UpdateLogicImpl();
+			UpdateRender();
+		}
 	}
 
 	// test.1
@@ -94,8 +91,7 @@ void CGameFrameWorkBase::Update()
 	}
 }
 
-void CGameFrameWorkBase::UpdateRender()
-{
+void CGameFrameWorkBase::UpdateRender() {
 	//dlog("UpdateRender");
 
 	PatBlt(_hdcMem, 0, 0, _whClientSize.w, _whClientSize.h, WHITENESS);
@@ -129,8 +125,7 @@ void CGameFrameWorkBase::UpdateRender()
 	BitBlt(_hdc, 0, 0, _whClientSize.w, _whClientSize.h, _hdcMem, 0, 0, SRCCOPY);
 }
 
-void CGameFrameWorkBase::Release()
-{
+void CGameFrameWorkBase::Release() {
 	//dlog("Release");
 
 	ReleaseDC(_hCanvas, _hdc);
@@ -138,24 +133,23 @@ void CGameFrameWorkBase::Release()
 	DeleteObject(_hClientAreaPen);
 	ReleaseImpl();
 }
+void CGameFrameWorkBase::PlayStop(bool bPlay) {
+	_bPlaying = bPlay;
+}
 
-void CGameFrameWorkBase::InitImpl()
-{
+void CGameFrameWorkBase::InitImpl() {
 	dlog("InitImpl");
 }
 
-void CGameFrameWorkBase::UpdateLogicImpl()
-{
+void CGameFrameWorkBase::UpdateLogicImpl() {
 	//dlog("UpdateLogicImpl");
 }
 
-void CGameFrameWorkBase::UpdateRenderImpl()
-{
+void CGameFrameWorkBase::UpdateRenderImpl() {
 	//dlog("UpdateRenderImpl");
 }
 
-void CGameFrameWorkBase::ReleaseImpl()
-{
+void CGameFrameWorkBase::ReleaseImpl() {
 	dlog("ReleaseImpl");
 }
 
