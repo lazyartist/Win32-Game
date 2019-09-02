@@ -13,6 +13,7 @@ public:
 
 	virtual void InitImpl();
 	virtual void UpdateLogicImpl();
+	virtual void UpdateControllerImpl();
 	virtual void UpdateRenderImpl();
 	virtual void ReleaseImpl();
 
@@ -20,7 +21,8 @@ public:
 	void SaveSettings(const char *szCurDir, const char * filePath);
 	void LoadUnit(const char *filePath);
 	void SaveUnit(const char *filePath);
-	void BindControllerAndUnit();
+	void AddUnitFilePath(CFilePath &cFilePath);
+	void DeleteUnitFilePath(int index);
 
 	vector<CFilePath> vecUnitFilePaths;
 	bool bInitializedUnit = false;

@@ -179,12 +179,16 @@ public:
 
 class CUnitStatePattern {
 public:
+	CUnitState cDefaultUnitState;
 	vector<CUnitState> vecCUnitState;
 	UINT iUnitStateIndex;
 	char szFilePath[MAX_PATH];
 	char szFileTitle[MAX_PATH];
 
 	CUnitStatePattern() {
+		cDefaultUnitState;
+		cDefaultUnitState.eUnitStateType == EUnitStateType::Idle;
+		cDefaultUnitState.iTime == INT_MAX;
 	}
 	~CUnitStatePattern() {
 	}
@@ -193,6 +197,9 @@ public:
 		iUnitStateIndex = 0;
 	}
 	CUnitState& GetCurUnitState() {
+		if (iUnitStateIndex < 0 || iUnitStateIndex >= vecCUnitState.size()) {
+			return cDefaultUnitState;
+		}
 		return vecCUnitState[iUnitStateIndex];
 	}
 	void UpUnitStateIndex() {

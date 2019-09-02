@@ -72,7 +72,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			}
 		}
 
-		g_CGameFrame->Update();
+		g_CGameFrame->UpdateFrame();
 	}
 
 	g_CGameFrame->Release();

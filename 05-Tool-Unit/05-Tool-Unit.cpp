@@ -7,6 +7,7 @@
 HINSTANCE g_hInstance;
 const char *g_szUnitStateTypeAsString[] = { "Idle" , "EUnitStateType_MoveTo" };
 HWND g_hWnd;
+HWND g_hWndPicture;
 HWND g_hUnitList;
 HWND g_hUnitStateAniList;
 CUnitCreatorGameFrameWork g_cUnitCreator;
@@ -17,7 +18,8 @@ BOOL InitInstance(HINSTANCE, int);
 INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 void LoadSettings();
 void SaveSettings();
-void LoadUnit(const char *filePath);
+void AddUnit(const char *filePath, const char *fileTitle);
+void DeleteUnit(int index);
 void SaveUnit(const char *filePath);
 void LoadSelectedUnit();
 void UpdateUnitList();
@@ -36,8 +38,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	HWND hWndPicture = GetDlgItem(g_hWnd, IDC_PIC1);
-	g_cUnitCreator.Init(g_hWnd, hWndPicture, 1000 / 90, { 800, 600 }, EWindowMode::None);
+	g_hWndPicture = GetDlgItem(g_hWnd, IDC_PIC1);
+	g_cUnitCreator.Init(g_hWnd, g_hWndPicture, 1000 / 90, { 800, 600 }, EWindowMode::None);
 	LoadSettings();
 	UpdateUnitList();
 
@@ -52,7 +54,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		if (g_cUnitCreator.Update()) {};
+		//GetFocus(g_hWndPicture);
+		if (g_cUnitCreator.UpdateFrame()) {
+			g_cUnitCreator.UpdateLogic();
+			if (GetFocus() == g_hWndPicture) {
+				g_cUnitCreator.UpdateController();
+			}
+			g_cUnitCreator.UpdateRender();
+		};
 	}
 	g_cUnitCreator.Release();
 
@@ -160,15 +169,36 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			}
 		}
 		break;
-		case IDC_BUTTON1: // Load
+		case IDC_BUTTON1: // Add Unit
 		{
 			char filePath[MAX_PATH] = {};
-			if (OpenFileDialog(filePath)) {
-				LoadUnit(filePath);
+			char fileTitle[MAX_PATH] = {};
+			if (OpenFileDialog(filePath, fileTitle)) {
+				AddUnit(filePath, fileTitle);
+				UpdateUnitList();
+				UpdateUnitUI();
+				UpdateBitmap();
+				UpdateUnitStateAniList();
 			};
 		}
 		break;
-		case IDC_BUTTON2: // Save
+		case IDC_BUTTON11: // Delete Unit
+		{
+			UINT itemIndex = ListView_GetNextItem(
+				g_hUnitList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
+			if (itemIndex != NoSelectedIndex) {
+				DeleteUnit(itemIndex);
+				UpdateUnitList();
+				UpdateUnitUI();
+				UpdateBitmap();
+				UpdateUnitStateAniList();
+			}
+		}
+		break;
+		case IDC_BUTTON2: // Save Unit
 		{
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
@@ -242,15 +272,20 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		{
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
-				g_cUnitCreator.cUnit.cUnitStateAction.LoadUnitStatePatternFile(filePath);
+				g_cUnitCreator.cUnit.cUnitStatePattern.LoadUnitStatePatternFile(filePath);
 				UpdateUnitUI();
 			}
 		}
 		break;
 		case IDC_BUTTON7: // Delete .usp
 		{
-			g_cUnitCreator.cUnit.cUnitStateAction.Clear();
+			g_cUnitCreator.cUnit.cUnitStatePattern.Clear();
 			UpdateUnitUI();
+		}
+		break;
+		case IDC_BUTTON16: // Apply .usp
+		{
+			g_cUnitCreator.cUnit.cUnitStateAction = g_cUnitCreator.cUnit.cUnitStatePattern;
 		}
 		break;
 		case IDC_BUTTON8: // Loas settings
@@ -269,6 +304,11 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 	}
 	break;
 	// 공통 컨트롤의 통지 메시지는 WM_NOTIFY로 받는다.
+	case WM_LBUTTONDOWN:
+	{
+		SetFocus(g_hWndPicture); // 리스트에서 포커스를 제거하기 위해 윈도우에 포커스를 준다.
+	}
+	break;
 	case WM_NOTIFY:
 	{
 		// ListView의 통지 메시지 받기
@@ -298,7 +338,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 
 				if (itemIndex != NoSelectedIndex) {
 					LoadSelectedUnit();
-					SetFocus(g_hWnd); // 리스트에서 포커스를 제거하기 위해 윈도우에 포커스를 준다.
+					//SetFocus(g_hWnd); // 리스트에서 포커스를 제거하기 위해 윈도우에 포커스를 준다.
 					//ListView_SetItemState(pnmhdr->hwndFrom,         // handle to listview
 						//-1,         // index to listview item
 						//0, // item state
@@ -340,7 +380,6 @@ void SaveSettings() {
 	g_cUnitCreator.SaveSettings(g_szCurDir, "settings.cfg");
 }
 void LoadSelectedUnit() {
-	//void LoadUnit(const char *filePath) {
 	UINT itemIndex = ListView_GetNextItem(
 		g_hUnitList, // 윈도우 핸들
 		-1, // 검색을 시작할 인덱스
@@ -348,14 +387,20 @@ void LoadSelectedUnit() {
 	);
 	if (itemIndex != NoSelectedIndex) {
 		CFilePath cFilePath = g_cUnitCreator.vecUnitFilePaths[itemIndex];
-		LoadUnit(cFilePath.szFilePath);
+		g_cUnitCreator.LoadUnit(cFilePath.szFilePath);
+		UpdateUnitUI();
+		UpdateBitmap();
+		UpdateUnitStateAniList();
 	}
 }
-void LoadUnit(const char *filePath) {
-	g_cUnitCreator.LoadUnit(filePath);
-	UpdateUnitUI();
-	UpdateBitmap();
-	UpdateUnitStateAniList();
+void AddUnit(const char *filePath, const char *fileTitle) {
+	CFilePath cFilePath;
+	strcpy_s(cFilePath.szFilePath, Const::szMax_Path, filePath);
+	strcpy_s(cFilePath.szFileTitle, Const::szMax_Path, fileTitle);
+	g_cUnitCreator.AddUnitFilePath(cFilePath);
+}
+void DeleteUnit(int index) {
+	g_cUnitCreator.DeleteUnitFilePath(index);
 }
 void SaveUnit(const char *filePath) {
 	g_cUnitCreator.SaveUnit(filePath);
@@ -369,8 +414,8 @@ void UpdateUnitList() {
 		item.stateMask;
 		item.iItem = i;
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
-		char itemText[MAX_PATH];
-		strcpy_s(itemText, MAX_PATH, g_szUnitStateTypeAsString[i]);
+		//char itemText[MAX_PATH];
+		//strcpy_s(itemText, MAX_PATH, g_szUnitStateTypeAsString[i]);
 		item.pszText = g_cUnitCreator.vecUnitFilePaths[i].szFilePath;
 		ListView_InsertItem(g_hUnitList, &item); // 아이템 추가0
 		//ListView_SetItemText(g_hUnitList, i, 1, g_cUnitCreator.cUnit.arAniInfos[i].FileTitle); // 아이템 추가0
@@ -387,7 +432,7 @@ void UpdateUnitUI() {
 	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_cUnitCreator.cUnit.fMagnification);
 	SetDlgItemText(g_hWnd, IDC_EDIT3, text);
 	// file title
-	SetDlgItemText(g_hWnd, IDC_EDIT2, g_cUnitCreator.cUnit.cUnitStateAction.szFileTitle);
+	SetDlgItemText(g_hWnd, IDC_EDIT2, g_cUnitCreator.cUnit.cUnitStatePattern.szFileTitle);
 }
 void UpdateBitmap() {
 	HWND hWndPic2 = GetDlgItem(g_hWnd, IDC_PIC2);

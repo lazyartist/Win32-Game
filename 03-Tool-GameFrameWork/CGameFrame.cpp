@@ -52,7 +52,7 @@ void CGameFrameWorkBase::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClie
 	InitImpl();
 }
 
-bool CGameFrameWorkBase::Update() {
+bool CGameFrameWorkBase::UpdateFrame() {
 	DWORD time = GetTickCount();
 	DWORD nDeltaTime = time - _prevFrameTime;
 	if (nDeltaTime >= _frameTime) {
@@ -66,8 +66,6 @@ bool CGameFrameWorkBase::Update() {
 		_fpsCount++;
 
 		if (_bPlaying) {
-			UpdateLogicImpl();
-			UpdateRender();
 			return true;
 		}
 	}
@@ -92,8 +90,18 @@ bool CGameFrameWorkBase::Update() {
 
 	return false;
 }
-
+void CGameFrameWorkBase::UpdateLogic() {
+	if (_bPlaying) {
+		UpdateLogicImpl();
+	}
+}
+void CGameFrameWorkBase::UpdateController() {
+	if (_bPlaying) {
+		UpdateControllerImpl();
+	}
+}
 void CGameFrameWorkBase::UpdateRender() {
+	if (!_bPlaying) { return; }
 	//dlog("UpdateRender");
 
 	PatBlt(_hdcMem, 0, 0, _whClientSize.w, _whClientSize.h, WHITENESS);
@@ -146,7 +154,9 @@ void CGameFrameWorkBase::InitImpl() {
 void CGameFrameWorkBase::UpdateLogicImpl() {
 	//dlog("UpdateLogicImpl");
 }
-
+void CGameFrameWorkBase::UpdateControllerImpl() {
+	//dlog("UpdateControllerImpl");
+}
 void CGameFrameWorkBase::UpdateRenderImpl() {
 	//dlog("UpdateRenderImpl");
 }

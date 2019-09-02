@@ -13,12 +13,12 @@ void CUnitCreatorGameFrameWork::InitImpl() {
 void CUnitCreatorGameFrameWork::UpdateLogicImpl() {
 	if (bInitializedUnit) {
 		// collision update
-
 		// game logic update
 		cUnit.Update(_fDeltaTime);
-		// controll update
-		cController.Update(_fDeltaTime, &cUnit);
 	}
+}
+void CUnitCreatorGameFrameWork::UpdateControllerImpl() {
+	cController.Update(_fDeltaTime, &cUnit);
 }
 void CUnitCreatorGameFrameWork::UpdateRenderImpl() {
 	if (bInitializedUnit) {
@@ -44,7 +44,8 @@ void CUnitCreatorGameFrameWork::LoadSettings(const char *filePath) {
 			CFilePath cFilePath;
 			fgets(cFilePath.szFilePath, Const::szMax_Path, file);
 			RemoveCarriageReturn(cFilePath.szFilePath);
-			vecUnitFilePaths.push_back(cFilePath);
+			AddUnitFilePath(cFilePath);
+
 
 			//LVITEM item = {};
 			//item.mask = LVIF_TEXT;
@@ -174,7 +175,10 @@ void CUnitCreatorGameFrameWork::SaveUnit(const char *filePath) {
 
 	fclose(file);
 }
-
-void CUnitCreatorGameFrameWork::BindControllerAndUnit() {
-	//cController.Init(&cUnit);
+void CUnitCreatorGameFrameWork::AddUnitFilePath(CFilePath & cFilePath) {
+	vecUnitFilePaths.push_back(cFilePath);
+}
+void CUnitCreatorGameFrameWork::DeleteUnitFilePath(int index) {
+	auto iter = vecUnitFilePaths.begin();
+	vecUnitFilePaths.erase(iter + index);
 }

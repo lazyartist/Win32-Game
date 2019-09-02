@@ -83,7 +83,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		}
 
-		g_gfUnitStatePattern.Update();
+		g_gfUnitStatePattern.UpdateFrame();
 	}
 
 	g_gfUnitStatePattern.Release();
@@ -198,7 +198,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	//case WM_TIMER:
 	//{
-	//	//g_cUnitStatePattern.Update();
+	//	//g_cUnitStatePattern.UpdateFrame();
 	//}
 	break;
 

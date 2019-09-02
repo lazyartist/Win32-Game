@@ -8,7 +8,9 @@ public:
 	virtual ~CGameFrameWorkBase();
 
 	void Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClient, EWindowMode windowMode);
-	bool Update();
+	bool UpdateFrame();
+	void UpdateLogic();
+	void UpdateController();
 	void UpdateRender();
 	void Release();
 	void PlayStop(bool bPlay);
@@ -16,6 +18,7 @@ public:
 	// implement derived class
 	virtual void InitImpl();
 	virtual void UpdateLogicImpl();
+	virtual void UpdateControllerImpl();
 	virtual void UpdateRenderImpl();
 	virtual void ReleaseImpl();
 
