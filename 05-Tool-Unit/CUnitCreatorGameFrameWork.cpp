@@ -11,18 +11,77 @@ void CUnitCreatorGameFrameWork::InitImpl() {
 	cUnit.Init(_hdcMem);
 }
 void CUnitCreatorGameFrameWork::UpdateLogicImpl() {
-	// collision update
+	if (bInitializedUnit) {
+		// collision update
 
-	// game logic update
-	cUnit.Update(_fDeltaTime);
-	// controll update
-	cController.Update(_fDeltaTime, &cUnit);
+		// game logic update
+		cUnit.Update(_fDeltaTime);
+		// controll update
+		cController.Update(_fDeltaTime, &cUnit);
+	}
 }
 void CUnitCreatorGameFrameWork::UpdateRenderImpl() {
-	cUnit.cUnitStatePattern.RenderUnitState(_hdcMem);
-	cUnit.Render(_hdcMem);
+	if (bInitializedUnit) {
+		cUnit.cUnitStatePattern.RenderUnitState(_hdcMem);
+		cUnit.Render(_hdcMem);
+	}
 }
 void CUnitCreatorGameFrameWork::ReleaseImpl() {
+}
+void CUnitCreatorGameFrameWork::LoadSettings(const char *filePath) {
+	char curDir[Const::szMax_Path] = {};//프로그램의 작업 경로
+	GetCurrentDirectory(Const::szMax_Path, curDir);
+	char fullPath[Const::szMax_Path] = {};//exe 파일 경로
+	sprintf_s(fullPath, "%s\\%s", curDir, filePath);
+
+	FILE *file = nullptr;
+	file = _fsopen(fullPath, "rt", _SH_DENYNO);
+	if (file != nullptr) {
+		char szItemCount[Const::szMax_ItemCount];
+		fgets(szItemCount, Const::szMax_ItemCount, file);
+		int iItemCount = atoi(szItemCount);
+		for (size_t i = 0; i < iItemCount; i++) {
+			CFilePath cFilePath;
+			fgets(cFilePath.szFilePath, Const::szMax_Path, file);
+			RemoveCarriageReturn(cFilePath.szFilePath);
+			vecUnitFilePaths.push_back(cFilePath);
+
+			//LVITEM item = {};
+			//item.mask = LVIF_TEXT;
+			//item.state;
+			//item.stateMask;
+			//item.iItem = i;
+			//item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
+			//char itemText[MAX_PATH];
+			//strcpy_s(itemText, MAX_PATH, g_szUnitStateTypeAsString[i]);
+			//item.pszText = itemText;
+			//ListView_InsertItem(g_hUnitList, &item); // 아이템 추가0
+			//ListView_SetItemText(g_hUnitList, i, 1, g_cUnitCreator.cUnit.arAniInfos[i].FileTitle); // 아이템 추가0
+		}
+		fclose(file);
+	}
+}
+void CUnitCreatorGameFrameWork::SaveSettings(const char *szCurDir, const char *filePath) {
+	char fullPath[MAX_PATH] = {};
+	sprintf_s(fullPath, "%s\\%s", szCurDir, filePath);
+
+	FILE *file = nullptr;
+	file = _fsopen(fullPath, "wt", _SH_DENYNO);
+
+	if (file != nullptr) {
+		int itemCount = vecUnitFilePaths.size();
+		char szItemCount[Const::szMax_ItemCount] = {};
+		_itoa_s(itemCount, szItemCount, Const::szMax_ItemCount, 10);
+		fputs(szItemCount, file);
+		fputs("\n", file);
+		for (size_t i = 0; i < itemCount; i++) {
+			char szItemText[Const::szMax_Path] = {};
+			CFilePath &CFilePath = vecUnitFilePaths[i];
+			fputs(CFilePath.szFilePath, file);
+			fputs("\n", file);
+		}
+		fclose(file);
+	}
 }
 void CUnitCreatorGameFrameWork::LoadUnit(const char *filePath) {
 	FILE *file = nullptr;
@@ -86,6 +145,8 @@ void CUnitCreatorGameFrameWork::LoadUnit(const char *filePath) {
 	for (size_t i = 0; i < EUnitStateType::Count; i++) {
 		cUnit.LoadAniFile((EUnitStateType)i, cUnit.arAniInfos[i].FilePath);
 	}
+
+	bInitializedUnit = true;
 }
 void CUnitCreatorGameFrameWork::SaveUnit(const char *filePath) {
 	FILE *file = nullptr;

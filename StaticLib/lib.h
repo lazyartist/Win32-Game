@@ -35,7 +35,11 @@ using namespace std;
 // todo : define을 대체하기
 static class Const {
 public:
-	const static int szMax_XYs = 30 + 1;
+	const static int szMax_Path = MAX_PATH;
+	const static int szMax_ItemCount = _MAX_INT_DIG;
+	const static int szMax_ListColumnName = 32;
+
+	const static int nMax_ListColumnWidth = 100;
 };
 
 // ===== enum =====
@@ -96,7 +100,16 @@ void dlog(float i, float ii, float iii, float iiii);
 // ===== inline function ===== end
 
 // ===== class ===== 
-typedef class CSpriteInfo_ {
+class CFilePath {
+public:
+	char szFilePath[Const::szMax_Path];
+	char szFileTitle[Const::szMax_Path];
+	void Clear() {
+		szFilePath[0] = 0;
+		szFileTitle[0] = 0;
+	}
+};
+class CSpriteInfo {
 public:
 	UINT iTime = 0;
 	INT ariCoordinates[nMax_SpriteCoordinateCount];
@@ -152,7 +165,7 @@ public:
 		vecsCollisions.clear();
 		iCollisionCount = 0;
 	}
-} CSpriteInfo;
+};
 
 class CUnitState {
 public:
@@ -252,7 +265,6 @@ public:
 		char itemLine[szMax_UnitStateLine] = {};
 		char *token;
 		char *nextToken;
-		char itemText[Const::szMax_XYs] = {};
 		for (size_t i = 0; i < itemCount; i++) {
 			memset(itemLine, 0, szMax_UnitStateLine);
 			fgets(itemLine, szMax_UnitStateLine, file);
@@ -552,7 +564,6 @@ public:
 		char itemLine[szMax_PosLine] = {};
 		char *token;
 		char *nextToken;
-		char itemText[szMax_Pos] = {};
 		for (size_t i = 0; i < itemCount; i++) {
 			memset(itemLine, 0, szMax_PosLine);
 			fgets(itemLine, szMax_PosLine, file);
