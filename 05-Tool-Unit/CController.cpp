@@ -39,13 +39,13 @@ void CController::Update(float fDeltaTime, CUnit *cUnit) {
 			cUnitState.sXY = { cos(_fDirectionRadian) , sin(_fDirectionRadian) }; // 각도로 x, y 좌표를 얻었으므로 정규화 되어있다.
 			cUnitState.sXY = { cUnitState.sXY.x * cUnit->fSpeedPerSeconds * fDeltaTime, cUnitState.sXY.y * cUnit->fSpeedPerSeconds * fDeltaTime };
 			cUnitState.sXY.Add(cUnit->sXY.x, cUnit->sXY.y);
-			cUnit->cUnitStatePattern.Clear();
-			cUnit->cUnitStatePattern.vecCUnitState.push_back(cUnitState);
+			cUnit->cUnitStateAction.Clear();
+			cUnit->cUnitStateAction.vecCUnitState.push_back(cUnitState);
 
 			cUnitState.eUnitStateType = EUnitStateType::Idle;
 			//cUnitState.iTime = 1;
 			cUnitState.iTime = INT_MAX;
-			cUnit->cUnitStatePattern.vecCUnitState.push_back(cUnitState);
+			cUnit->cUnitStateAction.vecCUnitState.push_back(cUnitState);
 		}
 	}
 }

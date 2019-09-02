@@ -22,7 +22,7 @@ void CUnitCreatorGameFrameWork::UpdateLogicImpl() {
 }
 void CUnitCreatorGameFrameWork::UpdateRenderImpl() {
 	if (bInitializedUnit) {
-		cUnit.cUnitStatePattern.RenderUnitState(_hdcMem);
+		cUnit.cUnitStateAction.RenderUnitState(_hdcMem);
 		cUnit.Render(_hdcMem);
 	}
 }
@@ -105,8 +105,8 @@ void CUnitCreatorGameFrameWork::LoadUnit(const char *filePath) {
 	fgets(cUnit.szBitmapPath, MAX_PATH, file);
 	RemoveCarriageReturn(cUnit.szBitmapPath);
 	// pattern file path
-	fgets(cUnit.cUnitStatePattern.szFilePath, MAX_PATH, file);
-	RemoveCarriageReturn(cUnit.cUnitStatePattern.szFilePath);
+	fgets(cUnit.cUnitStateAction.szFilePath, MAX_PATH, file);
+	RemoveCarriageReturn(cUnit.cUnitStateAction.szFilePath);
 	// ani files
 	char szItemCount[szMax_PosLine] = {};
 	fgets(szItemCount, szMax_PosLine, file);
@@ -140,7 +140,8 @@ void CUnitCreatorGameFrameWork::LoadUnit(const char *filePath) {
 	// load bitmap
 	cUnit.LoadUnitBitmap(cUnit.szBitmapPath);
 	// load .usp
-	cUnit.cUnitStatePattern.LoadUnitStatePatternFile(cUnit.cUnitStatePattern.szFilePath);
+	cUnit.cUnitStatePattern.LoadUnitStatePatternFile(cUnit.cUnitStateAction.szFilePath);
+	cUnit.cUnitStateAction = cUnit.cUnitStatePattern;
 	// load .ani
 	for (size_t i = 0; i < EUnitStateType::Count; i++) {
 		cUnit.LoadAniFile((EUnitStateType)i, cUnit.arAniInfos[i].FilePath);
@@ -163,7 +164,7 @@ void CUnitCreatorGameFrameWork::SaveUnit(const char *filePath) {
 	// bitmap path
 	fprintf_s(file, "%s\n", cUnit.szBitmapPath);
 	// pattern file
-	fprintf_s(file, "%s\n", cUnit.cUnitStatePattern.szFilePath);
+	fprintf_s(file, "%s\n", cUnit.cUnitStateAction.szFilePath);
 	// ani files
 	int itemCount = EUnitStateType::Count;
 	fprintf_s(file, "%d\n", itemCount);

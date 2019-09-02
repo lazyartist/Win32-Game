@@ -384,6 +384,7 @@ public:
 	EUnitStateType eCurUnitStateType;
 	char szBitmapPath[MAX_PATH];
 	SAniInfo arAniInfos[EUnitStateType::Count];
+	CUnitStatePattern cUnitStateAction;
 	CUnitStatePattern cUnitStatePattern;
 	HDC hBitmapDC;
 
@@ -415,7 +416,7 @@ public:
 	}
 	void Update(float fDeltaTime) {
 		// update CUnitState
-		CUnitState curUnitState = cUnitStatePattern.GetCurUnitState();
+		CUnitState curUnitState = cUnitStateAction.GetCurUnitState();
 
 		if (curUnitState.eUnitStateType == EUnitStateType::Idle) {
 			if (_iWaitTimeOnPosition == 0) {
@@ -426,7 +427,7 @@ public:
 				if (GetTickCount() - _iWaitTimeOnPosition >= curUnitState.iTime) {
 					// end wait
 					_iWaitTimeOnPosition = 0;
-					cUnitStatePattern.UpUnitStateIndex();
+					cUnitStateAction.UpUnitStateIndex();
 				}
 				else {
 					// wait
@@ -454,7 +455,7 @@ public:
 			sXY.y += speedY;
 
 			if (sameXY(curUnitState.sXY, sXY)) {
-				cUnitStatePattern.UpUnitStateIndex();
+				cUnitStateAction.UpUnitStateIndex();
 				//dlog(curUnitState.sXY.x, curUnitState.sXY.y, sXY.x, sXY.y);
 			}
 		}
@@ -522,8 +523,8 @@ public:
 		_iAniIndex = 0;
 		_iAniTime = GetTickCount();
 		// 초기 위치 설정
-		cUnitStatePattern.Init();
-		CUnitState unitState = cUnitStatePattern.GetCurUnitState();
+		cUnitStateAction.Init();
+		CUnitState unitState = cUnitStateAction.GetCurUnitState();
 		sXY = unitState.sXY;
 	}
 	//void Stop() {
