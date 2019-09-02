@@ -17,6 +17,7 @@ public:
 
 	void LoadUnit(const char *filePath);
 	void SaveUnit(const char *filePath);
+	void BindControllerAndUnit();
 
 	CUnit cUnit;
 	CController cController;

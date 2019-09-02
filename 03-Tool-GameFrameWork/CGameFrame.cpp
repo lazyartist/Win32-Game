@@ -52,7 +52,7 @@ void CGameFrameWorkBase::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClie
 	InitImpl();
 }
 
-void CGameFrameWorkBase::Update() {
+bool CGameFrameWorkBase::Update() {
 	DWORD time = GetTickCount();
 	DWORD nDeltaTime = time - _prevFrameTime;
 	if (nDeltaTime >= _frameTime) {
@@ -63,12 +63,12 @@ void CGameFrameWorkBase::Update() {
 
 		_nDeltaTime = nDeltaTime;
 		_fDeltaTime = (float)_nDeltaTime / 1000;
-
 		_fpsCount++;
 
 		if (_bPlaying) {
 			UpdateLogicImpl();
 			UpdateRender();
+			return true;
 		}
 	}
 
@@ -89,6 +89,8 @@ void CGameFrameWorkBase::Update() {
 		//UpdateRender();
 		//_prevFrameTime = time;
 	}
+
+	return false;
 }
 
 void CGameFrameWorkBase::UpdateRender() {
@@ -110,11 +112,11 @@ void CGameFrameWorkBase::UpdateRender() {
 	//RECT rectFpsCount = { 0, 100, 100, 200 };
 	//DrawText(_hdcMem, szFpsPrevCount, strlen(szFpsPrevCount), &rectFpsCount, DT_LEFT);
 
-	//// draw _nDeltaTime
-	//char szNDeltaTime[nStrLen_FPS];
-	//_itoa_s(_nDeltaTime, szNDeltaTime, nStrLen_FPS, 10);
-	//RECT rectNDeltaTime = { 0, 200, 100, 300 };
-	//DrawText(_hdcMem, szNDeltaTime, strlen(szNDeltaTime), &rectNDeltaTime, DT_LEFT);
+	// draw _nDeltaTime
+	char szNDeltaTime[nStrLen_FPS];
+	_itoa_s(_nDeltaTime, szNDeltaTime, nStrLen_FPS, 10);
+	RECT rectNDeltaTime = { _whClientSize.w - 20, 0, _whClientSize.w, 20 };
+	DrawText(_hdcMem, szNDeltaTime, strlen(szNDeltaTime), &rectNDeltaTime, DT_LEFT);
 
 	// 클라이언트 영역이 지정한데로 설정됐는지 우하단에 점을 찍어 확인
 	SelectObject(_hdcMem, _hClientAreaPen);

@@ -18,7 +18,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 
 WH g_whClientSize = { 800, 600 };
 char g_szAniFilePath[MAX_PATH];
-const char *g_szUnitStateTypeAsString[] = { "Idle" , "MoveTo" };
+const char *g_szUnitStateTypeAsString[] = { "Idle" , "EUnitStateType_MoveTo" };
 
 HWND g_hWnd;
 HWND g_hDlg;
@@ -410,7 +410,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		CUnitState unitState;
 		unitState.sXY = { (float)x, (float)y };
 		unitState.iTime = 0;
-		unitState.eUnitStateType = EUnitStateType::MoveTo;
+		unitState.eUnitStateType = EUnitStateType::EUnitStateType_MoveTo;
 
 		g_gfUnitStatePattern.UnitStatePattern.AddUnitState(unitState);
 

@@ -44,7 +44,7 @@ enum EWindowMode {
 };
 enum EUnitStateType {
 	EUnitStateType_None = -1,
-	Idle = 0, MoveTo,
+	Idle = 0, EUnitStateType_MoveTo,
 	Count
 };
 // ===== enum ===== end
@@ -92,6 +92,7 @@ bool sameXY(SXY xy1, SXY xy2);
 bool operator==(XY xy1, XY xy2);
 SXY operator-(SXY xy1, SXY xy2);
 bool operator==(SXY xy1, SXY xy2);
+void dlog(float i, float ii, float iii, float iiii);
 // ===== inline function ===== end
 
 // ===== class ===== 
@@ -178,7 +179,7 @@ public:
 	void Init() {
 		iUnitStateIndex = 0;
 	}
-	CUnitState GetCurUnitState() {
+	CUnitState& GetCurUnitState() {
 		return vecCUnitState[iUnitStateIndex];
 	}
 	void UpUnitStateIndex() {
@@ -321,7 +322,7 @@ public:
 				xy = prevXY;
 				size = 3;
 			}
-			else if (unitState.eUnitStateType == EUnitStateType::MoveTo) {
+			else if (unitState.eUnitStateType == EUnitStateType::EUnitStateType_MoveTo) {
 				SelectObject(_hdcMem, hLinePen);
 				LineTo(_hdcMem, unitState.sXY.x, unitState.sXY.y);
 
@@ -400,7 +401,7 @@ public:
 	void Init(HDC hdc) {
 		hBitmapDC = CreateCompatibleDC(hdc);
 	}
-	void Update(float _fDeltaTime) {
+	void Update(float fDeltaTime) {
 		// update CUnitState
 		CUnitState curUnitState = cUnitStatePattern.GetCurUnitState();
 
@@ -421,18 +422,18 @@ public:
 				}
 			}
 		}
-		else if (curUnitState.eUnitStateType == EUnitStateType::MoveTo) {
+		else if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_MoveTo) {
 			// 다음 지점까지의 거리
 			SXY distanceXY = curUnitState.sXY - sXY;
 			float distance = distanceXY.distance();
-			float speed = fSpeedPerSeconds * _fDeltaTime;
+			float speed = fSpeedPerSeconds * fDeltaTime;
 
 			if (distance < speed) {
 				speed = distance;
 			}
 
 			_fDirectionRadian = atan2(distanceXY.y, distanceXY.x);
-			_v2NormalDirection = { cos(_fDirectionRadian) , sin(_fDirectionRadian) }; // 각도로 x, y 좌료를 얻었으므로 정규화 되어있다.
+			_v2NormalDirection = { cos(_fDirectionRadian) , sin(_fDirectionRadian) }; // 각도로 x, y 좌표를 얻었으므로 정규화 되어있다.
 			_fDirectionWithCosRight = _v2NormalDirection.x * kV2Right.x + _v2NormalDirection.y * kV2Right.y;
 
 			float speedX = speed * _v2NormalDirection.x;
@@ -442,6 +443,7 @@ public:
 
 			if (sameXY(curUnitState.sXY, sXY)) {
 				cUnitStatePattern.UpUnitStateIndex();
+				//dlog(curUnitState.sXY.x, curUnitState.sXY.y, sXY.x, sXY.y);
 			}
 		}
 
@@ -677,7 +679,7 @@ inline bool operator==(SXY xy1, SXY xy2) {
 	return (xy1.x == xy2.x) && (xy1.y == xy2.y);
 }
 inline bool sameXY(SXY xy1, SXY xy2) {
-	return (abs(xy1.x - xy2.x) < 0.1) && (abs(xy1.x - xy2.x) < 0.1);
+	return (abs(xy1.x - xy2.x) < 0.1) && (abs(xy1.y - xy2.y) < 0.1);
 }
 // ===== operation overloading ===== end
 // ===== log =====
@@ -732,8 +734,8 @@ inline void _dlog(const char *title, UINT count, float args, ...) {
 	OutputDebugString(" : ");
 	// 첫번째 인자 출력
 	{
-		char buffer[11];
-		sprintf_s(buffer, 11, "%f", args);
+		char buffer[FLT_MAX_10_EXP];
+		sprintf_s(buffer, FLT_MAX_10_EXP, "%f", args);
 		OutputDebugString(buffer);
 	}
 	// 가변인자 출력
@@ -742,8 +744,8 @@ inline void _dlog(const char *title, UINT count, float args, ...) {
 		// https://stackoverflow.com/questions/11270588/variadic-function-va-arg-doesnt-work-with-float
 		float arg = va_arg(ap, double);
 		OutputDebugString(", ");
-		char buffer[11];
-		sprintf_s(buffer, 11, "%f", arg);
+		char buffer[FLT_MAX_10_EXP];
+		sprintf_s(buffer, FLT_MAX_10_EXP, "%f", arg);
 		OutputDebugString(buffer);
 	}
 	OutputDebugString("\n");
@@ -775,6 +777,18 @@ inline void dlog(int i, int ii) {
 };
 inline void dlog(int i, int ii, int iii) {
 	_dlog("", 3, i, ii, iii);
+};
+inline void dlog(float i) {
+	_dlog("", 1, i);
+};
+inline void dlog(float i, float ii) {
+	_dlog("", 2, i, ii);
+};
+inline void dlog(float i, float ii, float iii) {
+	_dlog("", 3, i, ii, iii);
+};
+inline void dlog(float i, float ii, float iii, float iiii) {
+	_dlog("", 4, i, ii, iii, iiii);
 };
 inline void dlog(RECT rect) {
 	_dlog("", 4, rect.left, rect.top, rect.right, rect.bottom);

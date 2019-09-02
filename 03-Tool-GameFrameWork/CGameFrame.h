@@ -8,7 +8,7 @@ public:
 	virtual ~CGameFrameWorkBase();
 
 	void Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClient, EWindowMode windowMode);
-	void Update();
+	bool Update();
 	void UpdateRender();
 	void Release();
 	void PlayStop(bool bPlay);

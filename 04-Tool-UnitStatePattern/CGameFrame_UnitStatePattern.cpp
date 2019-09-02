@@ -67,7 +67,7 @@ void CGameFrame_UnitStatePattern::UpdateLogicImpl()
 					}
 				}
 			}
-			else if (curUnitState.eUnitStateType == EUnitStateType::MoveTo) {
+			else if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_MoveTo) {
 				//
 			}
 
@@ -141,7 +141,7 @@ void CGameFrame_UnitStatePattern::DrawUnitState()
 		else if (unitState.EUnitStateType == EUnitStateType::Idle) {
 			SelectObject(_hdcMem, hIdlePen);
 		}
-		else if (unitState.EUnitStateType == EUnitStateType::MoveTo) {
+		else if (unitState.EUnitStateType == EUnitStateType::EUnitStateType_MoveTo) {
 			SelectObject(_hdcMem, hWalkPen);
 		}
 

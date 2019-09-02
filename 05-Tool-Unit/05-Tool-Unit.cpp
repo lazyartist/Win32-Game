@@ -5,7 +5,7 @@
 #include "Commctrl.h"
 
 HINSTANCE g_hInstance;
-const char *g_szUnitStateTypeAsString[] = { "Idle" , "MoveTo" };
+const char *g_szUnitStateTypeAsString[] = { "Idle" , "EUnitStateType_MoveTo" };
 HWND g_hWnd;
 HWND g_hUnitStateAniList;
 CUnitCreatorGameFrameWork g_cUnitCreator;
@@ -50,7 +50,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		g_cUnitCreator.Update();
+		if (g_cUnitCreator.Update()) {};
 	}
 	g_cUnitCreator.Release();
 
@@ -283,6 +283,8 @@ void SaveSettings(const char *filePath) {
 }
 void LoadUnit(const char *filePath) {
 	g_cUnitCreator.LoadUnit(filePath);
+	//g_cUnitCreator.BindControllerAndUnit();
+
 	UpdateUI();
 	UpdateBitmap();
 	UpdateUnitStateAniList();
