@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <deque>
 #include <list>
 #include "windows.h"
 //#include "windowsx.h"
@@ -49,7 +50,7 @@ enum EWindowMode {
 };
 enum EUnitStateType {
 	EUnitStateType_None = -1,
-	Idle = 0, EUnitStateType_MoveTo,
+	EUnitStateType_Idle = 0, EUnitStateType_MoveTo, EUnitStateType_Shoot,
 	Count
 };
 // ===== enum ===== end
@@ -181,34 +182,41 @@ public:
 class CUnitStatePattern {
 public:
 	CUnitState cDefaultUnitState;
-	vector<CUnitState> vecCUnitState;
+	deque<CUnitState> vecCUnitState;
 	UINT iUnitStateIndex;
 	char szFilePath[MAX_PATH];
 	char szFileTitle[MAX_PATH];
 
 	CUnitStatePattern() {
 		cDefaultUnitState;
-		cDefaultUnitState.eUnitStateType == EUnitStateType::Idle;
+		cDefaultUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Idle;
 		cDefaultUnitState.iTime == INT_MAX;
 	}
 	~CUnitStatePattern() {
 	}
 
 	void Init() {
-		iUnitStateIndex = 0;
+		//iUnitStateIndex = 0;
 	}
 	CUnitState& GetCurUnitState() {
+		if (vecCUnitState.size() == 0) {
+			return cDefaultUnitState;
+		}
+		return vecCUnitState[0];
+	}
+	/*CUnitState& GetCurUnitState() {
 		if (iUnitStateIndex < 0 || iUnitStateIndex >= vecCUnitState.size()) {
 			return cDefaultUnitState;
 		}
 		return vecCUnitState[iUnitStateIndex];
-	}
+	}*/
 	void UpUnitStateIndex() {
-		++iUnitStateIndex;
+		vecCUnitState.pop_front();
+		//++iUnitStateIndex;
 
-		if (iUnitStateIndex == vecCUnitState.size()) {
-			iUnitStateIndex = 0;
-		}
+		//if (iUnitStateIndex == vecCUnitState.size()) {
+		//	iUnitStateIndex = 0;
+		//}
 	}
 	void AddUnitState(CUnitState unitState) {
 		vecCUnitState.push_back(unitState);
@@ -267,7 +275,7 @@ public:
 		int itemCount = atoi(szItemCount);
 
 		vecCUnitState.clear();
-		vecCUnitState.reserve(itemCount);
+		//vecCUnitState.reserve(itemCount);
 
 		// ===== List에 아이템 추가 =====
 		char itemLine[szMax_UnitStateLine] = {};
@@ -336,7 +344,7 @@ public:
 			SXY xy = { 0.0, 0.0 };
 			float size = 1.0;
 
-			if (unitState.eUnitStateType == EUnitStateType::Idle) {
+			if (unitState.eUnitStateType == EUnitStateType::EUnitStateType_Idle) {
 				SelectObject(_hdcMem, hIdlePen);
 
 				xy = prevXY;
@@ -356,7 +364,7 @@ public:
 			Ellipse(_hdcMem, prevXY.x - wh.w / size, prevXY.y - wh.h / size,
 				prevXY.x + wh.w / size, prevXY.y + wh.w / size);
 
-			if (i == iUnitStateIndex) {
+			if (i == 0) {
 				SelectObject(_hdcMem, hSelectedPen);
 				Rectangle(_hdcMem, xy.x - wh.w / 2, xy.y - wh.h / 2,
 					xy.x + wh.w / 2, xy.y + wh.w / 2);
@@ -429,7 +437,7 @@ public:
 		// update CUnitState
 		CUnitState curUnitState = cUnitStateAction.GetCurUnitState();
 
-		if (curUnitState.eUnitStateType == EUnitStateType::Idle) {
+		if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Idle) {
 			if (_iWaitTimeOnPosition == 0) {
 				_iWaitTimeOnPosition = GetTickCount();
 				//return;
@@ -438,7 +446,7 @@ public:
 				if (GetTickCount() - _iWaitTimeOnPosition >= curUnitState.iTime) {
 					// end wait
 					_iWaitTimeOnPosition = 0;
-					cUnitStateAction.UpUnitStateIndex();
+					NextUnitState();
 				}
 				else {
 					// wait
@@ -466,8 +474,14 @@ public:
 			sXY.y += speedY;
 
 			if (sameXY(curUnitState.sXY, sXY)) {
-				cUnitStateAction.UpUnitStateIndex();
+				NextUnitState();
 				//dlog(curUnitState.sXY.x, curUnitState.sXY.y, sXY.x, sXY.y);
+			}
+		}
+		else if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Shoot) {
+			vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
+			if (spriteInfos.size() - 1 == _iAniIndex) {
+				NextUnitState();
 			}
 		}
 
@@ -637,6 +651,18 @@ public:
 			aniFile.SpriteInfos.push_back(spriteInfo);
 		}
 		fclose(file);
+	}
+	void NextUnitState() {
+		CUnitState cPrevUnitState = cUnitStateAction.GetCurUnitState();
+		cUnitStateAction.UpUnitStateIndex();
+		CUnitState cCurUnitState = cUnitStateAction.GetCurUnitState();
+		bool bUnitStateChanged = cPrevUnitState.eUnitStateType != cCurUnitState.eUnitStateType;
+
+		if (bUnitStateChanged) {
+			if (cCurUnitState.eUnitStateType != EUnitStateType::EUnitStateType_MoveTo) {
+				_iAniIndex = 0;
+			}
+		}
 	}
 };
 // ===== class ===== end

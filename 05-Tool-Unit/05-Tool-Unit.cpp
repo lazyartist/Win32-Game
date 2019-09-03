@@ -5,7 +5,7 @@
 #include "Commctrl.h"
 
 HINSTANCE g_hInstance;
-const char *g_szUnitStateTypeAsString[] = { "Idle" , "EUnitStateType_MoveTo" };
+const char *g_szUnitStateTypeAsString[] = { "EUnitStateType_Idle" , "EUnitStateType_MoveTo", "EUnitStateType_Shoot" };
 HWND g_hWnd;
 HWND g_hWndPicture;
 HWND g_hUnitList;

@@ -53,7 +53,7 @@ void CGameFrame_UnitStatePattern::UpdateLogicImpl()
 		_unit.sXY.y += speedY;
 
 		if (sameXY(curUnitState.sXY, _unit.sXY)) {
-			if (curUnitState.eUnitStateType == EUnitStateType::Idle) {
+			if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Idle) {
 				if (_unitIdleTime == 0) {
 					_unitIdleTime = GetTickCount();
 					return;
@@ -138,7 +138,7 @@ void CGameFrame_UnitStatePattern::DrawUnitState()
 		if (i == SelectedUnitStateIndex) {
 			SelectObject(_hdcMem, hSelectedPen);
 		}
-		else if (unitState.EUnitStateType == EUnitStateType::Idle) {
+		else if (unitState.EUnitStateType == EUnitStateType::EUnitStateType_Idle) {
 			SelectObject(_hdcMem, hIdlePen);
 		}
 		else if (unitState.EUnitStateType == EUnitStateType::EUnitStateType_MoveTo) {

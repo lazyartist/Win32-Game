@@ -25,6 +25,7 @@ public:
 	void DeleteUnitFilePath(int index);
 
 	vector<CFilePath> vecUnitFilePaths;
+	vector<CUnit*> vecUnitsOnCanvas;
 	CUnit cUnit;
 	CController cController;
 };
