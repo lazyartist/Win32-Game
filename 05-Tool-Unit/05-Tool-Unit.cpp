@@ -92,15 +92,17 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		char szColumnName0[Const::szMax_ListColumnName] = {};
 		char szColumnName1[Const::szMax_ListColumnName] = {};
 		// 컬럼 추가(List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.)
-		strcpy_s(szColumnName0, Const::szMax_ListColumnName, ".unit file");
+		strcpy_s(szColumnName0, Const::szMax_ListColumnName, ".unit FileTitle");
+		strcpy_s(szColumnName1, Const::szMax_ListColumnName, "FilePath");
 		LVCOLUMN column = {};
 		column.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
 		column.fmt = LVCFMT_LEFT;
-		column.cx = Const::nMax_ListColumnWidth;
+		column.cx = 150;
 		column.pszText = szColumnName0;
 		ListView_InsertColumn(g_hUnitList, 0, &column); // 컬럼 추가0
-		//column.pszText = szColumnName1;
-		//ListView_InsertColumn(g_hUnitStateAniList, 1, &column); // 컬럼 추가1
+		column.cx = 300;
+		column.pszText = szColumnName1;
+		ListView_InsertColumn(g_hUnitList, 1, &column); // 컬럼 추가1
 		// 줄 전체가 클릭되도록 설정(기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨)
 		ListView_SetExtendedListViewStyle(
 			g_hUnitList,
@@ -112,13 +114,10 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		// 컬럼 추가(List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.)
 		strcpy_s(szColumnName0, Const::szMax_ListColumnName, "EUnitStateType");
 		strcpy_s(szColumnName1, Const::szMax_ListColumnName, "Ani File");
-		//char szColumnName1[] = "Ani File";
-		//LVCOLUMN column = {};
-		//column.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
-		//column.fmt = LVCFMT_LEFT;
-		//column.cx = 100;
+		column.cx = 200;
 		column.pszText = szColumnName0;
 		ListView_InsertColumn(g_hUnitStateAniList, 0, &column); // 컬럼 추가0
+		column.cx = 150;
 		column.pszText = szColumnName1;
 		ListView_InsertColumn(g_hUnitStateAniList, 1, &column); // 컬럼 추가1
 		// 줄 전체가 클릭되도록 설정(기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨)
@@ -206,6 +205,16 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			}
 		}
 		break;
+		case IDC_BUTTON17: // New Unit
+		{
+			g_cUnitCreator.cUnit.Clear();
+			UpdateUnitList();
+			UpdateUnitUI();
+			UpdateBitmap();
+			UpdateUnitStateAniList();
+			UpdateUnitStateAniList();
+		}
+		break;
 		case IDC_BUTTON3: // Load .ani
 		{
 			UINT itemIndex = ListView_GetNextItem(
@@ -247,15 +256,13 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			//	-1, // 검색을 시작할 인덱스
 			//	LVNI_SELECTED // 검색 조건
 			//);
-			//g_cUnitCreator.cUnit.Clear((EUnitStateType)itemIndex);
 			g_cUnitCreator.PlayStop(true);
-			g_cUnitCreator.cUnit.Clear(EUnitStateType::Idle);
+			g_cUnitCreator.cUnit.Reset();
 		}
 		break;
 		case IDC_BUTTON10: // Stop Ani
 		{
 			g_cUnitCreator.PlayStop(false);
-			//g_cUnitCreator.cUnit.Stop();
 		}
 		break;
 		case IDC_BUTTON9: // Load Bitmap
@@ -414,11 +421,10 @@ void UpdateUnitList() {
 		item.stateMask;
 		item.iItem = i;
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
-		//char itemText[MAX_PATH];
-		//strcpy_s(itemText, MAX_PATH, g_szUnitStateTypeAsString[i]);
-		item.pszText = g_cUnitCreator.vecUnitFilePaths[i].szFilePath;
+		item.pszText = g_cUnitCreator.vecUnitFilePaths[i].szFileTitle;
 		ListView_InsertItem(g_hUnitList, &item); // 아이템 추가0
-		//ListView_SetItemText(g_hUnitList, i, 1, g_cUnitCreator.cUnit.arAniInfos[i].FileTitle); // 아이템 추가0
+		//item.pszText = g_cUnitCreator.vecUnitFilePaths[i].szFilePath;
+		ListView_SetItemText(g_hUnitList, i, 1, g_cUnitCreator.vecUnitFilePaths[i].szFilePath); // 아이템 추가1
 	}
 }
 void UpdateUnitUI() {

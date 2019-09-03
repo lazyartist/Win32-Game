@@ -38,6 +38,7 @@ public:
 	const static int szMax_Path = MAX_PATH;
 	const static int szMax_ItemCount = _MAX_INT_DIG;
 	const static int szMax_ListColumnName = 32;
+	const static int szMax_ItemLine = MAX_PATH;
 
 	const static int nMax_ListColumnWidth = 100;
 };
@@ -383,6 +384,7 @@ class CUnit {
 public:
 	const V2 kV2Right = { 1, 0 };
 
+	bool bInitialized = false;
 	char szName[szMax_UnitName];
 	SXY sXY;
 	WH sWH;
@@ -396,7 +398,6 @@ public:
 	HDC hBitmapDC;
 
 private:
-	//bool _bPlaying = false;
 	bool _bPatternPlaying = false;
 	// direction
 	float _fDirectionRadian = 0.0;
@@ -419,6 +420,9 @@ public:
 	~CUnit() {}
 
 	void Init(HDC hdc) {
+		if (hBitmapDC) {
+			DeleteDC(hBitmapDC);
+		}
 		hBitmapDC = CreateCompatibleDC(hdc);
 	}
 	void Update(float fDeltaTime) {
@@ -471,12 +475,15 @@ public:
 		time_t time = GetTickCount();
 		if (time - _iAniTime >= _cCurSpriteInfo.iTime) {
 			_iAniTime = time;
-			++_iAniIndex;
 			vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
-			if (_iAniIndex >= spriteInfos.size()) {
-				_iAniIndex = 0;
+			size_t size = spriteInfos.size();
+			if (size != 0) {
+				++_iAniIndex;
+				if (_iAniIndex >= spriteInfos.size()) {
+					_iAniIndex = 0;
+				}
+				_cCurSpriteInfo = spriteInfos[_iAniIndex];
 			}
-			_cCurSpriteInfo = spriteInfos[_iAniIndex];
 		}
 	}
 	void Render(HDC hdc) {
@@ -524,9 +531,7 @@ public:
 		}
 		TextOut(hdc, 0, 200, szDirection, FLT_MAX_10_EXP);
 	}
-	void Clear(EUnitStateType unitStateType) {
-		eCurUnitStateType = unitStateType;
-		//_bPlaying = true;
+	void Reset() {
 		_iAniIndex = 0;
 		_iAniTime = GetTickCount();
 		// 초기 위치 설정
@@ -534,15 +539,40 @@ public:
 		CUnitState unitState = cUnitStateAction.GetCurUnitState();
 		sXY = unitState.sXY;
 	}
-	//void Stop() {
-	//	_bPlaying = false;
-	//}
+	void Clear() {
+		eCurUnitStateType = EUnitStateType::EUnitStateType_None;
+		_iAniIndex = 0;
+		_iAniTime = GetTickCount();
+		cUnitStateAction.Clear();
+		cUnitStatePattern.Clear();
+
+		szName[0] = 0;
+		SXY sXY = {0, 0};
+		WH sWH = {0, 0};
+		float fSpeedPerSeconds = 10.0;
+		float fMagnification = 1.0;
+		//EUnitStateType eCurUnitStateType;
+		szBitmapPath[0] = 0;
+		for (size_t i = 0; i < static_cast<EUnitStateType>(EUnitStateType::Count); i++) {
+			arAniInfos[i].FilePath[0] = 0;
+			arAniInfos[i].FileTitle[0] = 0;
+			arAniInfos[i].SpriteInfos.clear();
+		}
+		ClearUnitBitmap();
+
+		bInitialized = false;
+	}
 	void SetName(const char *name) {
 		strcpy_s(szName, szMax_UnitName, name);
 	}
 	void LoadUnitBitmap(const char *filePath) {
 		strcpy_s(szBitmapPath, MAX_PATH, filePath);
 		HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, filePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		SelectObject(hBitmapDC, hBitmap); // HBITMAP은 HDC에 적용되면 다시 사용할 수 없기 때문에 재사용을 위해 HDC에 넣어둔다.
+		DeleteObject(hBitmap);
+	}
+	void ClearUnitBitmap() {
+		HBITMAP hBitmap = CreateCompatibleBitmap(hBitmapDC, 100, 100);
 		SelectObject(hBitmapDC, hBitmap); // HBITMAP은 HDC에 적용되면 다시 사용할 수 없기 때문에 재사용을 위해 HDC에 넣어둔다.
 		DeleteObject(hBitmap);
 	}

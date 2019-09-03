@@ -29,7 +29,7 @@ inline bool OpenFileDialog(char *filePath, char *fileTitle = nullptr) {
 	ofn.nMaxFileTitle = MAX_PATH;
 	ofn.lpstrTitle = "title";
 
-	// 이 프로그램에서 사용한 마지막 경로를 리겅하고 있다가 기본 폴더로 열어주는데 운영체제가 해주는 듯하다.
+	// 이 프로그램에서 사용한 마지막 경로를 기억하고 있다가 기본 폴더로 열어주는데 운영체제가 해주는 듯하다.
 	// 특정 폴더를 기본폴더로 지정하려면 GetModuleFileName, GetCurrentDirectory를 활용한다.
 	// 현재 실행파일의 경로
 	//char defaultPath[MAX_PATH];

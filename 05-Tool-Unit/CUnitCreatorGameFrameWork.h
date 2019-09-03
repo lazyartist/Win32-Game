@@ -25,7 +25,6 @@ public:
 	void DeleteUnitFilePath(int index);
 
 	vector<CFilePath> vecUnitFilePaths;
-	bool bInitializedUnit = false;
 	CUnit cUnit;
 	CController cController;
 };
