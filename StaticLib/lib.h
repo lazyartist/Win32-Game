@@ -183,6 +183,8 @@ public:
 	EUnitStateType eUnitStateType;
 	SXY sXY;
 	UINT iTime; // milliseconds
+	bool bCancelable;
+	bool bOncePlay;
 
 	CUnitState() {
 	}
@@ -200,6 +202,8 @@ public:
 		cDefaultUnitState;
 		cDefaultUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Idle;
 		cDefaultUnitState.iTime = UINT_MAX;
+		cDefaultUnitState.bCancelable = true;
+		cDefaultUnitState.bOncePlay = false;
 	}
 	~CUnitStatePattern() {
 	}
@@ -431,9 +435,39 @@ public:
 		hBitmapDC = CreateCompatibleDC(hdc);
 	}
 	void Update(float fDeltaTime) {
-		// update CUnitState
 		CUnitState curUnitState = cUnitStateAction.GetCurUnitState();
+		const vector<CSpriteInfo> * spriteInfos = &arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
+		_cCurSpriteInfo = (*spriteInfos)[_iAniIndex]; // todo : to pointer
+		bool bEndAni = false;//애니메이션이 끝났는지 여부, 애니가 끝까지 재생되고 _iAniIndex가 0으로 갱신되면 true가 된다.
 
+		// update ani
+		// 경과 시간을 보고 _iAniIndex를 갱신
+		time_t time = GetTickCount();
+		if (time - _iAniTime >= _cCurSpriteInfo.iTime) {
+			_iAniTime = time;
+			size_t size = spriteInfos->size();
+			if (size != 0) {
+				++_iAniIndex;
+				if (_iAniIndex >= spriteInfos->size()) {
+					_iAniIndex = 0;
+					bEndAni = true;
+				}
+				_cCurSpriteInfo = (*spriteInfos)[_iAniIndex];
+			}
+			else {
+				_iAniIndex = 0;
+			}
+		}
+
+		// 액션 상태 갱신1
+		if (bEndAni && curUnitState.bOncePlay) {
+			// ani가 끝났고 한번만 재생하는 액션이라면 액션 갱신하고 스프라이트 정보 다시 읽기
+			NextUnitState();
+			curUnitState = cUnitStateAction.GetCurUnitState();
+			spriteInfos = &arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
+			_cCurSpriteInfo = (*spriteInfos)[_iAniIndex];
+		}
+		// 액션 상태 갱신2
 		if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Idle) {
 			if (_iWaitTimeOnPosition == 0) {
 				_iWaitTimeOnPosition = GetTickCount();
@@ -472,33 +506,14 @@ public:
 
 			if (sameXY(curUnitState.sXY, sXY)) {
 				NextUnitState();
-				//dlog(curUnitState.sXY.x, curUnitState.sXY.y, sXY.x, sXY.y);
 			}
 		}
-		else if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Shoot) {
-			vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
-			if (spriteInfos.size() - 1 == _iAniIndex) {
-				NextUnitState();
-			}
-		}
-
-		// update ani
-		time_t time = GetTickCount();
-		if (time - _iAniTime >= _cCurSpriteInfo.iTime) {
-			_iAniTime = time;
-			vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
-			size_t size = spriteInfos.size();
-			if (size != 0) {
-				++_iAniIndex;
-				if (_iAniIndex >= spriteInfos.size()) {
-					_iAniIndex = 0;
-				}
-				_cCurSpriteInfo = spriteInfos[_iAniIndex];
-			}
-			else {
-				_iAniIndex = 0;
-			}
-		}
+		//else if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Shoot) {
+		//	vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
+		//	if (bEndAni) {
+		//		NextUnitState();
+		//	}
+		//}
 	}
 	void Render(HDC hdc) {
 		//if (!_bPlaying) return;
@@ -560,7 +575,8 @@ public:
 	}
 	void ClearAni() {
 		_iAniIndex = 0;
-		_iAniTime = 0;
+		//_iAniTime = 0;
+		_iAniTime = GetTickCount();
 	}
 	void Clear() {
 		ClearAni();

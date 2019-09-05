@@ -13,8 +13,7 @@ CController::~CController() {
 
 void CController::Update(float fDeltaTime, CUnit *cUnit) {
 	CUnitState cCurUnitState = cUnit->cUnitStateAction.GetCurUnitState();
-	if (cCurUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Shoot) {
-		// 슛이 끝날 때 까지 기다리기
+	if (!cCurUnitState.bCancelable) {
 		return;
 	}
 
@@ -47,15 +46,17 @@ void CController::Update(float fDeltaTime, CUnit *cUnit) {
 		cUnitState.sXY = { cos(_fDirectionRadian) , sin(_fDirectionRadian) }; // 각도로 x, y 좌표를 얻었으므로 정규화 되어있다.
 		cUnitState.sXY = { cUnitState.sXY.x * cUnit->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(), cUnitState.sXY.y * cUnit->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
 		cUnitState.sXY.Add(cUnit->sXY.x, cUnit->sXY.y);
+		cUnitState.bCancelable = true;
+		cUnitState.bOncePlay = false;
 		if (cCurUnitState.eUnitStateType != EUnitStateType::EUnitStateType_MoveTo) {
-			//이동중에는 애니메이션을 계속 재생한다.
-			cUnit->ClearAni();
+			cUnit->ClearAni(); //현재 이동중이라면 애니메이션을 초기화하지 않고 연속 재생한다.
 		}
 		cUnit->cUnitStateAction.Clear();
 		cUnit->cUnitStateAction.vecCUnitState.push_back(cUnitState);
 	}
 	else if (cUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Shoot) {
-		// shoot
+		cUnitState.bCancelable = false;
+		cUnitState.bOncePlay = true;
 		cUnit->ClearAni();
 		cUnit->cUnitStateAction.Clear();
 		cUnit->cUnitStateAction.vecCUnitState.push_back(cUnitState);
