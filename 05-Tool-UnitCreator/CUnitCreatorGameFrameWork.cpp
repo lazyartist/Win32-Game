@@ -84,6 +84,7 @@ void CUnitCreatorGameFrameWork::LoadUnit(const char *filePath) {
 	FILE *file = nullptr;
 	file = _fsopen(filePath, "rt", _SH_DENYNO);
 	if (file != nullptr) {
+		cUnit.Reset();
 		// name
 		fgets(cUnit.szName, szMax_UnitName, file);
 		RemoveCarriageReturn(cUnit.szName);
