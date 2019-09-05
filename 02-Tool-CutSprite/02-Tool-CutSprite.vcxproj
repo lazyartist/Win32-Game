@@ -91,7 +91,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\StaticLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\CommonLibrary;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -153,16 +153,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="02-Tool-CutSprite.h" />
+    <ClInclude Include="02-Tool-SpriteAnimation.h" />
     <ClInclude Include="common.h" />
-    <ClInclude Include="CutImage.h" />
+    <ClInclude Include="CSpriteAnimation.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="02-Tool-CutSprite.cpp" />
-    <ClCompile Include="CutImage.cpp" />
+    <ClCompile Include="02-Tool-SpriteAnimation.cpp" />
+    <ClCompile Include="CSpriteAnimation.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -181,7 +181,7 @@
     <None Include="cursor1.cur" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\StaticLib\StaticLib.vcxproj">
+    <ProjectReference Include="..\CommonLibrary\CommonLibrary.vcxproj">
       <Project>{58763e91-7189-4dc1-9123-001b91aaba30}</Project>
     </ProjectReference>
   </ItemGroup>

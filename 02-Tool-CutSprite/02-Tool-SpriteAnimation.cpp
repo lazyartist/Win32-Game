@@ -4,9 +4,9 @@
 #include <iostream> // sprintf_s()
 #include <vector>
 #include "Commctrl.h"
-#include "02-Tool-CutSprite.h"
+#include "02-Tool-SpriteAnimation.h"
 #include "common.h"
-#include "CutImage.h"
+#include "CSpriteAnimation.h"
 #include "lib.h"
 
 #define MAX_LOADSTRING 100
@@ -79,7 +79,7 @@ char g_szSpriteFilePath[MAX_PATH] = {};
 
 MouseModeType g_MouseModeType = MouseModeType::Sprite;
 BitmapViewInfo g_BitmapViewInfo;
-CutImage g_CutImage;
+CSpriteAnimation g_CutImage;
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -1277,8 +1277,8 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 				LoadSpriteForMainWnd();
 			}
 			else {
-				auto err = GetLastError();
-				dlog(err);
+				DWORD err = GetLastError();
+				dlog((int)err);
 			};
 
 		}

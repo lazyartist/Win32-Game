@@ -13,7 +13,7 @@
 #define nMax_SpriteCount 999
 #define szMax_SpriteCount 3 + 1
 #define szMax_Pos 6
-#define szMax_UnitState 9 + 1
+#define szMax_Action 9 + 1
 #define szMax_PosLine 99
 #define nFrameRate 60 // 모니터 주사율이 60hz인데 60보다 높이면 더 부드럽게 보인다. 왜일까?
 #define nPivotHalfSize 5
@@ -23,11 +23,11 @@
 #define nMax_RectPos 4
 #define szMax_Magnification 3 + 1
 
-#define szMax_UnitStateLine 99
+#define szMax_ActionLine 99
 #define szMax_UnitName 99
 
-#define nMax_UnitStateCount 999
-#define szMax_UnitStateCount 3 + 1
+#define nMax_ActionCount 999
+#define szMax_ActionCount 3 + 1
 
 #define NoSelectedIndex -1
 
@@ -56,9 +56,9 @@ public:
 enum EWindowMode {
 	None, Window, FullScreen
 };
-enum EUnitStateType {
-	EUnitStateType_None = -1,
-	EUnitStateType_Idle = 0, EUnitStateType_MoveTo, EUnitStateType_Shoot,
+enum EActionType {
+	EActionType_None = -1,
+	EActionType_Idle = 0, EActionType_MoveTo, EActionType_Shoot,
 	Count
 };
 // ===== enum ===== end
@@ -178,89 +178,86 @@ public:
 	}
 };
 
-class CUnitState {
+class CAction {
 public:
-	EUnitStateType eUnitStateType;
+	EActionType eActionType;
 	SXY sXY;
 	UINT iTime; // milliseconds
 	bool bCancelable;
 	bool bOncePlay;
 
-	CUnitState() {
+	CAction() {
 	}
 };
 
-class CUnitStatePattern {
+class CActions {
 public:
-	CUnitState cDefaultUnitState;
-	deque<CUnitState> vecCUnitState;
-	//UINT iUnitStateIndex;
+	CAction cDefaultAction;
+	deque<CAction> deqActions;
 	char szFilePath[MAX_PATH];
 	char szFileTitle[MAX_PATH];
 
-	CUnitStatePattern() {
-		cDefaultUnitState;
-		cDefaultUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Idle;
-		cDefaultUnitState.iTime = UINT_MAX;
-		cDefaultUnitState.bCancelable = true;
-		cDefaultUnitState.bOncePlay = false;
+	CActions() {
+		cDefaultAction;
+		cDefaultAction.eActionType == EActionType::EActionType_Idle;
+		cDefaultAction.iTime = UINT_MAX;
+		cDefaultAction.bCancelable = true;
+		cDefaultAction.bOncePlay = false;
 	}
-	~CUnitStatePattern() {
+	~CActions() {
 	}
-
 	void Init() {
-		//iUnitStateIndex = 0;
 	}
-	CUnitState& GetCurUnitState() {
-		if (vecCUnitState.size() == 0) {
-			return cDefaultUnitState;
+	CAction& GetCurAction() {
+		if (deqActions.size() == 0) {
+			return cDefaultAction;
 		}
-		return vecCUnitState[0];
+		return deqActions[0];
 	}
-	void UpUnitStateIndex() {
-		vecCUnitState.pop_front();
+	void NextAction() {
+		deqActions.pop_front();
 	}
-	void AddUnitState(CUnitState unitState) {
-		vecCUnitState.push_back(unitState);
+	void AddAction(CAction action) {
+		deqActions.push_back(action);
 	}
-	bool DeleteUnitState(UINT index) {
-		if (index >= vecCUnitState.size()) return false;
+	bool DeleteAction(UINT index) {
+		if (index >= deqActions.size()) return false;
 
-		auto iter = vecCUnitState.begin();
-		vecCUnitState.erase(iter + index);
+		auto iter = deqActions.begin();
+		deqActions.erase(iter + index);
 
 		return true;
 	}
-	bool DeleteAllUnitState() {
-		vecCUnitState.clear();
+	bool DeleteAllActions() {
+		deqActions.clear();
 
 		return true;
 	}
 	void Clear() {
 		Init();
-		DeleteAllUnitState();
+		DeleteAllActions();
 		szFilePath[0] = 0;
 		szFileTitle[0] = 0;
 	}
-	bool UpUnitState(UINT index) {
-		if (index == 0 || index >= vecCUnitState.size()) return false;
+	bool UpAction(UINT index) {
+		if (index == 0 || index >= deqActions.size()) return false;
 
-		CUnitState unitStateTemp = vecCUnitState[index - 1];
-		vecCUnitState[index - 1] = vecCUnitState[index];
-		vecCUnitState[index] = unitStateTemp;
-
-		return true;
-	}
-	bool DownUnitState(UINT index) {
-		if (index < 0 || index >= vecCUnitState.size() - 1) return false;
-
-		CUnitState unitStateTemp = vecCUnitState[index + 1];
-		vecCUnitState[index + 1] = vecCUnitState[index];
-		vecCUnitState[index] = unitStateTemp;
+		CAction cActionTemp = deqActions[index - 1];
+		deqActions[index - 1] = deqActions[index];
+		deqActions[index] = cActionTemp;
 
 		return true;
 	}
-	void LoadUnitStatePatternFile(const char *filePath) {
+	bool DownAction(UINT index) {
+		if (index < 0 || index >= deqActions.size() - 1) return false;
+
+		CAction cActionTemp = deqActions[index + 1];
+		deqActions[index + 1] = deqActions[index];
+		deqActions[index] = cActionTemp;
+
+		return true;
+	}
+	void LoadActionPatternFile(const char *filePath) {
 		FILE *file = nullptr;
 		file = _fsopen(filePath, "rt", _SH_DENYNO);
 
@@ -275,61 +272,58 @@ public:
 		// item count
 		int itemCount = atoi(szItemCount);
 
-		vecCUnitState.clear();
-		//vecCUnitState.reserve(itemCount);
+		deqActions.clear();
+		//deqActions.reserve(itemCount);
 
 		// ===== List에 아이템 추가 =====
-		char itemLine[szMax_UnitStateLine] = {};
+		char itemLine[szMax_ActionLine] = {};
 		char *token;
 		char *nextToken;
 		for (size_t i = 0; i < itemCount; i++) {
-			memset(itemLine, 0, szMax_UnitStateLine);
-			fgets(itemLine, szMax_UnitStateLine, file);
+			memset(itemLine, 0, szMax_ActionLine);
+			fgets(itemLine, szMax_ActionLine, file);
 
 			// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
 			itemLine[strcspn(itemLine, "\n")] = 0; // strcspn()으로 "\n"의 위치를 찾고 그 위치에 0을 넣어준다.
 
 			if (strnlen_s(itemLine, szMax_PosLine) == 0) continue;
 
-			CUnitState unitState;
-			{
-				nextToken = itemLine;
-
-				token = strtok_s(nullptr, "\t", &nextToken);
-				unitState.eUnitStateType = (EUnitStateType)atoi(token);
-				token = strtok_s(nullptr, "\t", &nextToken);
-				unitState.sXY.x = atof(token);
-				token = strtok_s(nullptr, "\t", &nextToken);
-				unitState.sXY.y = atof(token);
-				token = strtok_s(nullptr, "\t", &nextToken);
-				unitState.iTime = atoi(token);
-			}
-			AddUnitState(unitState);
+			CAction cAction;
+			nextToken = itemLine;
+			token = strtok_s(nullptr, "\t", &nextToken);
+			cAction.eActionType = (EActionType)atoi(token);
+			token = strtok_s(nullptr, "\t", &nextToken);
+			cAction.sXY.x = atof(token);
+			token = strtok_s(nullptr, "\t", &nextToken);
+			cAction.sXY.y = atof(token);
+			token = strtok_s(nullptr, "\t", &nextToken);
+			cAction.iTime = atoi(token);
+			AddAction(cAction);
 		}
 		fclose(file);
 	}
-	void SaveUnitStatePatternFile(const char *filePath) {
+	void SaveActionPatternFile(const char *filePath) {
 		FILE *file = nullptr;
 		file = _fsopen(filePath, "wt", _SH_DENYNO);
 
 		if (file == nullptr) return;
 
 		// item count
-		int itemCount = vecCUnitState.size();
-		char szItemCount[szMax_UnitStateCount] = {};
-		sprintf_s<szMax_UnitStateCount>(szItemCount, "%d\n", itemCount);
+		int itemCount = deqActions.size();
+		char szItemCount[szMax_ActionCount] = {};
+		sprintf_s<szMax_ActionCount>(szItemCount, "%d\n", itemCount);
 		fputs(szItemCount, file);
 
-		auto iter = vecCUnitState.begin();
-		while (iter != vecCUnitState.end()) {
-			fprintf_s(file, "%d\t%f\t%f\t%d\n", iter->eUnitStateType, iter->sXY.x, iter->sXY.y, iter->iTime);
+		auto iter = deqActions.begin();
+		while (iter != deqActions.end()) {
+			fprintf_s(file, "%d\t%f\t%f\t%d\n", iter->eActionType, iter->sXY.x, iter->sXY.y, iter->iTime);
 
 			++iter;
 		}
 		fclose(file);
 	}
-	void RenderUnitState(HDC _hdcMem) {
-		if (vecCUnitState.size() == 0) return;
+	void RenderActions(HDC _hdcMem) {
+		if (deqActions.size() == 0) return;
 
 		HPEN hLinePen = (HPEN)GetStockObject(BLACK_PEN);
 		HPEN hIdlePen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));;
@@ -337,28 +331,28 @@ public:
 		HPEN hSelectedPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
 		HPEN hOldPen = (HPEN)SelectObject(_hdcMem, hWalkPen);
 
-		MoveToEx(_hdcMem, vecCUnitState[0].sXY.x, vecCUnitState[0].sXY.y, nullptr);
+		MoveToEx(_hdcMem, deqActions[0].sXY.x, deqActions[0].sXY.y, nullptr);
 		WH wh = { 10, 10 };
 		SXY prevXY = { 0.0, 0.0 };
-		for (size_t i = 0; i < vecCUnitState.size(); i++) {
-			CUnitState unitState = vecCUnitState[i];
+		for (size_t i = 0; i < deqActions.size(); i++) {
+			CAction cAction = deqActions[i];
 			SXY xy = { 0.0, 0.0 };
 			float size = 1.0;
 
-			if (unitState.eUnitStateType == EUnitStateType::EUnitStateType_Idle) {
+			if (cAction.eActionType == EActionType::EActionType_Idle) {
 				SelectObject(_hdcMem, hIdlePen);
 
 				xy = prevXY;
 				size = 3;
 			}
-			else if (unitState.eUnitStateType == EUnitStateType::EUnitStateType_MoveTo) {
+			else if (cAction.eActionType == EActionType::EActionType_MoveTo) {
 				SelectObject(_hdcMem, hLinePen);
-				LineTo(_hdcMem, unitState.sXY.x, unitState.sXY.y);
+				LineTo(_hdcMem, cAction.sXY.x, cAction.sXY.y);
 
 				SelectObject(_hdcMem, hWalkPen);
 
-				xy = unitState.sXY;
-				prevXY = unitState.sXY;
+				xy = cAction.sXY;
+				prevXY = cAction.sXY;
 				size = 2;
 			}
 
@@ -399,11 +393,10 @@ public:
 	WH sWH;
 	float fSpeedPerSeconds = 10.0;
 	float fMagnification = 1.0;
-	EUnitStateType eCurUnitStateType;
 	char szBitmapPath[MAX_PATH];
-	SAniInfo arAniInfos[EUnitStateType::Count];
-	CUnitStatePattern cUnitStateAction;
-	CUnitStatePattern cUnitStatePattern;
+	SAniInfo arAniInfos[EActionType::Count];
+	CActions cActions;
+	CActions cActionsPattern;
 	HDC hBitmapDC;
 	UINT _iAniIndex = 0;
 
@@ -421,7 +414,7 @@ private:
 
 public:
 	CUnit() {
-		for (size_t i = 0; i < EUnitStateType::Count; i++) {
+		for (size_t i = 0; i < EActionType::Count; i++) {
 			arAniInfos[i].FilePath[0] = 0;
 			arAniInfos[i].FileTitle[0] = 0;
 		}
@@ -435,8 +428,8 @@ public:
 		hBitmapDC = CreateCompatibleDC(hdc);
 	}
 	void Update(float fDeltaTime) {
-		CUnitState curUnitState = cUnitStateAction.GetCurUnitState();
-		const vector<CSpriteInfo> * spriteInfos = &arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
+		CAction curAction = cActions.GetCurAction();
+		const vector<CSpriteInfo> * spriteInfos = &arAniInfos[(int)curAction.eActionType].SpriteInfos;
 		_cCurSpriteInfo = (*spriteInfos)[_iAniIndex]; // todo : to pointer
 		bool bEndAni = false;//애니메이션이 끝났는지 여부, 애니가 끝까지 재생되고 _iAniIndex가 0으로 갱신되면 true가 된다.
 
@@ -460,24 +453,24 @@ public:
 		}
 
 		// 액션 상태 갱신1
-		if (bEndAni && curUnitState.bOncePlay) {
+		if (bEndAni && curAction.bOncePlay) {
 			// ani가 끝났고 한번만 재생하는 액션이라면 액션 갱신하고 스프라이트 정보 다시 읽기
-			NextUnitState();
-			curUnitState = cUnitStateAction.GetCurUnitState();
-			spriteInfos = &arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
+			NextAction();
+			curAction = cActions.GetCurAction();
+			spriteInfos = &arAniInfos[(int)curAction.eActionType].SpriteInfos;
 			_cCurSpriteInfo = (*spriteInfos)[_iAniIndex];
 		}
 		// 액션 상태 갱신2
-		if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Idle) {
+		if (curAction.eActionType == EActionType::EActionType_Idle) {
 			if (_iWaitTimeOnPosition == 0) {
 				_iWaitTimeOnPosition = GetTickCount();
 				//return;
 			}
 			else {
-				if (curUnitState.iTime != INT_MAX && GetTickCount() - _iWaitTimeOnPosition >= curUnitState.iTime) {
+				if (curAction.iTime != INT_MAX && GetTickCount() - _iWaitTimeOnPosition >= curAction.iTime) {
 					// end wait
 					_iWaitTimeOnPosition = 0;
-					NextUnitState();
+					NextAction();
 				}
 				else {
 					// wait
@@ -485,9 +478,9 @@ public:
 				}
 			}
 		}
-		else if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_MoveTo) {
+		else if (curAction.eActionType == EActionType::EActionType_MoveTo) {
 			// 다음 지점까지의 거리
-			SXY distanceXY = curUnitState.sXY - sXY;
+			SXY distanceXY = curAction.sXY - sXY;
 			float distance = distanceXY.distance();
 			float speed = fSpeedPerSeconds * fDeltaTime;
 
@@ -504,14 +497,14 @@ public:
 			sXY.x += speedX;
 			sXY.y += speedY;
 
-			if (sameXY(curUnitState.sXY, sXY)) {
-				NextUnitState();
+			if (sameXY(curAction.sXY, sXY)) {
+				NextAction();
 			}
 		}
-		//else if (curUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Shoot) {
-		//	vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
+		//else if (curAction.eActionType == EActionType::EActionType_Shoot) {
+		//	vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curAction.eActionType].SpriteInfos;
 		//	if (bEndAni) {
-		//		NextUnitState();
+		//		NextAction();
 		//	}
 		//}
 	}
@@ -560,8 +553,8 @@ public:
 		}
 		TextOut(hdc, 0, 200, szDirection, FLT_MAX_10_EXP);
 		// test : text _iAniIndex
-		CUnitState curUnitState = cUnitStateAction.GetCurUnitState();
-		vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
+		CAction curAction = cActions.GetCurAction();
+		vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curAction.eActionType].SpriteInfos;
 		sprintf_s(szDirection, FLT_MAX_10_EXP, "%d/%d", _iAniIndex, spriteInfos.size());
 		TextOut(hdc, sXY.x, sXY.y + 2, szDirection, FLT_MAX_10_EXP);
 	}
@@ -569,9 +562,9 @@ public:
 		_iAniIndex = 0;
 		_iAniTime = GetTickCount();
 		// 초기 위치 설정
-		cUnitStateAction.Init();
-		CUnitState unitState = cUnitStateAction.GetCurUnitState();
-		sXY = unitState.sXY;
+		cActions.Init();
+		CAction cAction = cActions.GetCurAction();
+		sXY = cAction.sXY;
 	}
 	void ClearAni() {
 		_iAniIndex = 0;
@@ -580,19 +573,16 @@ public:
 	}
 	void Clear() {
 		ClearAni();
-
-		eCurUnitStateType = EUnitStateType::EUnitStateType_None;
-		cUnitStateAction.Clear();
-		cUnitStatePattern.Clear();
-
+		cActions.Clear();
+		cActionsPattern.Clear();
 		szName[0] = 0;
 		SXY sXY = {0, 0};
 		WH sWH = {0, 0};
 		float fSpeedPerSeconds = 10.0;
 		float fMagnification = 1.0;
-		//EUnitStateType eCurUnitStateType;
+		//EActionType eCurActionType;
 		szBitmapPath[0] = 0;
-		for (size_t i = 0; i < static_cast<EUnitStateType>(EUnitStateType::Count); i++) {
+		for (size_t i = 0; i < static_cast<EActionType>(EActionType::Count); i++) {
 			arAniInfos[i].FilePath[0] = 0;
 			arAniInfos[i].FileTitle[0] = 0;
 			arAniInfos[i].SpriteInfos.clear();
@@ -615,13 +605,13 @@ public:
 		SelectObject(hBitmapDC, hBitmap); // HBITMAP은 HDC에 적용되면 다시 사용할 수 없기 때문에 재사용을 위해 HDC에 넣어둔다.
 		DeleteObject(hBitmap);
 	}
-	void LoadAniFile(EUnitStateType unitStateType, const char *filePath) {
+	void LoadAniFile(EActionType eActionType, const char *filePath) {
 		FILE *file = nullptr;
 		file = _fsopen(filePath, "rt", _SH_DENYNO);
 
 		if (file == nullptr) return;
 
-		SAniInfo &aniFile = arAniInfos[(int)unitStateType];
+		SAniInfo &aniFile = arAniInfos[(int)eActionType];
 		strcpy_s(aniFile.FilePath, MAX_PATH, filePath);
 		strcpy_s(aniFile.FileTitle, MAX_PATH, GetFileNameByFullPath(filePath));
 		aniFile.SpriteInfos.clear();
@@ -677,8 +667,8 @@ public:
 		}
 		fclose(file);
 	}
-	void NextUnitState() {
-		cUnitStateAction.UpUnitStateIndex();
+	void NextAction() {
+		cActions.NextAction();
 		_iAniIndex = 0;
 	}
 };

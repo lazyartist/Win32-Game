@@ -1,16 +1,16 @@
 ﻿//{{NO_DEPENDENCIES}}
 // Microsoft Visual C++에서 생성한 포함 파일입니다.
-// 04-Tool-CUnitStatePattern.rc에서 사용되고 있습니다.
+// 04-Tool-CActions.rc에서 사용되고 있습니다.
 //
 #define IDC_MYICON                      2
-#define IDD_MY04TOOLUNITSTATEPATTERN_DIALOG 102
+#define IDD_MY04TOOLACTIONPATTERN_DIALOG 102
 #define IDS_APP_TITLE                   103
 #define IDD_ABOUTBOX                    103
 #define IDM_ABOUT                       104
 #define IDM_EXIT                        105
-#define IDI_MY04TOOLUNITSTATEPATTERN    107
+#define IDI_MY04TOOLACTIONPATTERN    107
 #define IDI_SMALL                       108
-#define IDC_MY04TOOLUNITSTATEPATTERN    109
+#define IDC_MY04TOOLACTIONPATTERN    109
 #define IDR_MAINFRAME                   128
 #define IDD_DIALOG1                     129
 #define IDC_LIST2                       1002

@@ -1,4 +1,4 @@
-﻿// 04-Tool-CUnitStatePattern.cpp : 응용 프로그램에 대한 진입점을 정의합니다.
+﻿// 04-Tool-CActions.cpp : 응용 프로그램에 대한 진입점을 정의합니다.
 //
 #include <list> 
 #include <vector> 
@@ -6,8 +6,8 @@
 #include <windowsx.h> // GET_X_LPARAM
 #include "Commctrl.h"
 #include <commdlg.h>
-#include "04-Tool-UnitStatePattern.h"
-#include "CGameFrame_UnitStatePattern.h"
+#include "04-Tool-ActionPattern.h"
+#include "CActionPatternGameFrameWork.h"
 
 #define MAX_LOADSTRING 100
 
@@ -18,17 +18,17 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 
 WH g_whClientSize = { 800, 600 };
 char g_szAniFilePath[MAX_PATH];
-const char *g_szUnitStateTypeAsString[] = { "EUnitStateType_Idle" , "EUnitStateType_MoveTo" };
+const char *g_szActionTypeAsString[] = { "EActionType_Idle" , "EActionType_MoveTo" };
 
 HWND g_hWnd;
 HWND g_hDlg;
-CGameFrame_UnitStatePattern g_gfUnitStatePattern;
-HWND g_hUnitStateList;
+CActionPatternGameFrameWork g_gfActionPattern;
+HWND g_hActionList;
 
 void SetWindowPositionToCenter(HWND hWnd);
 //bool OpenFileDialog(OPENFILENAME &ofn);
 void UpdateSubWndPosition();
-void UpdateUnitStatesList();
+void UpdateActions();
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -49,7 +49,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// 전역 문자열을 초기화합니다.
 	LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-	LoadStringW(hInstance, IDC_MY04TOOLUNITSTATEPATTERN, szWindowClass, MAX_LOADSTRING);
+	LoadStringW(hInstance, IDC_MY04TOOLACTIONPATTERN, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
 	// 응용 프로그램 초기화를 수행합니다:
@@ -58,11 +58,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	g_gfUnitStatePattern.Init(g_hWnd, g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, EWindowMode::Window);
+	g_gfActionPattern.Init(g_hWnd, g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, EWindowMode::Window);
 
 	SetWindowPositionToCenter(g_hWnd);
 
-	//HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY04TOOLUNITSTATEPATTERN));
+	//HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY04TOOLACTIONPATTERN));
 
 	MSG msg;
 
@@ -83,10 +83,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		}
 
-		g_gfUnitStatePattern.UpdateFrame();
+		g_gfActionPattern.UpdateFrame();
 	}
 
-	g_gfUnitStatePattern.Release();
+	g_gfActionPattern.Release();
 
 	return (int)msg.wParam;
 }
@@ -109,10 +109,10 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
-	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY04TOOLUNITSTATEPATTERN));
+	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MY04TOOLACTIONPATTERN));
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MY04TOOLUNITSTATEPATTERN);
+	wcex.lpszMenuName = MAKEINTRESOURCEW(IDC_MY04TOOLACTIONPATTERN);
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -163,7 +163,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// list
 		// ===== List에 컬럼 추가 =====
 		// Sprite list
-		g_hUnitStateList = GetDlgItem(hWnd, IDC_LIST2);
+		g_hActionList = GetDlgItem(hWnd, IDC_LIST2);
 
 		// List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.
 		const char *listColumnNames[] = { "type", "x", "y", "time" };
@@ -178,7 +178,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			strcpy_s(columnName, listColumnNames[i]);
 			col.pszText = columnName;
-			ListView_InsertColumn(g_hUnitStateList, i, &col); // 컬럼 추가1
+			ListView_InsertColumn(g_hActionList, i, &col); // 컬럼 추가1
 		}
 		// ===== List에 컬럼 추가 ===== end
 
@@ -186,7 +186,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// ===== List 뷰 설정 =====
 		// 기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨
 		ListView_SetExtendedListViewStyle(
-			g_hUnitStateList,
+			g_hActionList,
 			LVS_EX_FULLROWSELECT // 아이템 전체가 클릭되도록 한다.
 			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
 		);
@@ -194,12 +194,6 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		//SetTimer(hWnd, 1, 1000/30, nullptr);
 	}
-	break;
-
-	//case WM_TIMER:
-	//{
-	//	//g_cUnitStatePattern.UpdateFrame();
-	//}
 	break;
 
 	case WM_COMMAND:
@@ -211,14 +205,14 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		
 		case IDC_BUTTON1: // PlayStop
 		{
-			g_gfUnitStatePattern.PlayStop(!g_gfUnitStatePattern.IsPlaying);
+			g_gfActionPattern.PlayStop(!g_gfActionPattern.IsPlaying);
 
-			if (g_gfUnitStatePattern.IsPlaying) {
+			if (g_gfActionPattern.IsPlaying) {
 				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Stop");
 			}
 			else {
 				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Clear");
-				g_gfUnitStatePattern.InitUnit();
+				g_gfActionPattern.InitUnit();
 			}
 		}
 		break;
@@ -228,8 +222,8 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//OPENFILENAME ofn = { 0, };
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
-				g_gfUnitStatePattern.UnitStatePattern.LoadUnitStatePatternFile(filePath);
-				UpdateUnitStatesList();
+				g_gfActionPattern.cActions.LoadActionPatternFile(filePath);
+				UpdateActions();
 			};
 		}
 		break;
@@ -239,8 +233,8 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//OPENFILENAME ofn = { 0, };
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
-				g_gfUnitStatePattern.UnitStatePattern.SaveUnitStatePatternFile(filePath);
-				UpdateUnitStatesList();
+				g_gfActionPattern.cActions.SaveActionPatternFile(filePath);
+				UpdateActions();
 			};
 		}
 		break;
@@ -248,37 +242,37 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON4: // Delete
 		{
 			int selectedListItemIndex = ListView_GetNextItem(
-				g_hUnitStateList, // 윈도우 핸들
+				g_hActionList, // 윈도우 핸들
 				-1, // 검색을 시작할 인덱스
 				LVNI_SELECTED // 검색 조건
 			);
 
 			if (selectedListItemIndex != -1) {
-				g_gfUnitStatePattern.UnitStatePattern.DeleteUnitState(selectedListItemIndex);
-				UpdateUnitStatesList();
+				g_gfActionPattern.cActions.DeleteAction(selectedListItemIndex);
+				UpdateActions();
 			}
 		}
 		break;
 
 		case IDC_BUTTON5: // Delete All
 		{
-			if (g_gfUnitStatePattern.IsPlaying) break;
+			if (g_gfActionPattern.IsPlaying) break;
 
-			g_gfUnitStatePattern.UnitStatePattern.DeleteAllUnitState();
-			UpdateUnitStatesList();
+			g_gfActionPattern.cActions.DeleteAllActions();
+			UpdateActions();
 		}
 		break;
 
 		case IDC_BUTTON6: // Up
 		{
 			int selectedListItemIndex = ListView_GetNextItem(
-				g_hUnitStateList, // 윈도우 핸들
+				g_hActionList, // 윈도우 핸들
 				-1, // 검색을 시작할 인덱스
 				LVNI_SELECTED // 검색 조건
 			);
 
-			if (g_gfUnitStatePattern.UnitStatePattern.UpUnitState(selectedListItemIndex)) {
-				UpdateUnitStatesList();
+			if (g_gfActionPattern.cActions.UpAction(selectedListItemIndex)) {
+				UpdateActions();
 			};
 		}
 		break;
@@ -286,13 +280,13 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDC_BUTTON7: // Down
 		{
 			int selectedListItemIndex = ListView_GetNextItem(
-				g_hUnitStateList, // 윈도우 핸들
+				g_hActionList, // 윈도우 핸들
 				-1, // 검색을 시작할 인덱스
 				LVNI_SELECTED // 검색 조건
 			);
 
-			if (g_gfUnitStatePattern.UnitStatePattern.DownUnitState(selectedListItemIndex)) {
-				UpdateUnitStatesList();
+			if (g_gfActionPattern.cActions.DownAction(selectedListItemIndex)) {
+				UpdateActions();
 			};
 		}
 		break;
@@ -327,20 +321,20 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			if (pnmhdr->code == NM_CLICK) {
 				// 클릭된 아이템 인덱스 알아내기
-				g_gfUnitStatePattern.SelectedUnitStateIndex = ListView_GetNextItem(
+				g_gfActionPattern.iSelectedActionIndex = ListView_GetNextItem(
 					pnmhdr->hwndFrom, // 윈도우 핸들
 					-1, // 검색을 시작할 인덱스
 					LVNI_SELECTED // 검색 조건
 				);
 
 				// update pivot
-				if (g_gfUnitStatePattern.SelectedUnitStateIndex != NoSelectedIndex) {
+				if (g_gfActionPattern.iSelectedActionIndex != NoSelectedIndex) {
 					
 				}
 			}
 			else if (pnmhdr->code == LVN_ITEMCHANGED) {
 				//InvalidateRect(g_hMainWnd, nullptr, true);
-				g_gfUnitStatePattern.SelectedUnitStateIndex = ListView_GetNextItem(
+				g_gfActionPattern.iSelectedActionIndex = ListView_GetNextItem(
 					pnmhdr->hwndFrom, // 윈도우 핸들
 					-1, // 검색을 시작할 인덱스
 					LVNI_SELECTED // 검색 조건
@@ -407,14 +401,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int x = GET_X_LPARAM(lParam);
 		int y = GET_Y_LPARAM(lParam);
 
-		CUnitState unitState;
-		unitState.sXY = { (float)x, (float)y };
-		unitState.iTime = 0;
-		unitState.eUnitStateType = EUnitStateType::EUnitStateType_MoveTo;
+		CAction cAction;
+		cAction.sXY = { (float)x, (float)y };
+		cAction.iTime = 0;
+		cAction.eActionType = EActionType::EActionType_MoveTo;
 
-		g_gfUnitStatePattern.UnitStatePattern.AddUnitState(unitState);
+		g_gfActionPattern.cActions.AddAction(cAction);
 
-		UpdateUnitStatesList();
+		UpdateActions();
 	}
 	break;
 
@@ -423,14 +417,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		int x = GET_X_LPARAM(lParam);
 		int y = GET_Y_LPARAM(lParam);
 
-		CUnitState unitState;
-		unitState.sXY = { (float)x, (float)y };
-		unitState.iTime = 1000;
-		unitState.eUnitStateType = EUnitStateType::EUnitStateType_Idle;
+		CAction cAction;
+		cAction.sXY = { (float)x, (float)y };
+		cAction.iTime = 1000;
+		cAction.eActionType = EActionType::EActionType_Idle;
 
-		g_gfUnitStatePattern.UnitStatePattern.AddUnitState(unitState);
+		g_gfActionPattern.cActions.AddAction(cAction);
 
-		UpdateUnitStatesList();
+		UpdateActions();
 	}
 	break;
 
@@ -510,14 +504,14 @@ void UpdateSubWndPosition() {
 	MoveWindow(g_hDlg, rectWnd.right + 2, rectWnd.top, rectDlg.right - rectDlg.left, rectDlg.bottom - rectDlg.top, true);
 }
 
-void UpdateUnitStatesList() {
-	ListView_DeleteAllItems(g_hUnitStateList);
+void UpdateActions() {
+	ListView_DeleteAllItems(g_hActionList);
 
-	UINT spriteCount = g_gfUnitStatePattern.UnitStatePattern.vecCUnitState.size();
-	//UINT spriteCount = g_gfUnitStatePattern.vecCUnitState.size();
+	UINT spriteCount = g_gfActionPattern.cActions.deqActions.size();
+	//UINT spriteCount = g_gfActionPattern.deqActions.size();
 	for (size_t i = 0; i < spriteCount; i++)
 	{
-		CUnitState *unitState = &g_gfUnitStatePattern.UnitStatePattern.vecCUnitState[i];
+		CAction *pcAction = &g_gfActionPattern.cActions.deqActions[i];
 		LVITEM item = {};
 		item.mask = LVIF_TEXT;
 		item.iItem = i;
@@ -525,21 +519,21 @@ void UpdateUnitStatesList() {
 		item.state;
 		item.stateMask;
 
-		char itemText[szMax_UnitState] = {};
-		//_itoa_s(unitState->EUnitStateType, itemText, 10);
-		strcpy_s(itemText, szMax_UnitState, g_szUnitStateTypeAsString[unitState->eUnitStateType]);
+		char itemText[szMax_Action] = {};
+		//_itoa_s(cAction->EActionType, itemText, 10);
+		strcpy_s(itemText, szMax_Action, g_szActionTypeAsString[pcAction->eActionType]);
 		item.pszText = itemText;
-		ListView_InsertItem(g_hUnitStateList, &item); // 아이템 추가
+		ListView_InsertItem(g_hActionList, &item); // 아이템 추가
 
-		//ListView_SetItemText(g_hUnitStateList, i, 0, itemText);
+		//ListView_SetItemText(g_hActionList, i, 0, itemText);
 
-		_itoa_s(unitState->sXY.x, itemText, 10);
-		ListView_SetItemText(g_hUnitStateList, i, 1, itemText);
+		_itoa_s(pcAction->sXY.x, itemText, 10);
+		ListView_SetItemText(g_hActionList, i, 1, itemText);
 
-		_itoa_s(unitState->sXY.y, itemText, 10);
-		ListView_SetItemText(g_hUnitStateList, i, 2, itemText);
+		_itoa_s(pcAction->sXY.y, itemText, 10);
+		ListView_SetItemText(g_hActionList, i, 2, itemText);
 
-		_itoa_s(unitState->iTime, itemText, 10);
-		ListView_SetItemText(g_hUnitStateList, i, 3, itemText);
+		_itoa_s(pcAction->iTime, itemText, 10);
+		ListView_SetItemText(g_hActionList, i, 3, itemText);
 	}
 }

@@ -24,6 +24,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>My04ToolUnitStatePattern</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <ProjectName>04-Tool-ActionPattern</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -90,7 +91,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\StaticLib;..\03-Tool-GameFrameWork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\CommonLibrary;..\03-Tool-GameFrameWork;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -148,15 +149,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="04-Tool-UnitStatePattern.h" />
-    <ClInclude Include="CGameFrame_UnitStatePattern.h" />
+    <ClInclude Include="04-Tool-ActionPattern.h" />
+    <ClInclude Include="CActionPatternGameFrameWork.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="04-Tool-UnitStatePattern.cpp" />
-    <ClCompile Include="CGameFrame_UnitStatePattern.cpp" />
+    <ClCompile Include="04-Tool-ActionPattern.cpp" />
+    <ClCompile Include="CActionGameFrameWork.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -165,17 +166,17 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="04-Tool-UnitStatePattern.rc" />
+    <ResourceCompile Include="04-Tool-ActionPattern.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="04-Tool-UnitStatePattern.ico" />
+    <Image Include="04-Tool-ActionPattern.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\03-Tool-GameFrameWork\03-Tool-GameFrameWork.vcxproj">
       <Project>{8d7a51b9-237c-4ba6-8e31-4a32a6a05391}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\StaticLib\StaticLib.vcxproj">
+    <ProjectReference Include="..\CommonLibrary\CommonLibrary.vcxproj">
       <Project>{58763e91-7189-4dc1-9123-001b91aaba30}</Project>
     </ProjectReference>
   </ItemGroup>

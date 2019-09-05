@@ -1,15 +1,15 @@
 ﻿#include "stdafx.h"
-#include "05-Tool-Unit.h"
+#include "05-Tool-UnitCreator.h"
 #include "CUnitCreatorGameFrameWork.h"
 #include "lib.h"
 #include "Commctrl.h"
 
 HINSTANCE g_hInstance;
-const char *g_szUnitStateTypeAsString[] = { "EUnitStateType_Idle" , "EUnitStateType_MoveTo", "EUnitStateType_Shoot" };
+const char *g_szActionTypeAsString[] = { "EActionType_Idle" , "EActionType_MoveTo", "EActionType_Shoot" };
 HWND g_hWnd;
 HWND g_hWndPicture;
 HWND g_hUnitList;
-HWND g_hUnitStateAniList;
+HWND g_hActionAniList;
 CUnitCreatorGameFrameWork g_cUnitCreator;
 char g_szCurDir[MAX_PATH] = {}; // 작업 경로, 프로그램 실행 중 파일 대화상자에서 선택한 곳으로 바뀌기 때문에 프로그램 실행과 동시에 저장해둔다.
 char g_szUnitFilePath[MAX_PATH];
@@ -25,7 +25,7 @@ void LoadSelectedUnit();
 void UpdateUnitList();
 void UpdateUnitUI();
 void UpdateBitmap();
-void UpdateUnitStateAniList();
+void UpdateActionAniList();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -86,7 +86,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 	case WM_INITDIALOG:
 	{
 		g_hUnitList = GetDlgItem(hDlg, IDC_LIST2);
-		g_hUnitStateAniList = GetDlgItem(hDlg, IDC_LIST1);
+		g_hActionAniList = GetDlgItem(hDlg, IDC_LIST1);
 		// ===== List 설정 =====
 		//g_hUnitList
 		char szColumnName0[Const::szMax_ListColumnName] = {};
@@ -110,25 +110,25 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
 		);
 
-		//g_hUnitStateAniList
+		//g_hActionAniList
 		// 컬럼 추가(List 속성의 View를 Report로 설정해야 컬럼을 추가할 수 있다.)
-		strcpy_s(szColumnName0, Const::szMax_ListColumnName, "EUnitStateType");
+		strcpy_s(szColumnName0, Const::szMax_ListColumnName, "EActionType");
 		strcpy_s(szColumnName1, Const::szMax_ListColumnName, "Ani File");
 		column.cx = 200;
 		column.pszText = szColumnName0;
-		ListView_InsertColumn(g_hUnitStateAniList, 0, &column); // 컬럼 추가0
+		ListView_InsertColumn(g_hActionAniList, 0, &column); // 컬럼 추가0
 		column.cx = 150;
 		column.pszText = szColumnName1;
-		ListView_InsertColumn(g_hUnitStateAniList, 1, &column); // 컬럼 추가1
+		ListView_InsertColumn(g_hActionAniList, 1, &column); // 컬럼 추가1
 		// 줄 전체가 클릭되도록 설정(기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨)
 		ListView_SetExtendedListViewStyle(
-			g_hUnitStateAniList,
+			g_hActionAniList,
 			LVS_EX_FULLROWSELECT // 아이템 전체가 클릭되도록 한다.
 			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
 		);
 		// ===== List 설정 ===== end
 
-		UpdateUnitStateAniList();
+		UpdateActionAniList();
 
 		return (INT_PTR)TRUE;
 	}
@@ -177,7 +177,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 				UpdateUnitList();
 				UpdateUnitUI();
 				UpdateBitmap();
-				UpdateUnitStateAniList();
+				UpdateActionAniList();
 			};
 		}
 		break;
@@ -193,7 +193,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 				UpdateUnitList();
 				UpdateUnitUI();
 				UpdateBitmap();
-				UpdateUnitStateAniList();
+				UpdateActionAniList();
 			}
 		}
 		break;
@@ -211,14 +211,14 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			UpdateUnitList();
 			UpdateUnitUI();
 			UpdateBitmap();
-			UpdateUnitStateAniList();
-			UpdateUnitStateAniList();
+			UpdateActionAniList();
+			UpdateActionAniList();
 		}
 		break;
 		case IDC_BUTTON3: // Load .ani
 		{
 			UINT itemIndex = ListView_GetNextItem(
-				g_hUnitStateAniList, // 윈도우 핸들
+				g_hActionAniList, // 윈도우 핸들
 				-1, // 검색을 시작할 인덱스
 				LVNI_SELECTED // 검색 조건
 			);
@@ -226,9 +226,9 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 				char filePath[MAX_PATH] = {};
 				char fileTitle[MAX_PATH] = {};
 				if (OpenFileDialog(filePath, fileTitle)) {
-					g_cUnitCreator.cUnit.LoadAniFile((EUnitStateType)itemIndex, filePath);
+					g_cUnitCreator.cUnit.LoadAniFile((EActionType)itemIndex, filePath);
 
-					UpdateUnitStateAniList();
+					UpdateActionAniList();
 				};
 			}
 		}
@@ -236,7 +236,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		case IDC_BUTTON4: // Delete .ani
 		{
 			UINT itemIndex = ListView_GetNextItem(
-				g_hUnitStateAniList, // 윈도우 핸들
+				g_hActionAniList, // 윈도우 핸들
 				-1, // 검색을 시작할 인덱스
 				LVNI_SELECTED // 검색 조건
 			);
@@ -245,14 +245,14 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 				g_cUnitCreator.cUnit.arAniInfos[itemIndex].FilePath[0] = 0;
 				g_cUnitCreator.cUnit.arAniInfos[itemIndex].FileTitle[0] = 0;
 
-				UpdateUnitStateAniList();
+				UpdateActionAniList();
 			}
 		}
 		break;
 		case IDC_BUTTON5: // Play Ani
 		{
 			//UINT itemIndex = ListView_GetNextItem(
-			//	g_hUnitStateAniList, // 윈도우 핸들
+			//	g_hActionAniList, // 윈도우 핸들
 			//	-1, // 검색을 시작할 인덱스
 			//	LVNI_SELECTED // 검색 조건
 			//);
@@ -279,20 +279,20 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		{
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
-				g_cUnitCreator.cUnit.cUnitStatePattern.LoadUnitStatePatternFile(filePath);
+				g_cUnitCreator.cUnit.cActionsPattern.LoadActionPatternFile(filePath);
 				UpdateUnitUI();
 			}
 		}
 		break;
 		case IDC_BUTTON7: // Delete .usp
 		{
-			g_cUnitCreator.cUnit.cUnitStatePattern.Clear();
+			g_cUnitCreator.cUnit.cActionsPattern.Clear();
 			UpdateUnitUI();
 		}
 		break;
 		case IDC_BUTTON16: // Apply .usp
 		{
-			g_cUnitCreator.cUnit.cUnitStateAction = g_cUnitCreator.cUnit.cUnitStatePattern;
+			g_cUnitCreator.cUnit.cActions = g_cUnitCreator.cUnit.cActionsPattern;
 		}
 		break;
 		case IDC_BUTTON8: // Loas settings
@@ -397,7 +397,7 @@ void LoadSelectedUnit() {
 		g_cUnitCreator.LoadUnit(cFilePath.szFilePath);
 		UpdateUnitUI();
 		UpdateBitmap();
-		UpdateUnitStateAniList();
+		UpdateActionAniList();
 	}
 }
 void AddUnit(const char *filePath, const char *fileTitle) {
@@ -438,27 +438,27 @@ void UpdateUnitUI() {
 	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_cUnitCreator.cUnit.fMagnification);
 	SetDlgItemText(g_hWnd, IDC_EDIT3, text);
 	// file title
-	SetDlgItemText(g_hWnd, IDC_EDIT2, g_cUnitCreator.cUnit.cUnitStatePattern.szFileTitle);
+	SetDlgItemText(g_hWnd, IDC_EDIT2, g_cUnitCreator.cUnit.cActionsPattern.szFileTitle);
 }
 void UpdateBitmap() {
 	HWND hWndPic2 = GetDlgItem(g_hWnd, IDC_PIC2);
 	HDC hdc = GetDC(hWndPic2);
 	TransparentBlt(hdc, 0, 0, 100, 100, g_cUnitCreator.cUnit.hBitmapDC, 0, 0, 100, 100, RGB(255, 0, 0));
 }
-void UpdateUnitStateAniList() {
-	ListView_DeleteAllItems(g_hUnitStateAniList);
+void UpdateActionAniList() {
+	ListView_DeleteAllItems(g_hActionAniList);
 
 	LVITEM item = {};
 	item.mask = LVIF_TEXT;
 	item.state;
 	item.stateMask;
-	for (size_t i = 0; i < EUnitStateType::Count; i++) {
+	for (size_t i = 0; i < EActionType::Count; i++) {
 		item.iItem = i;
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
 		char itemText[MAX_PATH];
-		strcpy_s(itemText, MAX_PATH, g_szUnitStateTypeAsString[i]);
+		strcpy_s(itemText, MAX_PATH, g_szActionTypeAsString[i]);
 		item.pszText = itemText;
-		ListView_InsertItem(g_hUnitStateAniList, &item); // 아이템 추가0
-		ListView_SetItemText(g_hUnitStateAniList, i, 1, g_cUnitCreator.cUnit.arAniInfos[i].FileTitle); // 아이템 추가0
+		ListView_InsertItem(g_hActionAniList, &item); // 아이템 추가0
+		ListView_SetItemText(g_hActionAniList, i, 1, g_cUnitCreator.cUnit.arAniInfos[i].FileTitle); // 아이템 추가0
 	}
 }

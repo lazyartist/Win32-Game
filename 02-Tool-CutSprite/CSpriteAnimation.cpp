@@ -1,23 +1,23 @@
 #include "stdafx.h"
-#include "CutImage.h"
+#include "CSpriteAnimation.h"
 #include "common.h"
 #include "lib.h"
 
-CutImage::CutImage()
+CSpriteAnimation::CSpriteAnimation()
 {
 }
 
-CutImage::~CutImage()
+CSpriteAnimation::~CSpriteAnimation()
 {
 }
 
-void CutImage::Init(HDC hdc, BITMAP bitmapHeader)
+void CSpriteAnimation::Init(HDC hdc, BITMAP bitmapHeader)
 {
 	_hdc = hdc;
 	_bitmapHeader = bitmapHeader;
 }
 
-RECT CutImage::FitToImage(RECT rect, COLORREF transparentColor)
+RECT CSpriteAnimation::FitToImage(RECT rect, COLORREF transparentColor)
 {
 	_transparentColor = transparentColor;
 
@@ -30,7 +30,7 @@ RECT CutImage::FitToImage(RECT rect, COLORREF transparentColor)
 	return resultRect;
 }
 
-RECT CutImage::ScanTop(RECT rect)
+RECT CSpriteAnimation::ScanTop(RECT rect)
 {
 	WH wh = RectToWH(rect);
 
@@ -49,7 +49,7 @@ RECT CutImage::ScanTop(RECT rect)
 	return rect;
 }
 
-RECT CutImage::ScanBottom(RECT rect)
+RECT CSpriteAnimation::ScanBottom(RECT rect)
 {
 	WH wh = RectToWH(rect);
 
@@ -69,7 +69,7 @@ RECT CutImage::ScanBottom(RECT rect)
 }
 
 
-RECT CutImage::ScanLeft(RECT rect)
+RECT CSpriteAnimation::ScanLeft(RECT rect)
 {
 	WH wh = RectToWH(rect);
 
@@ -88,7 +88,7 @@ RECT CutImage::ScanLeft(RECT rect)
 	return rect;
 }
 
-RECT CutImage::ScanRight(RECT rect)
+RECT CSpriteAnimation::ScanRight(RECT rect)
 {
 	WH wh = RectToWH(rect);
 

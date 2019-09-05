@@ -24,10 +24,10 @@
     <ClInclude Include="Resource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="04-Tool-UnitStatePattern.h">
+    <ClInclude Include="CActionPatternGameFrameWork.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CGameFrame_UnitStatePattern.h">
+    <ClInclude Include="04-Tool-ActionPattern.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -35,24 +35,24 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="04-Tool-UnitStatePattern.cpp">
+    <ClCompile Include="04-Tool-ActionPattern.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CGameFrame_UnitStatePattern.cpp">
+    <ClCompile Include="CActionGameFrameWork.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="04-Tool-UnitStatePattern.rc">
-      <Filter>리소스 파일</Filter>
-    </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="small.ico">
       <Filter>리소스 파일</Filter>
     </Image>
-    <Image Include="04-Tool-UnitStatePattern.ico">
+    <Image Include="04-Tool-ActionPattern.ico">
       <Filter>리소스 파일</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="04-Tool-ActionPattern.rc">
+      <Filter>리소스 파일</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

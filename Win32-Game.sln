@@ -9,13 +9,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "01-Tool-Template", "01-Tool
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "02-Tool-SpriteAnimation", "02-Tool-CutSprite\02-Tool-CutSprite.vcxproj", "{EA8BE732-59C8-4C61-A437-24FC7D49BA3B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StaticLib", "StaticLib\StaticLib.vcxproj", "{58763E91-7189-4DC1-9123-001B91AABA30}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommonLibrary", "CommonLibrary\CommonLibrary.vcxproj", "{58763E91-7189-4DC1-9123-001B91AABA30}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "03-Tool-GameFrameWork", "03-Tool-GameFrameWork\03-Tool-GameFrameWork.vcxproj", "{8D7A51B9-237C-4BA6-8E31-4A32A6A05391}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "04-Tool-UnitStatePattern", "04-Tool-UnitStatePattern\04-Tool-UnitStatePattern.vcxproj", "{A7B86CE9-AA38-49ED-8BB1-A875D4C5AABF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "04-Tool-ActionPattern", "04-Tool-ActionPattern\04-Tool-ActionPattern.vcxproj", "{A7B86CE9-AA38-49ED-8BB1-A875D4C5AABF}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "05-Tool-Unit", "05-Tool-Unit\05-Tool-Unit.vcxproj", "{AC7FF16C-7ABA-4E39-AD5D-F043D57A4637}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "05-Tool-UnitCreator", "05-Tool-UnitCreator\05-Tool-UnitCreator.vcxproj", "{AC7FF16C-7ABA-4E39-AD5D-F043D57A4637}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

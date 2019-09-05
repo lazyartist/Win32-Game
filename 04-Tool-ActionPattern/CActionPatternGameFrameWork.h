@@ -2,12 +2,12 @@
 #include "lib.h"
 #include "CGameFrame.h"
 
-class CGameFrame_UnitStatePattern :
+class CActionPatternGameFrameWork :
 	public CGameFrameWorkBase
 {
 public:
-	CGameFrame_UnitStatePattern();
-	virtual ~CGameFrame_UnitStatePattern();
+	CActionPatternGameFrameWork();
+	virtual ~CActionPatternGameFrameWork();
 
 	virtual void InitImpl();
 	virtual void UpdateLogicImpl();
@@ -15,15 +15,14 @@ public:
 	virtual void ReleaseImpl();
 
 	void DrawUnit();
-	void DrawUnitState();
+	void DrawAction();
 	void InitUnit();
 
 	void PlayStop(bool isPlay);
 
-	CUnitStatePattern UnitStatePattern;
-	vector<CUnitState> UnitStates;
-	UINT UnitStateIndex;
-	UINT SelectedUnitStateIndex;
+	CActions cActions;
+	vector<CAction> vecActions;
+	UINT iSelectedActionIndex;
 	bool IsPlaying;
 
 private :

@@ -23,7 +23,7 @@ void CUnitCreatorGameFrameWork::UpdateControllerImpl() {
 }
 void CUnitCreatorGameFrameWork::UpdateRenderImpl() {
 	if (cUnit.bInitialized) {
-		cUnit.cUnitStateAction.RenderUnitState(_hdcMem);
+		cUnit.cActions.RenderActions(_hdcMem);
 		cUnit.Render(_hdcMem);
 	}
 }
@@ -100,8 +100,8 @@ void CUnitCreatorGameFrameWork::LoadUnit(const char *filePath) {
 		fgets(cUnit.szBitmapPath, MAX_PATH, file);
 		RemoveCarriageReturn(cUnit.szBitmapPath);
 		// pattern file path
-		fgets(cUnit.cUnitStateAction.szFilePath, MAX_PATH, file);
-		RemoveCarriageReturn(cUnit.cUnitStateAction.szFilePath);
+		fgets(cUnit.cActions.szFilePath, MAX_PATH, file);
+		RemoveCarriageReturn(cUnit.cActions.szFilePath);
 		// ani files
 		char szItemCount[szMax_PosLine] = {};
 		fgets(szItemCount, szMax_PosLine, file);
@@ -132,11 +132,11 @@ void CUnitCreatorGameFrameWork::LoadUnit(const char *filePath) {
 	// load bitmap
 	cUnit.LoadUnitBitmap(cUnit.szBitmapPath);
 	// load .usp
-	cUnit.cUnitStatePattern.LoadUnitStatePatternFile(cUnit.cUnitStateAction.szFilePath);
-	cUnit.cUnitStateAction = cUnit.cUnitStatePattern;
+	cUnit.cActionsPattern.LoadActionPatternFile(cUnit.cActions.szFilePath);
+	cUnit.cActions = cUnit.cActionsPattern;
 	// load .ani
-	for (size_t i = 0; i < EUnitStateType::Count; i++) {
-		cUnit.LoadAniFile((EUnitStateType)i, cUnit.arAniInfos[i].FilePath);
+	for (size_t i = 0; i < EActionType::Count; i++) {
+		cUnit.LoadAniFile((EActionType)i, cUnit.arAniInfos[i].FilePath);
 	}
 
 	cUnit.bInitialized = true;
@@ -154,9 +154,9 @@ void CUnitCreatorGameFrameWork::SaveUnit(const char *filePath) {
 		// bitmap path
 		fprintf_s(file, "%s\n", cUnit.szBitmapPath);
 		// pattern file
-		fprintf_s(file, "%s\n", cUnit.cUnitStateAction.szFilePath);
+		fprintf_s(file, "%s\n", cUnit.cActions.szFilePath);
 		// ani files
-		int itemCount = EUnitStateType::Count;
+		int itemCount = EActionType::Count;
 		fprintf_s(file, "%d\n", itemCount);
 		for (size_t i = 0; i < itemCount; i++) {
 			fprintf_s(file, "%s\t%s\n", cUnit.arAniInfos[i].FilePath, cUnit.arAniInfos[i].FileTitle);
