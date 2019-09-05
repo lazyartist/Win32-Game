@@ -13,8 +13,6 @@ CGameFrameWorkBase::~CGameFrameWorkBase() {
 }
 
 void CGameFrameWorkBase::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSize, EWindowMode windowMode) {
-	dlog("Init");
-
 	_hWnd = hWnd;
 	_hCanvas = hCanvas;
 	_frameTime = frameTime;
@@ -22,23 +20,32 @@ void CGameFrameWorkBase::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClie
 
 	_prevFrameTime = GetTickCount();
 	_prevSecondTime = GetTickCount();
-
 	_fps = 0;
 	_fpsPrevCount = 0;
-
 	_hdc = GetDC(_hCanvas);
 	_hdcMem = CreateCompatibleDC(_hdc);
+	_hClientAreaPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
 	// CreateCompatibleBitmap에 원본 DC인 _hdc를 전달해야한다.
 	// _hdcMem은 아주작고 기본적인 비트맵만 있기 때문에 CreateCompatibleBitmap에 _hdcMem을 전달하면 이와 동일한 비트맵을 생성하기 때문이다. 컬러적용도 안된다.
 	HBITMAP hBitmap = CreateCompatibleBitmap(_hdc, _whClientSize.w, _whClientSize.h);
 	SelectObject(_hdcMem, hBitmap);
 	DeleteObject(hBitmap);
 
-	_hClientAreaPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
-
 	switch (windowMode) {
 	case None:
-		break;
+	{
+		// 현재 윈도우를 화면 가운데 위치시킨다.
+		RECT clientRect = {};
+		GetClientRect(hWnd, &clientRect);
+		AdjustWindowRect(&clientRect, WS_OVERLAPPEDWINDOW, false);
+		int screenX = GetSystemMetrics(SM_CXFULLSCREEN);
+		int screenY = GetSystemMetrics(SM_CYFULLSCREEN);
+		int clientX = clientRect.right - clientRect.left;
+		int clientY = clientRect.bottom - clientRect.top;
+		SetWindowPos(_hWnd, nullptr, screenX / 2 - clientX / 2, screenY / 2 - clientY / 2,
+			clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, SWP_SHOWWINDOW);
+	}
+	break;
 	case Window:
 		SetFullScreen(false);
 		break;

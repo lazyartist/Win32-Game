@@ -42,6 +42,14 @@ public:
 	const static int szMax_ItemLine = MAX_PATH;
 
 	const static int nMax_ListColumnWidth = 100;
+
+	// 프레임당 이동할 거리만큼만 이동하면 "이동 -> 아이들 -> 이동" 이런식으로 아이들 상태가 들어가서 애니메이션이 끊긴다.
+	// 따라서 프레임 당 이동거리를 늘려 한 프레임에 이동이 완료되지 못하도록해서 중간에 아이들 상태가 되지않게 하기위한 값.
+	// static float는 클래스 내부에서 초기화 할 수 없고 int만 가능하기 때문에 함수로 만든다.
+	//const static int fSpeedPerFrameMagnification = 2;
+	static float fSpeedPerFrameMagnification() {
+		return 2.0;
+	}; 
 };
 
 // ===== enum =====
@@ -98,6 +106,7 @@ bool sameXY(SXY xy1, SXY xy2);
 bool operator==(XY xy1, XY xy2);
 SXY operator-(SXY xy1, SXY xy2);
 bool operator==(SXY xy1, SXY xy2);
+void dlog(LPCSTR lpStr);
 void dlog(float i, float ii, float iii, float iiii);
 // ===== inline function ===== end
 
@@ -183,14 +192,14 @@ class CUnitStatePattern {
 public:
 	CUnitState cDefaultUnitState;
 	deque<CUnitState> vecCUnitState;
-	UINT iUnitStateIndex;
+	//UINT iUnitStateIndex;
 	char szFilePath[MAX_PATH];
 	char szFileTitle[MAX_PATH];
 
 	CUnitStatePattern() {
 		cDefaultUnitState;
 		cDefaultUnitState.eUnitStateType == EUnitStateType::EUnitStateType_Idle;
-		cDefaultUnitState.iTime == INT_MAX;
+		cDefaultUnitState.iTime = UINT_MAX;
 	}
 	~CUnitStatePattern() {
 	}
@@ -204,19 +213,8 @@ public:
 		}
 		return vecCUnitState[0];
 	}
-	/*CUnitState& GetCurUnitState() {
-		if (iUnitStateIndex < 0 || iUnitStateIndex >= vecCUnitState.size()) {
-			return cDefaultUnitState;
-		}
-		return vecCUnitState[iUnitStateIndex];
-	}*/
 	void UpUnitStateIndex() {
 		vecCUnitState.pop_front();
-		//++iUnitStateIndex;
-
-		//if (iUnitStateIndex == vecCUnitState.size()) {
-		//	iUnitStateIndex = 0;
-		//}
 	}
 	void AddUnitState(CUnitState unitState) {
 		vecCUnitState.push_back(unitState);
@@ -236,7 +234,6 @@ public:
 	}
 	void Clear() {
 		Init();
-
 		DeleteAllUnitState();
 		szFilePath[0] = 0;
 		szFileTitle[0] = 0;
@@ -404,6 +401,7 @@ public:
 	CUnitStatePattern cUnitStateAction;
 	CUnitStatePattern cUnitStatePattern;
 	HDC hBitmapDC;
+	UINT _iAniIndex = 0;
 
 private:
 	bool _bPatternPlaying = false;
@@ -413,7 +411,6 @@ private:
 	float _fDirectionWithCosRight = 0.0;
 	// ani
 	time_t _iAniTime = 0;
-	UINT _iAniIndex = 0;
 	CSpriteInfo _cCurSpriteInfo;
 	// pos
 	time_t _iWaitTimeOnPosition = 0;
@@ -443,7 +440,7 @@ public:
 				//return;
 			}
 			else {
-				if (GetTickCount() - _iWaitTimeOnPosition >= curUnitState.iTime) {
+				if (curUnitState.iTime != INT_MAX && GetTickCount() - _iWaitTimeOnPosition >= curUnitState.iTime) {
 					// end wait
 					_iWaitTimeOnPosition = 0;
 					NextUnitState();
@@ -498,6 +495,9 @@ public:
 				}
 				_cCurSpriteInfo = spriteInfos[_iAniIndex];
 			}
+			else {
+				_iAniIndex = 0;
+			}
 		}
 	}
 	void Render(HDC hdc) {
@@ -544,6 +544,11 @@ public:
 			sprintf_s(szDirection, FLT_MAX_10_EXP, "%s", "left");
 		}
 		TextOut(hdc, 0, 200, szDirection, FLT_MAX_10_EXP);
+		// test : text _iAniIndex
+		CUnitState curUnitState = cUnitStateAction.GetCurUnitState();
+		vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curUnitState.eUnitStateType].SpriteInfos;
+		sprintf_s(szDirection, FLT_MAX_10_EXP, "%d/%d", _iAniIndex, spriteInfos.size());
+		TextOut(hdc, sXY.x, sXY.y + 2, szDirection, FLT_MAX_10_EXP);
 	}
 	void Reset() {
 		_iAniIndex = 0;
@@ -553,10 +558,14 @@ public:
 		CUnitState unitState = cUnitStateAction.GetCurUnitState();
 		sXY = unitState.sXY;
 	}
-	void Clear() {
-		eCurUnitStateType = EUnitStateType::EUnitStateType_None;
+	void ClearAni() {
 		_iAniIndex = 0;
-		_iAniTime = GetTickCount();
+		_iAniTime = 0;
+	}
+	void Clear() {
+		ClearAni();
+
+		eCurUnitStateType = EUnitStateType::EUnitStateType_None;
 		cUnitStateAction.Clear();
 		cUnitStatePattern.Clear();
 
@@ -653,16 +662,8 @@ public:
 		fclose(file);
 	}
 	void NextUnitState() {
-		CUnitState cPrevUnitState = cUnitStateAction.GetCurUnitState();
 		cUnitStateAction.UpUnitStateIndex();
-		CUnitState cCurUnitState = cUnitStateAction.GetCurUnitState();
-		bool bUnitStateChanged = cPrevUnitState.eUnitStateType != cCurUnitState.eUnitStateType;
-
-		if (bUnitStateChanged) {
-			if (cCurUnitState.eUnitStateType != EUnitStateType::EUnitStateType_MoveTo) {
-				_iAniIndex = 0;
-			}
-		}
+		_iAniIndex = 0;
 	}
 };
 // ===== class ===== end
