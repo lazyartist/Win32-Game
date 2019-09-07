@@ -12,7 +12,6 @@ HWND g_hUnitList;
 HWND g_hActionAniList;
 CUnitCreator g_cUnitCreator;
 char g_szCurDir[MAX_PATH] = {}; // 작업 경로, 프로그램 실행 중 파일 대화상자에서 선택한 곳으로 바뀌기 때문에 프로그램 실행과 동시에 저장해둔다.
-char g_szUnitFilePath[MAX_PATH];
 
 BOOL InitInstance(HINSTANCE, int);
 INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -422,7 +421,7 @@ void UpdateUnitList() {
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
 		item.pszText = g_cUnitCreator.vecUnitFilePaths[i].szFileTitle;
 		ListView_InsertItem(g_hUnitList, &item); // 아이템 추가0
-		//item.pszText = g_cUnitCreator.vecUnitFilePaths[i].szFilePath;
+		//item.pszText = g_cUnitCreator.cUnitFilePaths[i].szFilePath;
 		ListView_SetItemText(g_hUnitList, i, 1, g_cUnitCreator.vecUnitFilePaths[i].szFilePath); // 아이템 추가1
 	}
 }

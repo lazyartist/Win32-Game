@@ -19,13 +19,12 @@ public:
 
 	void LoadSettings(const char * filePath);
 	void SaveSettings(const char *szCurDir, const char * filePath);
-	void LoadUnit(const char *filePath);
-	void SaveUnit(const char *filePath);
 	void AddUnitFilePath(CFilePath &cFilePath);
 	void DeleteUnitFilePath(int index);
+	void LoadUnit(const char *filePath);
+	void SaveUnit(const char *filePath);
 
 	vector<CFilePath> vecUnitFilePaths;
-	vector<CUnit*> vecUnitsOnCanvas;
 	CUnit cUnit;
 	CController cController;
 };

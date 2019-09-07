@@ -36,20 +36,26 @@ using namespace std;
 // todo : define을 대체하기
 static class Const {
 public:
+	// string length
 	const static int szMax_Path = MAX_PATH;
 	const static int szMax_ItemCount = _MAX_INT_DIG;
 	const static int szMax_ListColumnName = 32;
 	const static int szMax_ItemLine = MAX_PATH;
+	const static int szMax_StageName = MAX_PATH;
 
-	const static int nMax_ListColumnWidth = 100;
-
+	// float
+	// static float는 클래스 내부에서 초기화 할 수 없고 int만 가능하기 때문에 함수로 만든다.
 	// 프레임당 이동할 거리만큼만 이동하면 "이동 -> 아이들 -> 이동" 이런식으로 아이들 상태가 들어가서 애니메이션이 끊긴다.
 	// 따라서 프레임 당 이동거리를 늘려 한 프레임에 이동이 완료되지 못하도록해서 중간에 아이들 상태가 되지않게 하기위한 값.
-	// static float는 클래스 내부에서 초기화 할 수 없고 int만 가능하기 때문에 함수로 만든다.
 	//const static int fSpeedPerFrameMagnification = 2;
 	static float fSpeedPerFrameMagnification() {
 		return 2.0;
-	}; 
+	};
+
+	// string
+	static const char *szStageSettingFileName() {
+		return "stageCreator.settings";
+	}
 };
 
 // ===== enum =====
@@ -113,8 +119,12 @@ void dlog(float i, float ii, float iii, float iiii);
 // ===== class ===== 
 class CFilePath {
 public:
-	char szFilePath[Const::szMax_Path];
 	char szFileTitle[Const::szMax_Path];
+	char szFilePath[Const::szMax_Path];
+	CFilePath() {
+		szFilePath[0] = 0;
+		szFileTitle[0] = 0;
+	}
 	void Clear() {
 		szFilePath[0] = 0;
 		szFileTitle[0] = 0;
@@ -576,8 +586,8 @@ public:
 		cActionList.Clear();
 		cActionListPattern.Clear();
 		szName[0] = 0;
-		SXY sXY = {0, 0};
-		WH sWH = {0, 0};
+		SXY sXY = { 0, 0 };
+		WH sWH = { 0, 0 };
 		float fSpeedPerSeconds = 10.0;
 		float fMagnification = 1.0;
 		//EActionType eCurActionType;
@@ -674,6 +684,33 @@ public:
 };
 // ===== class ===== end
 // ===== function =====
+static class Func {
+public:
+	static bool OpenFileDialog(CFilePath *cFilePath, const char *szFilter) {
+		OPENFILENAME ofn = { 0, };
+		ofn.lStructSize = sizeof(OPENFILENAME);
+		ofn.hwndOwner = nullptr;
+		ofn.lpstrFilter = szFilter;
+		ofn.lpstrFile = cFilePath->szFilePath;
+		ofn.lpstrFileTitle = cFilePath->szFileTitle;
+		ofn.nMaxFile = MAX_PATH;
+		ofn.nMaxFileTitle = MAX_PATH;
+		ofn.lpstrTitle = szFilter;
+		// 기본 폴더 지정
+		//ofn.lpstrInitialDir = defaultPath;
+		//ofn.lpstrInitialDir = "C:\\";
+		return GetOpenFileName(&ofn);
+	}
+	static char* __cdecl FGets(char *szBuffer, int iBufferSize, FILE *sFile) {
+		char *result = fgets(szBuffer, iBufferSize, sFile);
+		RemoveCarriageReturn(szBuffer);
+		return result;
+	}
+	static void RemoveCarriageReturn(char *sz) {
+		// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
+		sz[strcspn(sz, "\n")] = 0; // strcspn()으로 "\n"의 위치를 찾고 그 위치에 0을 넣어준다.
+	}
+};
 inline WH RectToWH(RECT rect) {
 	int w = rect.right - rect.left;
 	int h = rect.bottom - rect.top;

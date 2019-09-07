@@ -21,7 +21,6 @@ char g_szAniFilePath[MAX_PATH];
 const char *g_szActionTypeAsString[] = { "EActionType_Idle" , "EActionType_MoveTo" };
 
 HWND g_hDlg;
-HWND g_hDlg;
 CActionPattern g_cActionPattern;
 HWND g_hActionList;
 
@@ -34,7 +33,6 @@ void UpdateActions();
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-INT_PTR CALLBACK    DlgProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    DlgProc(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,

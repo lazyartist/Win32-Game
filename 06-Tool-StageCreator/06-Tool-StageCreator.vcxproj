@@ -175,6 +175,9 @@
     <ProjectReference Include="..\03-Tool-GameFrameWork\03-Tool-GameFrameWork.vcxproj">
       <Project>{8d7a51b9-237c-4ba6-8e31-4a32a6a05391}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\CommonLibrary\CommonLibrary.vcxproj">
+      <Project>{58763e91-7189-4dc1-9123-001b91aaba30}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
