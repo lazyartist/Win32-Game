@@ -397,6 +397,7 @@ class CUnit {
 public:
 	const V2 kV2Right = { 1, 0 };
 
+	CFilePath cFilePath;
 	bool bInitialized = false;
 	char szName[szMax_UnitName];
 	SXY sXY;
@@ -430,6 +431,31 @@ public:
 		}
 	}
 	~CUnit() {}
+	CUnit& operator=(const CUnit& r) {
+		//포인터 또는 가변길이로 인해 객체의 데이터가 메모리상 일직선이 아닐 경우 일괄적으로 memcpy를 사용하면 안되고 개별 복사해줘야한다.
+		//memcpy(this, &r, sizeof(*this));
+
+		memcpy(&this->cFilePath, &r.cFilePath, sizeof(this->cFilePath));
+
+		for (size_t i = 0; i < EActionType::Count; i++) {
+			this->arAniInfos[i] = r.arAniInfos[i];
+			this->arAniInfos[i].SpriteInfos = r.arAniInfos[i].SpriteInfos;
+			//memcpy(&this->arAniInfos[i], &r.arAniInfos[i], sizeof(this->arAniInfos[i]));
+		}
+		this->cActionList = r.cActionList;
+		//memcpy(&this->cActionList, &r.cActionList, sizeof(this->cActionList));
+		this->cActionList.cActions = r.cActionList.cActions;
+
+		this->cActionListPattern = r.cActionListPattern;
+		//memcpy(&this->cActionListPattern, &r.cActionListPattern, sizeof(this->cActionListPattern));
+		this->cActionListPattern.cActions = r.cActionListPattern.cActions;
+
+		this->_cCurSpriteInfo = r._cCurSpriteInfo;
+		//memcpy(&this->_cCurSpriteInfo, &r._cCurSpriteInfo, sizeof(this->_cCurSpriteInfo));
+		this->_cCurSpriteInfo.vecsCollisions = r._cCurSpriteInfo.vecsCollisions;
+
+		return (*this);
+	}
 
 	void Init(HDC hdc) {
 		if (hBitmapDC) {

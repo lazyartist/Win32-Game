@@ -18,13 +18,12 @@ public:
 	void SaveSettings(const char *szCurDir, const char *filePath);
 	void LoadStage(const CFilePath &cFilePath);
 	void SaveStage(const CFilePath &cFilePath);
-	void AddUnitFilePath(CFilePath &cFilePath);
-	void DeleteUnitFilePath(int index);
+	void AddUnit(CFilePath & cFilePath);
+	void RemoveUnit(int index);
 
 	CFilePath cStageFilePath;
 	CFilePath cBgiFilePath;
-	vector<CFilePath> cUnitFilePaths;
-	vector<CUnit> cUnits;
+	vector<CUnit> cUnits; // todo : 포인터로 교체
 	int iUnitIndex;
 	CUnit *cUnit;
 	CController cController;

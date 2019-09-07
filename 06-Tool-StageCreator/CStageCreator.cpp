@@ -30,7 +30,7 @@ bool CStageCreator::LoadSettings(const char *szCurDir, const char *filePath) {
 	file = _fsopen(fullPath, "rt", _SH_DENYNO);
 	if (file != nullptr) {
 		Func::FGets(cStageFilePath.szFileTitle, Const::szMax_Path, file);
-		Func::FGets(cStageFilePath.szFileTitle, Const::szMax_Path, file);
+		Func::FGets(cStageFilePath.szFilePath, Const::szMax_Path, file);
 		fclose(file);
 		return true;
 	}
@@ -66,20 +66,15 @@ void CStageCreator::LoadStage(const CFilePath &cFilePath) {
 		Func::FGets(szLine, Const::szMax_Path, file);
 		int iCount = atoi(szLine);
 		//units
-		int iFilePathCount = cUnitFilePaths.size();
 		int iUnitCount = cUnits.size();
 		for (size_t i = 0; i < iCount; i++) {
-			if (i >= iFilePathCount) {
-				cUnitFilePaths.push_back(CFilePath());
-			}
 			if (i >= iUnitCount) {
 				cUnits.push_back(CUnit());
 			}
-			CFilePath &cUnitFilePath = cUnitFilePaths[i];
 			CUnit &cUnit = cUnits[i];
-
-			Func::FGets(cUnitFilePath.szFileTitle, Const::szMax_Path, file);
-			Func::FGets(cUnitFilePath.szFilePath, Const::szMax_Path, file);
+			cUnit.Init(_hdcMem);
+			Func::FGets(cUnit.cFilePath.szFileTitle, Const::szMax_Path, file);
+			Func::FGets(cUnit.cFilePath.szFilePath, Const::szMax_Path, file);
 			Func::FGets(szLine, Const::szMax_Path, file);
 			cUnit.sXY.x = atoi(szLine);
 			Func::FGets(szLine, Const::szMax_Path, file);
@@ -103,23 +98,79 @@ void CStageCreator::SaveStage(const CFilePath &cFilePath) {
 		fprintf_s(file, "%i\n", itemCount);
 		//units
 		for (size_t i = 0; i < itemCount; i++) {
-			CFilePath &cFilePath = cUnitFilePaths[i];
 			CUnit &cUnit = cUnits[i];
-			//filetitle filepath x y
-			//char szItemText[Const::szMax_Path] = {};
-			CFilePath &CFilePath = cUnitFilePaths[i];
-			fprintf_s(file, "%s\n", cFilePath.szFileTitle);
-			fprintf_s(file, "%s\n", cFilePath.szFilePath);
+			fprintf_s(file, "%s\n", cUnit.cFilePath.szFileTitle);
+			fprintf_s(file, "%s\n", cUnit.cFilePath.szFilePath);
 			fprintf_s(file, "%i\n", cUnit.sXY.x);
 			fprintf_s(file, "%i\n", cUnit.sXY.y);
 		}
 		fclose(file);
 	}
 }
-void CStageCreator::AddUnitFilePath(CFilePath & cFilePath) {
-	cUnitFilePaths.push_back(cFilePath);
+void CStageCreator::AddUnit(CFilePath &cFilePath) {
+	FILE *file = nullptr;
+	file = _fsopen(cFilePath.szFilePath, "rt", _SH_DENYNO);
+	if (file != nullptr) {
+		CUnit cUnit;
+		cUnit.cFilePath = cFilePath;
+		// name
+		fgets(cUnit.szName, szMax_UnitName, file);
+		RemoveCarriageReturn(cUnit.szName);
+		// fMagnification
+		char szFloat[FLT_MAX_10_EXP];
+		fgets(szFloat, FLT_MAX_10_EXP, file);
+		RemoveCarriageReturn(szFloat);
+		cUnit.fMagnification = atof(szFloat);
+		// fSpeedPerSeconds
+		fgets(szFloat, FLT_MAX_10_EXP, file);
+		RemoveCarriageReturn(szFloat);
+		cUnit.fSpeedPerSeconds = atof(szFloat);
+		// bitmap file path
+		fgets(cUnit.szBitmapPath, MAX_PATH, file);
+		RemoveCarriageReturn(cUnit.szBitmapPath);
+		// pattern file path
+		fgets(cUnit.cActionList.szFilePath, MAX_PATH, file);
+		RemoveCarriageReturn(cUnit.cActionList.szFilePath);
+		// ani files
+		char szItemCount[szMax_PosLine] = {};
+		fgets(szItemCount, szMax_PosLine, file);
+		RemoveCarriageReturn(szItemCount);
+		int itemCount = atoi(szItemCount);
+		char itemLine[szMax_PosLine] = {};
+		for (size_t i = 0; i < itemCount; i++) {
+			// ===== List에 아이템 추가 =====
+			memset(itemLine, 0, szMax_PosLine);
+
+			fgets(itemLine, szMax_PosLine, file);
+			RemoveCarriageReturn(itemLine);
+
+			char *token;
+			char *nextToken;
+			nextToken = itemLine;
+			SAniInfo aniInfo;
+			token = strtok_s(nullptr, "\t", &nextToken);
+			strcpy_s(aniInfo.FilePath, MAX_PATH, token);
+			token = strtok_s(nullptr, "\t", &nextToken);
+			strcpy_s(aniInfo.FileTitle, MAX_PATH, token);
+
+			cUnit.arAniInfos[i] = aniInfo;
+		}
+		// load bitmap
+		cUnit.LoadUnitBitmap(cUnit.szBitmapPath);
+		// load .usp
+		cUnit.cActionListPattern.LoadActionPatternFile(cUnit.cActionList.szFilePath);
+		cUnit.cActionList = cUnit.cActionListPattern;
+		// load .ani
+		for (size_t i = 0; i < EActionType::Count; i++) {
+			cUnit.LoadAniFile((EActionType)i, cUnit.arAniInfos[i].FilePath);
+		}
+		cUnit.bInitialized = true;
+		cUnits.push_back(cUnit);
+
+		fclose(file);
+	}
 }
-void CStageCreator::DeleteUnitFilePath(int index) {
-	auto iter = cUnitFilePaths.begin();
-	cUnitFilePaths.erase(iter + index);
+void CStageCreator::RemoveUnit(int index) {
+	auto iter = cUnits.begin();
+	cUnits.erase(iter + index);
 }

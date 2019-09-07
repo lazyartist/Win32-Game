@@ -8,9 +8,11 @@ HWND g_hDlg;
 HWND g_hCanvas;
 CStageCreator g_cStageCreator;
 char g_szCurDir[MAX_PATH] = {}; // 작업 경로, 프로그램 실행 중 파일 대화상자에서 선택한 곳으로 바뀌기 때문에 프로그램 실행과 동시에 저장해둔다.
+HWND g_hUnitList;
 
 INT_PTR CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
 void UpdateUI();
+void UpdateUnitList();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow) {
 	g_hInst = hInstance;
@@ -24,6 +26,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	g_cStageCreator.PlayStop(true);
 	if (g_cStageCreator.LoadSettings(g_szCurDir, Const::szStageSettingFileName())) {
 		g_cStageCreator.LoadStage(g_cStageCreator.cStageFilePath);
+		UpdateUI();
+		UpdateUnitList();
 	}
 
 	MSG msg;
@@ -47,6 +51,27 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch (message) {
 	case WM_INITDIALOG: {
+		g_hUnitList = GetDlgItem(hDlg, IDC_LIST1);
+		// ===== List 설정 =====
+		//g_hUnitList
+		char szColumnName0[Const::szMax_ListColumnName] = "player";
+		char szColumnName1[Const::szMax_ListColumnName] = ".unit FileTitle";
+		LVCOLUMN column = {};
+		column.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+		column.fmt = LVCFMT_LEFT;
+		column.cx = 50;
+		column.pszText = szColumnName0;
+		ListView_InsertColumn(g_hUnitList, 0, &column);
+		column.cx = 200;
+		column.pszText = szColumnName1;
+		ListView_InsertColumn(g_hUnitList, 1, &column);
+		// 줄 전체가 클릭되도록 설정(기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨)
+		ListView_SetExtendedListViewStyle(
+			g_hUnitList,
+			LVS_EX_FULLROWSELECT // 아이템 전체가 클릭되도록 한다.
+			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
+		);
+		// ===== List 설정 ===== end
 		return (INT_PTR)TRUE;
 	}
 	case WM_COMMAND: {
@@ -74,10 +99,24 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		case IDC_BUTTON9: {//Load Background .bmp
 			return (INT_PTR)TRUE;
 		}
-		case IDC_BUTTON4: {//Load .unit
+		case IDC_BUTTON4: {//Add .unit
+			CFilePath cFilePath;
+			if (Func::OpenFileDialog(&cFilePath, "Add Unit\0*.unit\0")) {
+				g_cStageCreator.AddUnit(cFilePath);
+				UpdateUnitList();
+			}
 			return (INT_PTR)TRUE;
 		}
-		case IDC_BUTTON8: {//Delete .unit
+		case IDC_BUTTON8: {//Remove .unit
+			UINT itemIndex = ListView_GetNextItem(
+				g_hUnitList, // 윈도우 핸들
+				-1, // 검색을 시작할 인덱스
+				LVNI_SELECTED // 검색 조건
+			);
+			if (itemIndex != NoSelectedIndex) {
+				g_cStageCreator.RemoveUnit(itemIndex);
+				UpdateUnitList();
+			}
 			return (INT_PTR)TRUE;
 		}
 		case IDC_BUTTON5: {//Set Playable Unit
@@ -160,4 +199,28 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 void UpdateUI() {
 	//.stage name
 	SetDlgItemText(g_hDlg, IDC_EDIT1, g_cStageCreator.cStageFilePath.szFileTitle);
+}
+void UpdateUnitList() {
+	ListView_DeleteAllItems(g_hUnitList);
+
+	LVITEM item = {};
+	item.mask = LVIF_TEXT;
+	item.state;
+	item.stateMask;
+	int iCount = g_cStageCreator.cUnits.size();
+	for (size_t i = 0; i < iCount; i++) {
+		CUnit &cUnit = g_cStageCreator.cUnits[i];
+		item.iItem = i;
+		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
+		char itemText[MAX_PATH];
+		if (i == g_cStageCreator.iUnitIndex) {
+			strcpy_s(itemText, MAX_PATH, "player");
+		}
+		else {
+			strcpy_s(itemText, MAX_PATH, "");
+		}
+		item.pszText = itemText;
+		ListView_InsertItem(g_hUnitList, &item);
+		ListView_SetItemText(g_hUnitList, i, 1, cUnit.cFilePath.szFileTitle); // 아이템 추가0
+	}
 }
