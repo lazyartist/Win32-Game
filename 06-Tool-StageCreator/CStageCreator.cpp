@@ -7,17 +7,17 @@ CStageCreator::CStageCreator() {
 CStageCreator::~CStageCreator() {
 }
 void CStageCreator::InitImpl() {
-	//dlog("InitImpl");
+	dlog("InitImpl");
 }
 void CStageCreator::UpdateLogicImpl() {
-	//dlog("UpdateLogicImpl");
+	dlog("UpdateLogicImpl");
 }
 void CStageCreator::UpdateControllerImpl() {
-	//dlog("UpdateControllerImpl");
+	dlog("UpdateControllerImpl");
 }
 void CStageCreator::UpdateRenderImpl() {
-	//dlog("UpdateRenderImpl");
+	dlog("UpdateRenderImpl");
 }
 void CStageCreator::ReleaseImpl() {
-	//dlog("ReleaseImpl");
+	dlog("ReleaseImpl");
 }

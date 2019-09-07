@@ -153,6 +153,7 @@
     <ClInclude Include="CGameFramework.h" />
     <ClInclude Include="CGameFrameworkTest.h" />
     <ClInclude Include="common.h" />
+    <ClInclude Include="DialogGameFrameworkTemplate.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />

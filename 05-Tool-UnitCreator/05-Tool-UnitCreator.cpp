@@ -6,7 +6,7 @@
 
 HINSTANCE g_hInstance;
 const char *g_szActionTypeAsString[] = { "EActionType_Idle" , "EActionType_MoveTo", "EActionType_Shoot" };
-HWND g_hWnd;
+HWND g_hDlg;
 HWND g_hWndPicture;
 HWND g_hUnitList;
 HWND g_hActionAniList;
@@ -38,8 +38,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	g_hWndPicture = GetDlgItem(g_hWnd, IDC_PIC1);
-	g_cUnitCreator.Init(g_hWnd, g_hWndPicture, 1000 / 90, { 800, 600 }, EWindowMode::None);
+	g_hWndPicture = GetDlgItem(g_hDlg, IDC_PIC1);
+	g_cUnitCreator.Init(g_hDlg, g_hWndPicture, 1000 / 90, { 800, 600 }, EWindowMode::None);
 	LoadSettings();
 	UpdateUnitList();
 
@@ -54,7 +54,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		//GetFocus(g_hWndPicture);
 		if (g_cUnitCreator.UpdateFrame()) {
 			g_cUnitCreator.UpdateLogic();
 			if (GetFocus() == g_hWndPicture) {
@@ -73,7 +72,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 	GetCurrentDirectory(MAX_PATH, g_szCurDir);
 	// 다이얼로그 윈도우 생성
 	HWND hWnd = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), nullptr, DlgProc);
-	g_hWnd = hWnd;
+	g_hDlg = hWnd;
 
 	if (!hWnd) {
 		return FALSE;
@@ -345,7 +344,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 
 				if (itemIndex != NoSelectedIndex) {
 					LoadSelectedUnit();
-					//SetFocus(g_hWnd); // 리스트에서 포커스를 제거하기 위해 윈도우에 포커스를 준다.
+					//SetFocus(g_hDlg); // 리스트에서 포커스를 제거하기 위해 윈도우에 포커스를 준다.
 					//ListView_SetItemState(pnmhdr->hwndFrom,         // handle to listview
 						//-1,         // index to listview item
 						//0, // item state
@@ -429,19 +428,19 @@ void UpdateUnitList() {
 }
 void UpdateUnitUI() {
 	// name
-	SetDlgItemText(g_hWnd, IDC_EDIT1, g_cUnitCreator.cUnit.szName);
+	SetDlgItemText(g_hDlg, IDC_EDIT1, g_cUnitCreator.cUnit.szName);
 	// speed
 	char text[FLT_MAX_10_EXP];
 	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_cUnitCreator.cUnit.fSpeedPerSeconds);
-	SetDlgItemText(g_hWnd, IDC_EDIT4, text);
+	SetDlgItemText(g_hDlg, IDC_EDIT4, text);
 	// magnification
 	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_cUnitCreator.cUnit.fMagnification);
-	SetDlgItemText(g_hWnd, IDC_EDIT3, text);
+	SetDlgItemText(g_hDlg, IDC_EDIT3, text);
 	// file title
-	SetDlgItemText(g_hWnd, IDC_EDIT2, g_cUnitCreator.cUnit.cActionListPattern.szFileTitle);
+	SetDlgItemText(g_hDlg, IDC_EDIT2, g_cUnitCreator.cUnit.cActionListPattern.szFileTitle);
 }
 void UpdateBitmap() {
-	HWND hWndPic2 = GetDlgItem(g_hWnd, IDC_PIC2);
+	HWND hWndPic2 = GetDlgItem(g_hDlg, IDC_PIC2);
 	HDC hdc = GetDC(hWndPic2);
 	TransparentBlt(hdc, 0, 0, 100, 100, g_cUnitCreator.cUnit.hBitmapDC, 0, 0, 100, 100, RGB(255, 0, 0));
 }

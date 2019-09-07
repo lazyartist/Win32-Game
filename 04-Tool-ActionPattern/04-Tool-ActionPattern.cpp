@@ -20,7 +20,7 @@ WH g_whClientSize = { 800, 600 };
 char g_szAniFilePath[MAX_PATH];
 const char *g_szActionTypeAsString[] = { "EActionType_Idle" , "EActionType_MoveTo" };
 
-HWND g_hWnd;
+HWND g_hDlg;
 HWND g_hDlg;
 CActionPattern g_cActionPattern;
 HWND g_hActionList;
@@ -58,9 +58,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	g_cActionPattern.Init(g_hWnd, g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, EWindowMode::Window);
+	g_cActionPattern.Init(g_hDlg, g_hDlg, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, EWindowMode::Window);
 
-	SetWindowPositionToCenter(g_hWnd);
+	SetWindowPositionToCenter(g_hDlg);
 
 	//HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY04TOOLACTIONPATTERN));
 
@@ -141,7 +141,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	HWND hDlg = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, DlgProc);
 
-	g_hWnd = hWnd;
+	g_hDlg = hWnd;
 	g_hDlg = hDlg;
 
 	if (!hWnd)
@@ -482,7 +482,7 @@ void SetWindowPositionToCenter(HWND hWnd) {
 	RECT rectMainWnd;
 	RECT rectRightWnd;
 	//RECT rectBottomWnd;
-	GetWindowRect(g_hWnd, &rectMainWnd);
+	GetWindowRect(g_hDlg, &rectMainWnd);
 	GetWindowRect(g_hDlg, &rectRightWnd);
 	//GetWindowRect(g_hBottomWnd, &rectBottomWnd);
 
@@ -497,7 +497,7 @@ void SetWindowPositionToCenter(HWND hWnd) {
 
 void UpdateSubWndPosition() {
 	RECT rectWnd;
-	GetWindowRect(g_hWnd, &rectWnd);
+	GetWindowRect(g_hDlg, &rectWnd);
 
 	RECT rectDlg;
 	GetWindowRect(g_hDlg, &rectDlg);

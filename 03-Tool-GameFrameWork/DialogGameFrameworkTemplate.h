@@ -1,4 +1,5 @@
-﻿#include "stdafx.h"
+/*
+#include "stdafx.h"
 #include "06-Tool-StageCreator.h"
 #include "CStageCreator.h"
 
@@ -57,3 +58,4 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 
 	return (INT_PTR)FALSE;
 }
+*/
