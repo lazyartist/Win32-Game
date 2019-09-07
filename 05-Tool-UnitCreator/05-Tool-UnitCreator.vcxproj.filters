@@ -24,13 +24,10 @@
     <ClInclude Include="Resource.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="CUnitCreatorGameFrameWork.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="CController.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="05-Tool-UnitCreator.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CUnitCreator.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -38,13 +35,10 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="CUnitCreatorGameFrameWork.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="CController.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="05-Tool-UnitCreator.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CUnitCreator.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

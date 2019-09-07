@@ -1,4 +1,4 @@
-﻿// 04-Tool-CActions.cpp : 응용 프로그램에 대한 진입점을 정의합니다.
+﻿// 04-Tool-CActionList.cpp : 응용 프로그램에 대한 진입점을 정의합니다.
 //
 #include <list> 
 #include <vector> 
@@ -7,7 +7,7 @@
 #include "Commctrl.h"
 #include <commdlg.h>
 #include "04-Tool-ActionPattern.h"
-#include "CActionPatternGameFrameWork.h"
+#include "CActionPattern.h"
 
 #define MAX_LOADSTRING 100
 
@@ -22,7 +22,7 @@ const char *g_szActionTypeAsString[] = { "EActionType_Idle" , "EActionType_MoveT
 
 HWND g_hWnd;
 HWND g_hDlg;
-CActionPatternGameFrameWork g_gfActionPattern;
+CActionPattern g_cActionPattern;
 HWND g_hActionList;
 
 void SetWindowPositionToCenter(HWND hWnd);
@@ -35,7 +35,7 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK    DlgProc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    DlgProc(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -58,7 +58,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	g_gfActionPattern.Init(g_hWnd, g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, EWindowMode::Window);
+	g_cActionPattern.Init(g_hWnd, g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, EWindowMode::Window);
 
 	SetWindowPositionToCenter(g_hWnd);
 
@@ -83,10 +83,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		}
 
-		g_gfActionPattern.UpdateFrame();
+		g_cActionPattern.UpdateFrame();
 	}
 
-	g_gfActionPattern.Release();
+	g_cActionPattern.Release();
 
 	return (int)msg.wParam;
 }
@@ -205,14 +205,14 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		
 		case IDC_BUTTON1: // PlayStop
 		{
-			g_gfActionPattern.PlayStop(!g_gfActionPattern.IsPlaying);
+			g_cActionPattern.PlayStop(!g_cActionPattern.IsPlaying);
 
-			if (g_gfActionPattern.IsPlaying) {
+			if (g_cActionPattern.IsPlaying) {
 				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Stop");
 			}
 			else {
 				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Clear");
-				g_gfActionPattern.InitUnit();
+				g_cActionPattern.InitUnit();
 			}
 		}
 		break;
@@ -222,7 +222,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//OPENFILENAME ofn = { 0, };
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
-				g_gfActionPattern.cActions.LoadActionPatternFile(filePath);
+				g_cActionPattern.cActionList.LoadActionPatternFile(filePath);
 				UpdateActions();
 			};
 		}
@@ -233,7 +233,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			//OPENFILENAME ofn = { 0, };
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
-				g_gfActionPattern.cActions.SaveActionPatternFile(filePath);
+				g_cActionPattern.cActionList.SaveActionPatternFile(filePath);
 				UpdateActions();
 			};
 		}
@@ -248,7 +248,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			);
 
 			if (selectedListItemIndex != -1) {
-				g_gfActionPattern.cActions.DeleteAction(selectedListItemIndex);
+				g_cActionPattern.cActionList.DeleteAction(selectedListItemIndex);
 				UpdateActions();
 			}
 		}
@@ -256,9 +256,9 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON5: // Delete All
 		{
-			if (g_gfActionPattern.IsPlaying) break;
+			if (g_cActionPattern.IsPlaying) break;
 
-			g_gfActionPattern.cActions.DeleteAllActions();
+			g_cActionPattern.cActionList.DeleteAllActions();
 			UpdateActions();
 		}
 		break;
@@ -271,7 +271,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				LVNI_SELECTED // 검색 조건
 			);
 
-			if (g_gfActionPattern.cActions.UpAction(selectedListItemIndex)) {
+			if (g_cActionPattern.cActionList.UpAction(selectedListItemIndex)) {
 				UpdateActions();
 			};
 		}
@@ -285,7 +285,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				LVNI_SELECTED // 검색 조건
 			);
 
-			if (g_gfActionPattern.cActions.DownAction(selectedListItemIndex)) {
+			if (g_cActionPattern.cActionList.DownAction(selectedListItemIndex)) {
 				UpdateActions();
 			};
 		}
@@ -321,20 +321,20 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			if (pnmhdr->code == NM_CLICK) {
 				// 클릭된 아이템 인덱스 알아내기
-				g_gfActionPattern.iSelectedActionIndex = ListView_GetNextItem(
+				g_cActionPattern.iSelectedActionIndex = ListView_GetNextItem(
 					pnmhdr->hwndFrom, // 윈도우 핸들
 					-1, // 검색을 시작할 인덱스
 					LVNI_SELECTED // 검색 조건
 				);
 
 				// update pivot
-				if (g_gfActionPattern.iSelectedActionIndex != NoSelectedIndex) {
+				if (g_cActionPattern.iSelectedActionIndex != NoSelectedIndex) {
 					
 				}
 			}
 			else if (pnmhdr->code == LVN_ITEMCHANGED) {
 				//InvalidateRect(g_hMainWnd, nullptr, true);
-				g_gfActionPattern.iSelectedActionIndex = ListView_GetNextItem(
+				g_cActionPattern.iSelectedActionIndex = ListView_GetNextItem(
 					pnmhdr->hwndFrom, // 윈도우 핸들
 					-1, // 검색을 시작할 인덱스
 					LVNI_SELECTED // 검색 조건
@@ -385,7 +385,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (wmId)
 		{
 		case IDM_ABOUT:
-			DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, DlgProc);
 			break;
 		case IDM_EXIT:
 			DestroyWindow(hWnd);
@@ -406,7 +406,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		cAction.iTime = 0;
 		cAction.eActionType = EActionType::EActionType_MoveTo;
 
-		g_gfActionPattern.cActions.AddAction(cAction);
+		g_cActionPattern.cActionList.AddAction(cAction);
 
 		UpdateActions();
 	}
@@ -422,7 +422,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		cAction.iTime = 1000;
 		cAction.eActionType = EActionType::EActionType_Idle;
 
-		g_gfActionPattern.cActions.AddAction(cAction);
+		g_cActionPattern.cActionList.AddAction(cAction);
 
 		UpdateActions();
 	}
@@ -507,11 +507,11 @@ void UpdateSubWndPosition() {
 void UpdateActions() {
 	ListView_DeleteAllItems(g_hActionList);
 
-	UINT spriteCount = g_gfActionPattern.cActions.deqActions.size();
-	//UINT spriteCount = g_gfActionPattern.deqActions.size();
+	UINT spriteCount = g_cActionPattern.cActionList.cActions.size();
+	//UINT spriteCount = g_cActionPattern.cActionList.size();
 	for (size_t i = 0; i < spriteCount; i++)
 	{
-		CAction *pcAction = &g_gfActionPattern.cActions.deqActions[i];
+		CAction *pcAction = &g_cActionPattern.cActionList.cActions[i];
 		LVITEM item = {};
 		item.mask = LVIF_TEXT;
 		item.iItem = i;

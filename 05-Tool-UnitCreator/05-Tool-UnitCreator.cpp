@@ -1,6 +1,6 @@
 ﻿#include "stdafx.h"
 #include "05-Tool-UnitCreator.h"
-#include "CUnitCreatorGameFrameWork.h"
+#include "CUnitCreator.h"
 #include "lib.h"
 #include "Commctrl.h"
 
@@ -10,7 +10,7 @@ HWND g_hWnd;
 HWND g_hWndPicture;
 HWND g_hUnitList;
 HWND g_hActionAniList;
-CUnitCreatorGameFrameWork g_cUnitCreator;
+CUnitCreator g_cUnitCreator;
 char g_szCurDir[MAX_PATH] = {}; // 작업 경로, 프로그램 실행 중 파일 대화상자에서 선택한 곳으로 바뀌기 때문에 프로그램 실행과 동시에 저장해둔다.
 char g_szUnitFilePath[MAX_PATH];
 
@@ -279,20 +279,20 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		{
 			char filePath[MAX_PATH] = {};
 			if (OpenFileDialog(filePath)) {
-				g_cUnitCreator.cUnit.cActionsPattern.LoadActionPatternFile(filePath);
+				g_cUnitCreator.cUnit.cActionListPattern.LoadActionPatternFile(filePath);
 				UpdateUnitUI();
 			}
 		}
 		break;
 		case IDC_BUTTON7: // Delete .usp
 		{
-			g_cUnitCreator.cUnit.cActionsPattern.Clear();
+			g_cUnitCreator.cUnit.cActionListPattern.Clear();
 			UpdateUnitUI();
 		}
 		break;
 		case IDC_BUTTON16: // Apply .usp
 		{
-			g_cUnitCreator.cUnit.cActions = g_cUnitCreator.cUnit.cActionsPattern;
+			g_cUnitCreator.cUnit.cActionList = g_cUnitCreator.cUnit.cActionListPattern;
 		}
 		break;
 		case IDC_BUTTON8: // Loas settings
@@ -438,7 +438,7 @@ void UpdateUnitUI() {
 	sprintf_s(text, FLT_MAX_10_EXP, "%f", g_cUnitCreator.cUnit.fMagnification);
 	SetDlgItemText(g_hWnd, IDC_EDIT3, text);
 	// file title
-	SetDlgItemText(g_hWnd, IDC_EDIT2, g_cUnitCreator.cUnit.cActionsPattern.szFileTitle);
+	SetDlgItemText(g_hWnd, IDC_EDIT2, g_cUnitCreator.cUnit.cActionListPattern.szFileTitle);
 }
 void UpdateBitmap() {
 	HWND hWndPic2 = GetDlgItem(g_hWnd, IDC_PIC2);

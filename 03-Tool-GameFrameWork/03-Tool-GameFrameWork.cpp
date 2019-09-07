@@ -3,8 +3,8 @@
 
 #include "stdafx.h"
 #include "03-Tool-GameFrameWork.h"
-#include "CGameFrame.h"
-#include "CGameFrameTest.h"
+#include "CGameFramework.h"
+#include "CGameFrameworkTest.h"
 #include "lib.h"
 #include "common.h"
 
@@ -18,7 +18,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 
 // 
 WH g_whClientSize = { 800, 600 };
-CGameFrameWorkBase *g_CGameFrame;
+CGameFrameworkTest *g_cGameFrameworkTest;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -47,10 +47,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	// init CGameFrameWorkBase
-	g_CGameFrame = new CGameFrameTest();
-	g_CGameFrame->Init(g_hWnd, g_hWnd, nFrameTime, g_whClientSize, EWindowMode::Window);
-	//g_CGameFrame->Init(g_hWnd, nFrameTime, g_whClientSize, true);
+	// init CGameFramework
+	g_cGameFrameworkTest = new CGameFrameworkTest();
+	g_cGameFrameworkTest->Init(g_hWnd, g_hWnd, nFrameTime, g_whClientSize, EWindowMode::Window);
+	//g_cGameFrameworkTest->Init(g_hWnd, nFrameTime, g_whClientSize, true);
 
 	//HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY03TOOLGAMEFRAMEWORK));
 
@@ -72,13 +72,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 			}
 		}
 
-		g_CGameFrame->UpdateFrame();
+		g_cGameFrameworkTest->UpdateFrame();
 	}
 
-	g_CGameFrame->Release();
+	g_cGameFrameworkTest->Release();
 
-	if (g_CGameFrame) {
-		delete g_CGameFrame;
+	if (g_cGameFrameworkTest) {
+		delete g_cGameFrameworkTest;
 	}
 
 	return (int)msg.wParam;

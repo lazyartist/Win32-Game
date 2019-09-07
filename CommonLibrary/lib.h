@@ -190,46 +190,46 @@ public:
 	}
 };
 
-class CActions {
+class CActionList {
 public:
 	CAction cDefaultAction;
-	deque<CAction> deqActions;
+	deque<CAction> cActions;
 	char szFilePath[MAX_PATH];
 	char szFileTitle[MAX_PATH];
 
-	CActions() {
+	CActionList() {
 		cDefaultAction;
 		cDefaultAction.eActionType == EActionType::EActionType_Idle;
 		cDefaultAction.iTime = UINT_MAX;
 		cDefaultAction.bCancelable = true;
 		cDefaultAction.bOncePlay = false;
 	}
-	~CActions() {
+	~CActionList() {
 	}
 	void Init() {
 	}
 	CAction& GetCurAction() {
-		if (deqActions.size() == 0) {
+		if (cActions.size() == 0) {
 			return cDefaultAction;
 		}
-		return deqActions[0];
+		return cActions[0];
 	}
 	void NextAction() {
-		deqActions.pop_front();
+		cActions.pop_front();
 	}
 	void AddAction(CAction action) {
-		deqActions.push_back(action);
+		cActions.push_back(action);
 	}
 	bool DeleteAction(UINT index) {
-		if (index >= deqActions.size()) return false;
+		if (index >= cActions.size()) return false;
 
-		auto iter = deqActions.begin();
-		deqActions.erase(iter + index);
+		auto iter = cActions.begin();
+		cActions.erase(iter + index);
 
 		return true;
 	}
 	bool DeleteAllActions() {
-		deqActions.clear();
+		cActions.clear();
 
 		return true;
 	}
@@ -240,20 +240,20 @@ public:
 		szFileTitle[0] = 0;
 	}
 	bool UpAction(UINT index) {
-		if (index == 0 || index >= deqActions.size()) return false;
+		if (index == 0 || index >= cActions.size()) return false;
 
-		CAction cActionTemp = deqActions[index - 1];
-		deqActions[index - 1] = deqActions[index];
-		deqActions[index] = cActionTemp;
+		CAction cActionTemp = cActions[index - 1];
+		cActions[index - 1] = cActions[index];
+		cActions[index] = cActionTemp;
 
 		return true;
 	}
 	bool DownAction(UINT index) {
-		if (index < 0 || index >= deqActions.size() - 1) return false;
+		if (index < 0 || index >= cActions.size() - 1) return false;
 
-		CAction cActionTemp = deqActions[index + 1];
-		deqActions[index + 1] = deqActions[index];
-		deqActions[index] = cActionTemp;
+		CAction cActionTemp = cActions[index + 1];
+		cActions[index + 1] = cActions[index];
+		cActions[index] = cActionTemp;
 
 		return true;
 	}
@@ -272,8 +272,8 @@ public:
 		// item count
 		int itemCount = atoi(szItemCount);
 
-		deqActions.clear();
-		//deqActions.reserve(itemCount);
+		cActions.clear();
+		//cActionList.reserve(itemCount);
 
 		// ===== List에 아이템 추가 =====
 		char itemLine[szMax_ActionLine] = {};
@@ -309,13 +309,13 @@ public:
 		if (file == nullptr) return;
 
 		// item count
-		int itemCount = deqActions.size();
+		int itemCount = cActions.size();
 		char szItemCount[szMax_ActionCount] = {};
 		sprintf_s<szMax_ActionCount>(szItemCount, "%d\n", itemCount);
 		fputs(szItemCount, file);
 
-		auto iter = deqActions.begin();
-		while (iter != deqActions.end()) {
+		auto iter = cActions.begin();
+		while (iter != cActions.end()) {
 			fprintf_s(file, "%d\t%f\t%f\t%d\n", iter->eActionType, iter->sXY.x, iter->sXY.y, iter->iTime);
 
 			++iter;
@@ -323,7 +323,7 @@ public:
 		fclose(file);
 	}
 	void RenderActions(HDC _hdcMem) {
-		if (deqActions.size() == 0) return;
+		if (cActions.size() == 0) return;
 
 		HPEN hLinePen = (HPEN)GetStockObject(BLACK_PEN);
 		HPEN hIdlePen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));;
@@ -331,11 +331,11 @@ public:
 		HPEN hSelectedPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
 		HPEN hOldPen = (HPEN)SelectObject(_hdcMem, hWalkPen);
 
-		MoveToEx(_hdcMem, deqActions[0].sXY.x, deqActions[0].sXY.y, nullptr);
+		MoveToEx(_hdcMem, cActions[0].sXY.x, cActions[0].sXY.y, nullptr);
 		WH wh = { 10, 10 };
 		SXY prevXY = { 0.0, 0.0 };
-		for (size_t i = 0; i < deqActions.size(); i++) {
-			CAction cAction = deqActions[i];
+		for (size_t i = 0; i < cActions.size(); i++) {
+			CAction cAction = cActions[i];
 			SXY xy = { 0.0, 0.0 };
 			float size = 1.0;
 
@@ -395,8 +395,8 @@ public:
 	float fMagnification = 1.0;
 	char szBitmapPath[MAX_PATH];
 	SAniInfo arAniInfos[EActionType::Count];
-	CActions cActions;
-	CActions cActionsPattern;
+	CActionList cActionList;
+	CActionList cActionListPattern;
 	HDC hBitmapDC;
 	UINT _iAniIndex = 0;
 
@@ -428,7 +428,7 @@ public:
 		hBitmapDC = CreateCompatibleDC(hdc);
 	}
 	void Update(float fDeltaTime) {
-		CAction curAction = cActions.GetCurAction();
+		CAction curAction = cActionList.GetCurAction();
 		const vector<CSpriteInfo> * spriteInfos = &arAniInfos[(int)curAction.eActionType].SpriteInfos;
 		_cCurSpriteInfo = (*spriteInfos)[_iAniIndex]; // todo : to pointer
 		bool bEndAni = false;//애니메이션이 끝났는지 여부, 애니가 끝까지 재생되고 _iAniIndex가 0으로 갱신되면 true가 된다.
@@ -456,7 +456,7 @@ public:
 		if (bEndAni && curAction.bOncePlay) {
 			// ani가 끝났고 한번만 재생하는 액션이라면 액션 갱신하고 스프라이트 정보 다시 읽기
 			NextAction();
-			curAction = cActions.GetCurAction();
+			curAction = cActionList.GetCurAction();
 			spriteInfos = &arAniInfos[(int)curAction.eActionType].SpriteInfos;
 			_cCurSpriteInfo = (*spriteInfos)[_iAniIndex];
 		}
@@ -553,7 +553,7 @@ public:
 		}
 		TextOut(hdc, 0, 200, szDirection, FLT_MAX_10_EXP);
 		// test : text _iAniIndex
-		CAction curAction = cActions.GetCurAction();
+		CAction curAction = cActionList.GetCurAction();
 		vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curAction.eActionType].SpriteInfos;
 		sprintf_s(szDirection, FLT_MAX_10_EXP, "%d/%d", _iAniIndex, spriteInfos.size());
 		TextOut(hdc, sXY.x, sXY.y + 2, szDirection, FLT_MAX_10_EXP);
@@ -562,8 +562,8 @@ public:
 		_iAniIndex = 0;
 		_iAniTime = GetTickCount();
 		// 초기 위치 설정
-		cActions.Init();
-		CAction cAction = cActions.GetCurAction();
+		cActionList.Init();
+		CAction cAction = cActionList.GetCurAction();
 		sXY = cAction.sXY;
 	}
 	void ClearAni() {
@@ -573,8 +573,8 @@ public:
 	}
 	void Clear() {
 		ClearAni();
-		cActions.Clear();
-		cActionsPattern.Clear();
+		cActionList.Clear();
+		cActionListPattern.Clear();
 		szName[0] = 0;
 		SXY sXY = {0, 0};
 		WH sWH = {0, 0};
@@ -668,7 +668,7 @@ public:
 		fclose(file);
 	}
 	void NextAction() {
-		cActions.NextAction();
+		cActionList.NextAction();
 		_iAniIndex = 0;
 	}
 };

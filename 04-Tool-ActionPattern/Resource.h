@@ -1,6 +1,6 @@
 ﻿//{{NO_DEPENDENCIES}}
 // Microsoft Visual C++에서 생성한 포함 파일입니다.
-// 04-Tool-CActions.rc에서 사용되고 있습니다.
+// 04-Tool-CActionList.rc에서 사용되고 있습니다.
 //
 #define IDC_MYICON                      2
 #define IDD_MY04TOOLACTIONPATTERN_DIALOG 102
