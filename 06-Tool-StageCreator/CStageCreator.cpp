@@ -135,7 +135,6 @@ void CStageCreator::Reset() {
 		}
 	}
 }
-
 void CStageCreator::SetControlUnit(int iIndex) {
 	if (iIndex < 0 || iIndex >= cUnits.size()) {
 		return;
@@ -147,7 +146,11 @@ void CStageCreator::SetControlUnit(int iIndex) {
 	pUnit->cActionList.Clear();
 	pUnit->sXY = sXY; // 컨트롤유닛으로 지정시 현재 위치에 있도록 xy값을 저장했다가 다시 넣어줌
 }
-
 CUnit * CStageCreator::GetControlUnit() {
 	return nullptr;
+}
+void CStageCreator::SetStartXY() {
+	if (pUnit != nullptr) {
+		pUnit->sStartXY = pUnit->sXY;
+	}
 }

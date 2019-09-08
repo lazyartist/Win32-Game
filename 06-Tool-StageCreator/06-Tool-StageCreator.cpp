@@ -57,15 +57,19 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		//g_hUnitList
 		char szColumnName0[Const::szMax_ListColumnName] = "player";
 		char szColumnName1[Const::szMax_ListColumnName] = ".unit FileTitle";
+		char szColumnName2[Const::szMax_ListColumnName] = "startXY";
 		LVCOLUMN column = {};
 		column.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
 		column.fmt = LVCFMT_LEFT;
 		column.cx = 50;
 		column.pszText = szColumnName0;
 		ListView_InsertColumn(g_hUnitList, 0, &column);
-		column.cx = 200;
+		column.cx = 150;
 		column.pszText = szColumnName1;
 		ListView_InsertColumn(g_hUnitList, 1, &column);
+		column.cx = 150;
+		column.pszText = szColumnName2;
+		ListView_InsertColumn(g_hUnitList, 2, &column);
 		// 줄 전체가 클릭되도록 설정(기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨)
 		ListView_SetExtendedListViewStyle(
 			g_hUnitList,
@@ -120,7 +124,10 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			}
 			return (INT_PTR)TRUE;
 		}
-		case IDC_BUTTON5: {//Set Playable Unit
+		case IDC_BUTTON5: {//Set current position to StartXY
+			g_cStageCreator.SetStartXY();
+			UpdateUI();
+			UpdateUnitList();
 			return (INT_PTR)TRUE;
 		}
 		case IDC_BUTTON6: {//Play
@@ -231,6 +238,9 @@ void UpdateUnitList() {
 		}
 		item.pszText = itemText;
 		ListView_InsertItem(g_hUnitList, &item);
-		ListView_SetItemText(g_hUnitList, i, 1, cUnit.cFilePath.szFileTitle); // 아이템 추가0
+		ListView_SetItemText(g_hUnitList, i, 1, cUnit.cFilePath.szFileTitle);
+		char text[Const::szMax_ItemLine];
+		sprintf_s(text, Const::szMax_ItemLine, "%.1f, %.1f", cUnit.sStartXY.x, cUnit.sStartXY.y);
+		ListView_SetItemText(g_hUnitList, i, 2, text);
 	}
 }

@@ -26,6 +26,8 @@ public:
 	void SetControlUnit(int index);
 	CUnit* GetControlUnit();
 
+	void SetStartXY();
+
 	CFilePath cStageFilePath;
 	CFilePath cBgiFilePath;
 	vector<CUnit> cUnits; // todo : 포인터로 교체
