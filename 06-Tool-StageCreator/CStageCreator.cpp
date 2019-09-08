@@ -2,14 +2,15 @@
 #include "lib.h"
 #include "CStageCreator.h"
 #include "CGameFramework.cpp"
+#include "Physics.h"
 
 CStageCreator::CStageCreator() {
 }
 CStageCreator::~CStageCreator() {
 }
 void CStageCreator::InitImpl() {
-	//pUnit.Init(_hdcMem);
 	hdcBgi = CreateCompatibleDC(_hdcMem);
+	//Physics::cUnits = &cUnits;
 }
 void CStageCreator::UpdateLogicImpl() {
 	for (size_t i = 0; i < cUnits.size(); i++) {

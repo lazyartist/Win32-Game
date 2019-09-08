@@ -24,7 +24,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 	g_hCanvas = GetDlgItem(g_hDlg, IDC_PIC1);
 	g_cStageCreator.Init(g_hDlg, g_hCanvas, 1000 / 60, { 424*2, 318*2}, EWindowMode::None);
-	g_cStageCreator.PlayStop(false);
+	g_cStageCreator.PlayStop(true);
 	if (g_cStageCreator.LoadSettings(g_szCurDir, Const::szStageSettingFileName())) {
 		g_cStageCreator.LoadStage(g_cStageCreator.cStageFilePath);
 		UpdateUI();

@@ -583,7 +583,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 				for (size_t ii = 0; ii < spriteInfo.iCollisionCount; ii++)
 				{
 					// collision rect
-					RECT collisionRect = spriteInfo.vecsCollisions[ii];
+					RECT collisionRect = spriteInfo.sLocalCollisions[ii];
 					collisionRect = collisionRect * fMagnification;
 					//collisionRect = collisionRect - g_pntScrollPos;
 					//Rectangle(g_hBufferMemDC, collisionRect.left, collisionRect.top, collisionRect.right + 1 + pixelOffset, collisionRect.bottom + 1 + pixelOffset);
@@ -1684,7 +1684,7 @@ void SaveAniFile(const char *filePath) {
 		fprintf_s(file, "\t%d", iter->iCollisionCount);
 		for (size_t i = 0; i < iter->iCollisionCount; i++)
 		{
-			RECT &collision = iter->vecsCollisions[i];
+			RECT &collision = iter->sLocalCollisions[i];
 			fprintf_s(file, "\t%d\t%d\t%d\t%d", collision.left, collision.top, collision.right, collision.bottom);
 		}
 		fprintf_s(file, "\n");
@@ -1800,7 +1800,7 @@ void UpdateCollisionList() {
 			item.pszText = itemText;
 			ListView_InsertItem(g_hCollisionList, &item); // 아이템 추가
 
-			pCollisionRect = &g_SpriteInfo.vecsCollisions[i];
+			pCollisionRect = &g_SpriteInfo.sLocalCollisions[i];
 
 			_itoa_s(pCollisionRect->left, itemText, 10);
 			ListView_SetItemText(g_hCollisionList, i, 0, itemText);
