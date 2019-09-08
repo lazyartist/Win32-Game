@@ -9,6 +9,7 @@ CStageCreator::~CStageCreator() {
 }
 void CStageCreator::InitImpl() {
 	//pUnit.Init(_hdcMem);
+	_hdcBgi = CreateCompatibleDC(_hdcMem);
 }
 void CStageCreator::UpdateLogicImpl() {
 	for (size_t i = 0; i < cUnits.size(); i++) {
@@ -22,6 +23,20 @@ void CStageCreator::UpdateControllerImpl() {
 	}
 }
 void CStageCreator::UpdateRenderImpl() {
+	//bgi
+	//fWH spriteSize = { _cCurSpriteInfo.sRect.right - _cCurSpriteInfo.sRect.left , _cCurSpriteInfo.sRect.bottom - _cCurSpriteInfo.sRect.top };
+	//UINT w = _cCurSpriteInfo.sRect.right - _cCurSpriteInfo.sRect.left;
+	//UINT h = _cCurSpriteInfo.sRect.bottom - _cCurSpriteInfo.sRect.top;
+	// TransparentBlt를 사용하려면 프로젝트 설정에서 msimg32.lib;를 추가종속성에 받드시 추가해야한다.
+	TransparentBlt(_hdcMem,
+		0, 0,
+		100, 100,
+		_hdcBgi,
+		0, 0,
+		100, 100,
+
+		RGB(255, 0, 0));
+	
 	for (size_t i = 0; i < cUnits.size(); i++) {
 		CUnit &cUnit = cUnits[i];
 		cUnit.cActionList.RenderActions(_hdcMem);
@@ -64,6 +79,7 @@ void CStageCreator::LoadStage(const CFilePath &cFilePath) {
 		//bg bmp path 
 		Func::FGetStr(cBgiFilePath.szFileTitle, Const::szMax_Path, file);
 		Func::FGetStr(cBgiFilePath.szFilePath, Const::szMax_Path, file);
+		LoadBgi(cBgiFilePath);
 		//controll unit iIndex
 		int iControllUnitIndex = Func::FGetInt(szBuffer, Const::szMax_Path, file);
 		//units
@@ -153,4 +169,11 @@ void CStageCreator::SetStartXY() {
 	if (pUnit != nullptr) {
 		pUnit->sStartXY = pUnit->sXY;
 	}
+}
+void CStageCreator::LoadBgi(CFilePath &cFilePath) {
+	//strcpy_s(szBitmapPath, MAX_PATH, filePath);
+	cBgiFilePath = cFilePath;
+	HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, cFilePath.szFilePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	SelectObject(_hdcBgi, hBitmap); // HBITMAP은 HDC에 적용되면 다시 사용할 수 없기 때문에 재사용을 위해 HDC에 넣어둔다.
+	DeleteObject(hBitmap);
 }

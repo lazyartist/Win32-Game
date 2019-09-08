@@ -25,8 +25,8 @@ public:
 	void Reset();
 	void SetControlUnit(int index);
 	CUnit* GetControlUnit();
-
 	void SetStartXY();
+	void LoadBgi(CFilePath &cFilePath);
 
 	CFilePath cStageFilePath;
 	CFilePath cBgiFilePath;
@@ -34,5 +34,6 @@ public:
 	int iControlUnitIndex;
 	CUnit *pUnit = nullptr;
 	CController cController;
+	HDC _hdcBgi;
 };
 

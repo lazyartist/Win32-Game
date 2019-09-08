@@ -102,6 +102,11 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			return (INT_PTR)TRUE;
 		}
 		case IDC_BUTTON9: {//Load Background .bmp
+			CFilePath cFilePath;
+			if (Func::OpenFileDialog(&cFilePath, "Load background image\0*.bmp\0")) {
+				g_cStageCreator.LoadBgi(cFilePath);
+				UpdateUI();
+			}
 			return (INT_PTR)TRUE;
 		}
 		case IDC_BUTTON4: {//Add .unit
@@ -216,6 +221,8 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 void UpdateUI() {
 	//.stage name
 	SetDlgItemText(g_hDlg, IDC_EDIT1, g_cStageCreator.cStageFilePath.szFileTitle);
+	//bgi
+	SetDlgItemText(g_hDlg, IDC_EDIT2, g_cStageCreator.cBgiFilePath.szFileTitle);
 }
 void UpdateUnitList() {
 	ListView_DeleteAllItems(g_hUnitList);
