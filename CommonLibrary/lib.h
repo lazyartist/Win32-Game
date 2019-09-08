@@ -147,10 +147,18 @@ public:
 		//ofn.lpstrInitialDir = "C:\\";
 		return GetOpenFileName(&ofn);
 	}
-	static char* __cdecl FGets(char *szBuffer, int iBufferSize, FILE *sFile) {
+	static char* __cdecl FGetStr(char *szBuffer, int iBufferSize, FILE *sFile) {
 		char *result = fgets(szBuffer, iBufferSize, sFile);
 		RemoveCarriageReturn(szBuffer);
 		return result;
+	}
+	static int FGetInt(char *szBuffer, int iBufferSize, FILE *sFile) {
+		FGetStr(szBuffer, iBufferSize, sFile);
+		return atoi(szBuffer);
+	}
+	static float FGetFloat(char *szBuffer, int iBufferSize, FILE *sFile) {
+		FGetStr(szBuffer, iBufferSize, sFile);
+		return atof(szBuffer);
 	}
 	static void RemoveCarriageReturn(char *sz) {
 		// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
@@ -427,7 +435,8 @@ public:
 	CFilePath cFilePath;
 	bool bInitialized = false;
 	char szName[szMax_UnitName];
-	SXY sXY;
+	SXY sStartXY = {0.0, 0.0};
+	SXY sXY = {0.0, 0.0};
 	WH sWH;
 	float fSpeedPerSeconds = 10.0;
 	float fMagnification = 1.0;
@@ -627,8 +636,15 @@ public:
 		_iAniTime = GetTickCount();
 		// 초기 위치 설정
 		cActionList.Init();
+		cActionListPattern.Init();
+		cActionList = cActionListPattern;
+		sXY = sStartXY;
+		//sXY = cAction.sXY;
 		CAction cAction = cActionList.GetCurAction();
-		sXY = cAction.sXY;
+		const vector<CSpriteInfo> * spriteInfos = &arAniInfos[(int)cAction.eActionType].SpriteInfos;
+		if (spriteInfos->size() != 0) {
+			_cCurSpriteInfo = (*spriteInfos)[_iAniIndex];
+		}
 	}
 	void ClearAni() {
 		_iAniIndex = 0;
@@ -659,29 +675,28 @@ public:
 		FILE *file = nullptr;
 		file = _fsopen(cFilePath->szFilePath, "rt", _SH_DENYNO);
 		if (file != nullptr) {
-			Reset();
 			this->cFilePath = *cFilePath;
 			char szLine[Const::szMax_ItemLine];
 			// name
-			Func::FGets(szName, szMax_UnitName, file);
+			Func::FGetStr(szName, szMax_UnitName, file);
 			//fMagnification
-			Func::FGets(szLine, FLT_MAX_10_EXP, file);
+			Func::FGetStr(szLine, FLT_MAX_10_EXP, file);
 			fMagnification = atof(szLine);
 			//fSpeedPerSeconds
-			Func::FGets(szLine, FLT_MAX_10_EXP, file);
+			Func::FGetStr(szLine, FLT_MAX_10_EXP, file);
 			fSpeedPerSeconds = atof(szLine);
 			// bitmap file path
-			Func::FGets(szBitmapPath, MAX_PATH, file);
+			Func::FGetStr(szBitmapPath, MAX_PATH, file);
 			// pattern file path
-			Func::FGets(cActionList.szFilePath, MAX_PATH, file);
+			Func::FGetStr(cActionList.szFilePath, MAX_PATH, file);
 			// ani files
-			Func::FGets(szLine, Const::szMax_ItemLine, file);
+			Func::FGetStr(szLine, Const::szMax_ItemLine, file);
 			int itemCount = atoi(szLine);
 			for (size_t i = 0; i < itemCount; i++) {
 				// ===== List에 아이템 추가 =====
 				memset(szLine, 0, Const::szMax_ItemLine);
 
-				Func::FGets(szLine, Const::szMax_ItemLine, file);
+				Func::FGetStr(szLine, Const::szMax_ItemLine, file);
 
 				char *token;
 				char *nextToken;

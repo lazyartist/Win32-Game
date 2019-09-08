@@ -68,9 +68,9 @@ bool CGameFramework::UpdateFrame() {
 		_fDeltaTime = (float)_nDeltaTime / 1000;
 		_fpsCount++;
 
-		if (_bPlaying) {
+		//if (_bPlaying) {
 			return true;
-		}
+		//}
 	}
 
 	// test.1
@@ -104,7 +104,7 @@ void CGameFramework::UpdateController() {
 	}
 }
 void CGameFramework::UpdateRender() {
-	if (!_bPlaying) { return; }
+	//if (!_bPlaying) { return; }
 	//dlog("UpdateRender");
 
 	PatBlt(_hdcMem, 0, 0, _whClientSize.w, _whClientSize.h, WHITENESS);

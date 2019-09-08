@@ -24,7 +24,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 	g_hCanvas = GetDlgItem(g_hDlg, IDC_PIC1);
 	g_cStageCreator.Init(g_hDlg, g_hCanvas, 1000 / 60, { 800, 600 }, EWindowMode::None);
-	g_cStageCreator.PlayStop(true);
+	g_cStageCreator.PlayStop(false);
 	if (g_cStageCreator.LoadSettings(g_szCurDir, Const::szStageSettingFileName())) {
 		g_cStageCreator.LoadStage(g_cStageCreator.cStageFilePath);
 		UpdateUI();
@@ -124,9 +124,15 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			return (INT_PTR)TRUE;
 		}
 		case IDC_BUTTON6: {//Play
+			g_cStageCreator.PlayStop(true);
 			return (INT_PTR)TRUE;
 		}
 		case IDC_BUTTON7: {//Stop
+			g_cStageCreator.PlayStop(false);
+			return (INT_PTR)TRUE;
+		}
+		case IDC_BUTTON10: {//Reset
+			g_cStageCreator.Reset();
 			return (INT_PTR)TRUE;
 		}
 		default:

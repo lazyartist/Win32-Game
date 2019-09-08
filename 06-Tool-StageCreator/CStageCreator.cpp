@@ -34,8 +34,8 @@ bool CStageCreator::LoadSettings(const char *szCurDir, const char *filePath) {
 	FILE *file = nullptr;
 	file = _fsopen(fullPath, "rt", _SH_DENYNO);
 	if (file != nullptr) {
-		Func::FGets(cStageFilePath.szFileTitle, Const::szMax_Path, file);
-		Func::FGets(cStageFilePath.szFilePath, Const::szMax_Path, file);
+		Func::FGetStr(cStageFilePath.szFileTitle, Const::szMax_Path, file);
+		Func::FGetStr(cStageFilePath.szFilePath, Const::szMax_Path, file);
 		fclose(file);
 		return true;
 	}
@@ -58,19 +58,14 @@ void CStageCreator::LoadStage(const CFilePath &cFilePath) {
 	file = _fsopen(cFilePath.szFilePath, "rt", _SH_DENYNO);
 	if (file != nullptr) {
 		cStageFilePath = cFilePath;
-		char szLine[Const::szMax_Path] = {};
-		char *token;
-		char *nextToken;
+		char szBuffer[Const::szMax_Path] = {};
 		//bg bmp path 
-		Func::FGets(cBgiFilePath.szFileTitle, Const::szMax_Path, file);
-		Func::FGets(cBgiFilePath.szFilePath, Const::szMax_Path, file);
+		Func::FGetStr(cBgiFilePath.szFileTitle, Const::szMax_Path, file);
+		Func::FGetStr(cBgiFilePath.szFilePath, Const::szMax_Path, file);
 		//controll unit index
-		Func::FGets(szLine, Const::szMax_Path, file);
-		iUnitIndex = atoi(szLine);
-		//unit count
-		Func::FGets(szLine, Const::szMax_Path, file);
-		int iCount = atoi(szLine);
+		iUnitIndex = Func::FGetInt(szBuffer, Const::szMax_Path, file);
 		//units
+		int iCount = Func::FGetInt(szBuffer, Const::szMax_Path, file);
 		int iUnitCount = cUnits.size();
 		for (size_t i = 0; i < iCount; i++) {
 			if (i >= iUnitCount) {
@@ -78,13 +73,12 @@ void CStageCreator::LoadStage(const CFilePath &cFilePath) {
 			}
 			CUnit &cUnit = cUnits[i];
 			cUnit.Init(_hdcMem);
-			Func::FGets(cUnit.cFilePath.szFileTitle, Const::szMax_Path, file);
-			Func::FGets(cUnit.cFilePath.szFilePath, Const::szMax_Path, file);
+			Func::FGetStr(cUnit.cFilePath.szFileTitle, Const::szMax_Path, file);
+			Func::FGetStr(cUnit.cFilePath.szFilePath, Const::szMax_Path, file);
 			cUnit.LoadUnit(&cUnit.cFilePath);
-			Func::FGets(szLine, Const::szMax_Path, file);
-			cUnit.sXY.x = atoi(szLine);
-			Func::FGets(szLine, Const::szMax_Path, file);
-			cUnit.sXY.y = atoi(szLine);
+			cUnit.sStartXY.x = Func::FGetFloat(szBuffer, Const::szMax_Path, file);
+			cUnit.sStartXY.y = Func::FGetFloat(szBuffer, Const::szMax_Path, file);
+			cUnit.Reset();
 		}
 		fclose(file);
 	}
@@ -107,8 +101,8 @@ void CStageCreator::SaveStage(const CFilePath &cFilePath) {
 			CUnit &cUnit = cUnits[i];
 			fprintf_s(file, "%s\n", cUnit.cFilePath.szFileTitle);
 			fprintf_s(file, "%s\n", cUnit.cFilePath.szFilePath);
-			fprintf_s(file, "%i\n", cUnit.sXY.x);
-			fprintf_s(file, "%i\n", cUnit.sXY.y);
+			fprintf_s(file, "%f\n", cUnit.sXY.x);
+			fprintf_s(file, "%f\n", cUnit.sXY.y);
 		}
 		fclose(file);
 	}
@@ -127,4 +121,10 @@ void CStageCreator::AddUnit(CFilePath &cFilePath) {
 void CStageCreator::RemoveUnit(int index) {
 	auto iter = cUnits.begin();
 	cUnits.erase(iter + index);
+}
+void CStageCreator::Reset() {
+	for (size_t i = 0; i < cUnits.size(); i++) {
+		CUnit &cUnit = cUnits[i];
+		cUnit.Reset();
+	}
 }
