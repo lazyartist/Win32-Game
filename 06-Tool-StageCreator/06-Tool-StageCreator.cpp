@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "06-Tool-StageCreator.h"
 #include "CStageCreator.h"
+#include "lib.h"
 #include "Commctrl.h"
 
 HINSTANCE g_hInst;

@@ -1,6 +1,8 @@
 #pragma once
-#include "CGameFramework.h";
-#include "CController.h";
+#include <vector>
+#include "lib.h"
+#include "CGameFramework.h"
+#include "CController.h"
 
 class CStageCreator :
 	public CGameFramework{

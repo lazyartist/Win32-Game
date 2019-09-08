@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "lib.h"
 #include "CStageCreator.h"
 #include "CGameFramework.cpp"
 
@@ -10,16 +11,20 @@ void CStageCreator::InitImpl() {
 	//cUnit.Init(_hdcMem);
 }
 void CStageCreator::UpdateLogicImpl() {
-	//cUnit.Update(_fDeltaTime);
+	for (size_t i = 0; i < cUnits.size(); i++) {
+		CUnit &cUnit = cUnits[i];
+		cUnit.Update(_fDeltaTime);
+	}
 }
 void CStageCreator::UpdateControllerImpl() {
 	//cController.Update(_fDeltaTime, &cUnit);
 }
 void CStageCreator::UpdateRenderImpl() {
-	//if (cUnit.bInitialized) {
-	//	cUnit.cActionList.RenderActions(_hdcMem);
-	//	cUnit.Render(_hdcMem);
-	//}
+	for (size_t i = 0; i < cUnits.size(); i++) {
+		CUnit &cUnit = cUnits[i];
+		cUnit.cActionList.RenderActions(_hdcMem);
+		cUnit.Render(_hdcMem);
+	}
 }
 void CStageCreator::ReleaseImpl() {
 }
@@ -75,6 +80,7 @@ void CStageCreator::LoadStage(const CFilePath &cFilePath) {
 			cUnit.Init(_hdcMem);
 			Func::FGets(cUnit.cFilePath.szFileTitle, Const::szMax_Path, file);
 			Func::FGets(cUnit.cFilePath.szFilePath, Const::szMax_Path, file);
+			cUnit.LoadUnit(&cUnit.cFilePath);
 			Func::FGets(szLine, Const::szMax_Path, file);
 			cUnit.sXY.x = atoi(szLine);
 			Func::FGets(szLine, Const::szMax_Path, file);
@@ -112,61 +118,9 @@ void CStageCreator::AddUnit(CFilePath &cFilePath) {
 	file = _fsopen(cFilePath.szFilePath, "rt", _SH_DENYNO);
 	if (file != nullptr) {
 		CUnit cUnit;
-		cUnit.cFilePath = cFilePath;
-		// name
-		fgets(cUnit.szName, szMax_UnitName, file);
-		RemoveCarriageReturn(cUnit.szName);
-		// fMagnification
-		char szFloat[FLT_MAX_10_EXP];
-		fgets(szFloat, FLT_MAX_10_EXP, file);
-		RemoveCarriageReturn(szFloat);
-		cUnit.fMagnification = atof(szFloat);
-		// fSpeedPerSeconds
-		fgets(szFloat, FLT_MAX_10_EXP, file);
-		RemoveCarriageReturn(szFloat);
-		cUnit.fSpeedPerSeconds = atof(szFloat);
-		// bitmap file path
-		fgets(cUnit.szBitmapPath, MAX_PATH, file);
-		RemoveCarriageReturn(cUnit.szBitmapPath);
-		// pattern file path
-		fgets(cUnit.cActionList.szFilePath, MAX_PATH, file);
-		RemoveCarriageReturn(cUnit.cActionList.szFilePath);
-		// ani files
-		char szItemCount[szMax_PosLine] = {};
-		fgets(szItemCount, szMax_PosLine, file);
-		RemoveCarriageReturn(szItemCount);
-		int itemCount = atoi(szItemCount);
-		char itemLine[szMax_PosLine] = {};
-		for (size_t i = 0; i < itemCount; i++) {
-			// ===== List에 아이템 추가 =====
-			memset(itemLine, 0, szMax_PosLine);
-
-			fgets(itemLine, szMax_PosLine, file);
-			RemoveCarriageReturn(itemLine);
-
-			char *token;
-			char *nextToken;
-			nextToken = itemLine;
-			SAniInfo aniInfo;
-			token = strtok_s(nullptr, "\t", &nextToken);
-			strcpy_s(aniInfo.FilePath, MAX_PATH, token);
-			token = strtok_s(nullptr, "\t", &nextToken);
-			strcpy_s(aniInfo.FileTitle, MAX_PATH, token);
-
-			cUnit.arAniInfos[i] = aniInfo;
-		}
-		// load bitmap
-		cUnit.LoadUnitBitmap(cUnit.szBitmapPath);
-		// load .usp
-		cUnit.cActionListPattern.LoadActionPatternFile(cUnit.cActionList.szFilePath);
-		cUnit.cActionList = cUnit.cActionListPattern;
-		// load .ani
-		for (size_t i = 0; i < EActionType::Count; i++) {
-			cUnit.LoadAniFile((EActionType)i, cUnit.arAniInfos[i].FilePath);
-		}
-		cUnit.bInitialized = true;
+		cUnit.Init(_hdcMem);
+		cUnit.LoadUnit(&cFilePath);
 		cUnits.push_back(cUnit);
-
 		fclose(file);
 	}
 }

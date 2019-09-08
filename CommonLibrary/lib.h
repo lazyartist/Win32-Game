@@ -130,6 +130,33 @@ public:
 		szFileTitle[0] = 0;
 	}
 };
+static class Func {
+public:
+	static bool OpenFileDialog(CFilePath *cFilePath, const char *szFilter) {
+		OPENFILENAME ofn = { 0, };
+		ofn.lStructSize = sizeof(OPENFILENAME);
+		ofn.hwndOwner = nullptr;
+		ofn.lpstrFilter = szFilter;
+		ofn.lpstrFile = cFilePath->szFilePath;
+		ofn.lpstrFileTitle = cFilePath->szFileTitle;
+		ofn.nMaxFile = MAX_PATH;
+		ofn.nMaxFileTitle = MAX_PATH;
+		ofn.lpstrTitle = szFilter;
+		// 기본 폴더 지정
+		//ofn.lpstrInitialDir = defaultPath;
+		//ofn.lpstrInitialDir = "C:\\";
+		return GetOpenFileName(&ofn);
+	}
+	static char* __cdecl FGets(char *szBuffer, int iBufferSize, FILE *sFile) {
+		char *result = fgets(szBuffer, iBufferSize, sFile);
+		RemoveCarriageReturn(szBuffer);
+		return result;
+	}
+	static void RemoveCarriageReturn(char *sz) {
+		// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
+		sz[strcspn(sz, "\n")] = 0; // strcspn()으로 "\n"의 위치를 찾고 그 위치에 0을 넣어준다.
+	}
+};
 class CSpriteInfo {
 public:
 	UINT iTime = 0;
@@ -209,7 +236,7 @@ public:
 
 	CActionList() {
 		cDefaultAction;
-		cDefaultAction.eActionType == EActionType::EActionType_Idle;
+		cDefaultAction.eActionType = EActionType::EActionType_Idle;
 		cDefaultAction.iTime = UINT_MAX;
 		cDefaultAction.bCancelable = true;
 		cDefaultAction.bOncePlay = false;
@@ -332,16 +359,16 @@ public:
 		}
 		fclose(file);
 	}
-	void RenderActions(HDC _hdcMem) {
+	void RenderActions(HDC hdcMem) {
 		if (cActions.size() == 0) return;
 
 		HPEN hLinePen = (HPEN)GetStockObject(BLACK_PEN);
 		HPEN hIdlePen = CreatePen(PS_SOLID, 1, RGB(0, 255, 0));;
 		HPEN hWalkPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 255));;
 		HPEN hSelectedPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
-		HPEN hOldPen = (HPEN)SelectObject(_hdcMem, hWalkPen);
+		HPEN hOldPen = (HPEN)SelectObject(hdcMem, hWalkPen);
 
-		MoveToEx(_hdcMem, cActions[0].sXY.x, cActions[0].sXY.y, nullptr);
+		MoveToEx(hdcMem, cActions[0].sXY.x, cActions[0].sXY.y, nullptr);
 		WH wh = { 10, 10 };
 		SXY prevXY = { 0.0, 0.0 };
 		for (size_t i = 0; i < cActions.size(); i++) {
@@ -350,33 +377,33 @@ public:
 			float size = 1.0;
 
 			if (cAction.eActionType == EActionType::EActionType_Idle) {
-				SelectObject(_hdcMem, hIdlePen);
+				SelectObject(hdcMem, hIdlePen);
 
 				xy = prevXY;
 				size = 3;
 			}
 			else if (cAction.eActionType == EActionType::EActionType_MoveTo) {
-				SelectObject(_hdcMem, hLinePen);
-				LineTo(_hdcMem, cAction.sXY.x, cAction.sXY.y);
+				SelectObject(hdcMem, hLinePen);
+				LineTo(hdcMem, cAction.sXY.x, cAction.sXY.y);
 
-				SelectObject(_hdcMem, hWalkPen);
+				SelectObject(hdcMem, hWalkPen);
 
 				xy = cAction.sXY;
 				prevXY = cAction.sXY;
 				size = 2;
 			}
 
-			Ellipse(_hdcMem, prevXY.x - wh.w / size, prevXY.y - wh.h / size,
+			Ellipse(hdcMem, prevXY.x - wh.w / size, prevXY.y - wh.h / size,
 				prevXY.x + wh.w / size, prevXY.y + wh.w / size);
 
 			if (i == 0) {
-				SelectObject(_hdcMem, hSelectedPen);
-				Rectangle(_hdcMem, xy.x - wh.w / 2, xy.y - wh.h / 2,
+				SelectObject(hdcMem, hSelectedPen);
+				Rectangle(hdcMem, xy.x - wh.w / 2, xy.y - wh.h / 2,
 					xy.x + wh.w / 2, xy.y + wh.w / 2);
 			}
-			SelectObject(_hdcMem, hWalkPen);
+			SelectObject(hdcMem, hWalkPen);
 		}
-		SelectObject(_hdcMem, hOldPen);
+		SelectObject(hdcMem, hOldPen);
 		DeleteObject(hLinePen);
 		DeleteObject(hIdlePen);
 		DeleteObject(hWalkPen);
@@ -555,6 +582,7 @@ public:
 		fWH spriteSize = { _cCurSpriteInfo.sRect.right - _cCurSpriteInfo.sRect.left , _cCurSpriteInfo.sRect.bottom - _cCurSpriteInfo.sRect.top };
 		UINT w = _cCurSpriteInfo.sRect.right - _cCurSpriteInfo.sRect.left;
 		UINT h = _cCurSpriteInfo.sRect.bottom - _cCurSpriteInfo.sRect.top;
+		// TransparentBlt를 사용하려면 프로젝트 설정에서 msimg32.lib;를 추가종속성에 받드시 추가해야한다.
 		TransparentBlt(hdc,
 			sXY.x - _cCurSpriteInfo.sPivot.x * fMagnification,
 			sXY.y - _cCurSpriteInfo.sPivot.y * fMagnification,
@@ -626,6 +654,59 @@ public:
 		ClearUnitBitmap();
 
 		bInitialized = false;
+	}
+	void LoadUnit(CFilePath *cFilePath) {
+		FILE *file = nullptr;
+		file = _fsopen(cFilePath->szFilePath, "rt", _SH_DENYNO);
+		if (file != nullptr) {
+			Reset();
+			this->cFilePath = *cFilePath;
+			char szLine[Const::szMax_ItemLine];
+			// name
+			Func::FGets(szName, szMax_UnitName, file);
+			//fMagnification
+			Func::FGets(szLine, FLT_MAX_10_EXP, file);
+			fMagnification = atof(szLine);
+			//fSpeedPerSeconds
+			Func::FGets(szLine, FLT_MAX_10_EXP, file);
+			fSpeedPerSeconds = atof(szLine);
+			// bitmap file path
+			Func::FGets(szBitmapPath, MAX_PATH, file);
+			// pattern file path
+			Func::FGets(cActionList.szFilePath, MAX_PATH, file);
+			// ani files
+			Func::FGets(szLine, Const::szMax_ItemLine, file);
+			int itemCount = atoi(szLine);
+			for (size_t i = 0; i < itemCount; i++) {
+				// ===== List에 아이템 추가 =====
+				memset(szLine, 0, Const::szMax_ItemLine);
+
+				Func::FGets(szLine, Const::szMax_ItemLine, file);
+
+				char *token;
+				char *nextToken;
+				nextToken = szLine;
+				SAniInfo aniInfo;
+				token = strtok_s(nullptr, "\t", &nextToken);
+				strcpy_s(aniInfo.FilePath, MAX_PATH, token);
+				token = strtok_s(nullptr, "\t", &nextToken);
+				strcpy_s(aniInfo.FileTitle, MAX_PATH, token);
+
+				arAniInfos[i] = aniInfo;
+			}
+			fclose(file);
+		}
+		// load bitmap
+		LoadUnitBitmap(szBitmapPath);
+		// load .usp
+		cActionListPattern.LoadActionPatternFile(cActionList.szFilePath);
+		cActionList = cActionListPattern;
+		// load .ani
+		for (size_t i = 0; i < EActionType::Count; i++) {
+			LoadAniFile((EActionType)i, arAniInfos[i].FilePath);
+		}
+
+		bInitialized = true;
 	}
 	void SetName(const char *name) {
 		strcpy_s(szName, szMax_UnitName, name);
@@ -710,33 +791,6 @@ public:
 };
 // ===== class ===== end
 // ===== function =====
-static class Func {
-public:
-	static bool OpenFileDialog(CFilePath *cFilePath, const char *szFilter) {
-		OPENFILENAME ofn = { 0, };
-		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = nullptr;
-		ofn.lpstrFilter = szFilter;
-		ofn.lpstrFile = cFilePath->szFilePath;
-		ofn.lpstrFileTitle = cFilePath->szFileTitle;
-		ofn.nMaxFile = MAX_PATH;
-		ofn.nMaxFileTitle = MAX_PATH;
-		ofn.lpstrTitle = szFilter;
-		// 기본 폴더 지정
-		//ofn.lpstrInitialDir = defaultPath;
-		//ofn.lpstrInitialDir = "C:\\";
-		return GetOpenFileName(&ofn);
-	}
-	static char* __cdecl FGets(char *szBuffer, int iBufferSize, FILE *sFile) {
-		char *result = fgets(szBuffer, iBufferSize, sFile);
-		RemoveCarriageReturn(szBuffer);
-		return result;
-	}
-	static void RemoveCarriageReturn(char *sz) {
-		// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
-		sz[strcspn(sz, "\n")] = 0; // strcspn()으로 "\n"의 위치를 찾고 그 위치에 0을 넣어준다.
-	}
-};
 inline WH RectToWH(RECT rect) {
 	int w = rect.right - rect.left;
 	int h = rect.bottom - rect.top;

@@ -1,16 +1,24 @@
 
 
 0
-3
+5
 kirby2.unit
 X:\StudySources\Win32-Game\resources\kirby2.unit
 0
 0
 ball.unit
 X:\StudySources\Win32-Game\resources\ball.unit
-0
-0
+-1073741824
+1610612736
 alucard.unit
 X:\StudySources\Win32-Game\resources\alucard.unit
 0
 0
+kouki.unit
+X:\StudySources\Win32-Game\resources\kouki.unit
+0
+0
+ball.unit
+X:\StudySources\Win32-Game\resources\ball.unit
+-536870912
+1610612736

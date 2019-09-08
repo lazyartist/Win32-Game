@@ -5,8 +5,7 @@
 #include "CController.h"
 
 class CUnitCreator :
-	public CGameFramework
-{
+	public CGameFramework {
 public:
 	CUnitCreator();
 	virtual ~CUnitCreator();

@@ -129,7 +129,6 @@ void CUnitCreator::LoadUnit(const char *filePath) {
 		}
 		fclose(file);
 	}
-
 	// load bitmap
 	cUnit.LoadUnitBitmap(cUnit.szBitmapPath);
 	// load .usp

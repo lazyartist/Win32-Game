@@ -95,6 +95,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>msimg32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -172,7 +173,7 @@
     <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\03-Tool-GameFrameWork\03-Tool-GameFrameWork.vcxproj">
+    <ProjectReference Include="..\03-Tool-GameFramework\03-Tool-GameFramework.vcxproj">
       <Project>{8d7a51b9-237c-4ba6-8e31-4a32a6a05391}</Project>
     </ProjectReference>
     <ProjectReference Include="..\CommonLibrary\CommonLibrary.vcxproj">
