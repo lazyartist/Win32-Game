@@ -47,7 +47,7 @@ void CController::Update(float fDeltaTime, CUnit *cUnit) {
 		cAction.sXY = { cAction.sXY.x * cUnit->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(), cAction.sXY.y * cUnit->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
 		cAction.sXY.Add(cUnit->sXY.x, cUnit->sXY.y);
 		cAction.bCancelable = true;
-		cAction.bOncePlay = false;
+		cAction.bRepeat = false;
 		if (cCurAction.eActionType != EActionType::EActionType_MoveTo) {
 			cUnit->ClearAni(); //현재 이동중이라면 애니메이션을 초기화하지 않고 연속 재생한다.
 		}
@@ -56,7 +56,7 @@ void CController::Update(float fDeltaTime, CUnit *cUnit) {
 	}
 	else if (cAction.eActionType == EActionType::EActionType_Shoot) {
 		cAction.bCancelable = false;
-		cAction.bOncePlay = true;
+		cAction.bRepeat = false;
 		cUnit->ClearAni();
 		cUnit->cActionList.Clear();
 		cUnit->cActionList.cActions.push_back(cAction);

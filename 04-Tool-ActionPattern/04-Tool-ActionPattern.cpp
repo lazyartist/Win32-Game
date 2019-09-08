@@ -1,6 +1,4 @@
-﻿// 04-Tool-CActionList.cpp : 응용 프로그램에 대한 진입점을 정의합니다.
-//
-#include <list> 
+﻿#include <list> 
 #include <vector> 
 #include "stdafx.h"
 #include <windowsx.h> // GET_X_LPARAM
@@ -18,14 +16,13 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 
 WH g_whClientSize = { 800, 600 };
 char g_szAniFilePath[MAX_PATH];
-const char *g_szActionTypeAsString[] = { "EActionType_Idle" , "EActionType_MoveTo" };
 
+HWND g_hWnd;
 HWND g_hDlg;
 CActionPattern g_cActionPattern;
 HWND g_hActionList;
 
 void SetWindowPositionToCenter(HWND hWnd);
-//bool OpenFileDialog(OPENFILENAME &ofn);
 void UpdateSubWndPosition();
 void UpdateActions();
 
@@ -38,8 +35,7 @@ INT_PTR CALLBACK    DlgProc(HWND, UINT, WPARAM, LPARAM);
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
 	_In_ LPWSTR    lpCmdLine,
-	_In_ int       nCmdShow)
-{
+	_In_ int       nCmdShow) {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -51,53 +47,35 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	MyRegisterClass(hInstance);
 
 	// 응용 프로그램 초기화를 수행합니다:
-	if (!InitInstance(hInstance, nCmdShow))
-	{
+	if (!InitInstance(hInstance, nCmdShow)) {
 		return FALSE;
 	}
 
-	g_cActionPattern.Init(g_hDlg, g_hDlg, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, EWindowMode::Window);
-
+	g_cActionPattern.Init(g_hWnd, g_hWnd, 1000 / 90, { g_whClientSize.w, g_whClientSize.h }, EWindowMode::EWindowMode_None);
 	SetWindowPositionToCenter(g_hDlg);
-
-	//HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY04TOOLACTIONPATTERN));
 
 	MSG msg;
 
-	// 기본 메시지 루프입니다:
-	while (true)
-	{
-		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-		{
-			if (msg.message == WM_QUIT)
-			{
-				break;
-			}
-			//if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-
+	while (true) {
+		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+			if (msg.message == WM_QUIT) break;
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
 		}
-
-		g_cActionPattern.UpdateFrame();
+		if (g_cActionPattern.UpdateFrame()) {
+			g_cActionPattern.UpdateLogic();
+			/*if (GetFocus() == g_hCanvas) {
+				g_cStageCreator.UpdateController();
+			}*/
+			g_cActionPattern.UpdateRender();
+		};
 	}
-
 	g_cActionPattern.Release();
 
 	return (int)msg.wParam;
 }
 
-
-
-//
-//  함수: MyRegisterClass()
-//
-//  용도: 창 클래스를 등록합니다.
-//
-ATOM MyRegisterClass(HINSTANCE hInstance)
-{
+ATOM MyRegisterClass(HINSTANCE hInstance) {
 	WNDCLASSEXW wcex;
 
 	wcex.cbSize = sizeof(WNDCLASSEX);
@@ -116,19 +94,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 	return RegisterClassExW(&wcex);
 }
-
-//
-//   함수: InitInstance(HINSTANCE, int)
-//
-//   용도: 인스턴스 핸들을 저장하고 주 창을 만듭니다.
-//
-//   주석:
-//
-//        이 함수를 통해 인스턴스 핸들을 전역 변수에 저장하고
-//        주 프로그램 창을 만든 다음 표시합니다.
-//
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-{
+BOOL InitInstance(HINSTANCE hInstance, int nCmdShow) {
 	g_hInstance = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
 	RECT clientRect = { 0, 0, g_whClientSize.w - 1, g_whClientSize.h - 1 };
@@ -139,26 +105,19 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	HWND hDlg = CreateDialog(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, DlgProc);
 
-	g_hDlg = hWnd;
+	g_hWnd = hWnd;
 	g_hDlg = hDlg;
 
-	if (!hWnd)
-	{
+	if (!hWnd) {
 		return FALSE;
 	}
 
-	//ShowWindow(hWnd, nCmdShow);
-	//UpdateWindow(hWnd);
-
 	return TRUE;
 }
-INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-	{
+INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+	switch (message) {
 	case WM_INITDIALOG:
 	{
-		// list
 		// ===== List에 컬럼 추가 =====
 		// Sprite list
 		g_hActionList = GetDlgItem(hWnd, IDC_LIST2);
@@ -172,14 +131,12 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		col.fmt = LVCFMT_LEFT;
 		col.cx = 50;
 		char columnName[99];
-		for (size_t i = 0; i < columnCount; i++)
-		{
+		for (size_t i = 0; i < columnCount; i++) {
 			strcpy_s(columnName, listColumnNames[i]);
 			col.pszText = columnName;
 			ListView_InsertColumn(g_hActionList, i, &col); // 컬럼 추가1
 		}
 		// ===== List에 컬럼 추가 ===== end
-
 
 		// ===== List 뷰 설정 =====
 		// 기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨
@@ -189,27 +146,22 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
 		);
 		// ===== List 뷰 설정 ===== end
-
-		//SetTimer(hWnd, 1, 1000/30, nullptr);
 	}
 	break;
-
 	case WM_COMMAND:
 	{
 		int wmId = LOWORD(wParam);
 		// 메뉴 선택을 구문 분석합니다:
-		switch (wmId)
-		{
-		
+		switch (wmId) {
+
 		case IDC_BUTTON1: // PlayStop
 		{
-			g_cActionPattern.PlayStop(!g_cActionPattern.IsPlaying);
-
-			if (g_cActionPattern.IsPlaying) {
+			g_cActionPattern.PlayStop(!g_cActionPattern.bPlaying);
+			if (g_cActionPattern.bPlaying) {
 				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Stop");
 			}
 			else {
-				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Clear");
+				SetDlgItemText(g_hDlg, IDC_BUTTON1, "Play");
 				g_cActionPattern.InitUnit();
 			}
 		}
@@ -254,7 +206,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		case IDC_BUTTON5: // Delete All
 		{
-			if (g_cActionPattern.IsPlaying) break;
+			if (g_cActionPattern.bPlaying) break;
 
 			g_cActionPattern.cActionList.DeleteAllActions();
 			UpdateActions();
@@ -327,7 +279,7 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 				// update pivot
 				if (g_cActionPattern.iSelectedActionIndex != NoSelectedIndex) {
-					
+
 				}
 			}
 			else if (pnmhdr->code == LVN_ITEMCHANGED) {
@@ -361,27 +313,13 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	return 0;
 }
-
-//
-//  함수: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  용도: 주 창의 메시지를 처리합니다.
-//
-//  WM_COMMAND  - 응용 프로그램 메뉴를 처리합니다.
-//  WM_PAINT    - 주 창을 그립니다.
-//  WM_DESTROY  - 종료 메시지를 게시하고 반환합니다.
-//
-//
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-	{
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+	switch (message) {
 	case WM_COMMAND:
 	{
 		int wmId = LOWORD(wParam);
 		// 메뉴 선택을 구문 분석합니다:
-		switch (wmId)
-		{
+		switch (wmId) {
 		case IDM_ABOUT:
 			DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, DlgProc);
 			break;
@@ -449,19 +387,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	return 0;
 }
-
 // 정보 대화 상자의 메시지 처리기입니다.
-INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
+INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
 	UNREFERENCED_PARAMETER(lParam);
-	switch (message)
-	{
+	switch (message) {
 	case WM_INITDIALOG:
 		return (INT_PTR)TRUE;
 
 	case WM_COMMAND:
-		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-		{
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
 			EndDialog(hDlg, LOWORD(wParam));
 			return (INT_PTR)TRUE;
 		}
@@ -469,7 +403,6 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	return (INT_PTR)FALSE;
 }
-
 // 윈도우의 위치를 스크린 가운데로 옮김
 void SetWindowPositionToCenter(HWND hWnd) {
 	UpdateSubWndPosition();
@@ -479,36 +412,28 @@ void SetWindowPositionToCenter(HWND hWnd) {
 
 	RECT rectMainWnd;
 	RECT rectRightWnd;
-	//RECT rectBottomWnd;
 	GetWindowRect(g_hDlg, &rectMainWnd);
 	GetWindowRect(g_hDlg, &rectRightWnd);
-	//GetWindowRect(g_hBottomWnd, &rectBottomWnd);
 
 	UINT clientW = rectRightWnd.right - rectMainWnd.left;
 	UINT clientH = rectMainWnd.bottom - rectMainWnd.top;
 
 	MoveWindow(hWnd, (screenX / 2) - (clientW / 2), (screenY / 2) - (clientH / 2), rectMainWnd.right - rectMainWnd.left, clientH, false);
-	//MoveWindow(hWnd, (screenX / 2) - (clientW / 2), (screenY / 2) - (clientH / 2), clientW, clientH, false);
-
 	UpdateSubWndPosition();
 }
-
 void UpdateSubWndPosition() {
 	RECT rectWnd;
-	GetWindowRect(g_hDlg, &rectWnd);
+	GetWindowRect(g_hWnd, &rectWnd);
 
 	RECT rectDlg;
 	GetWindowRect(g_hDlg, &rectDlg);
 	MoveWindow(g_hDlg, rectWnd.right + 2, rectWnd.top, rectDlg.right - rectDlg.left, rectDlg.bottom - rectDlg.top, true);
 }
-
 void UpdateActions() {
 	ListView_DeleteAllItems(g_hActionList);
 
 	UINT spriteCount = g_cActionPattern.cActionList.cActions.size();
-	//UINT spriteCount = g_cActionPattern.cActionList.size();
-	for (size_t i = 0; i < spriteCount; i++)
-	{
+	for (size_t i = 0; i < spriteCount; i++) {
 		CAction *pcAction = &g_cActionPattern.cActionList.cActions[i];
 		LVITEM item = {};
 		item.mask = LVIF_TEXT;
@@ -518,19 +443,13 @@ void UpdateActions() {
 		item.stateMask;
 
 		char itemText[szMax_Action] = {};
-		//_itoa_s(cAction->EActionType, itemText, 10);
-		strcpy_s(itemText, szMax_Action, g_szActionTypeAsString[pcAction->eActionType]);
+		strcpy_s(itemText, szMax_Action, Const::szActionTypesAsString[pcAction->eActionType]);
 		item.pszText = itemText;
 		ListView_InsertItem(g_hActionList, &item); // 아이템 추가
-
-		//ListView_SetItemText(g_hActionList, i, 0, itemText);
-
 		_itoa_s(pcAction->sXY.x, itemText, 10);
 		ListView_SetItemText(g_hActionList, i, 1, itemText);
-
 		_itoa_s(pcAction->sXY.y, itemText, 10);
 		ListView_SetItemText(g_hActionList, i, 2, itemText);
-
 		_itoa_s(pcAction->iTime, itemText, 10);
 		ListView_SetItemText(g_hActionList, i, 3, itemText);
 	}

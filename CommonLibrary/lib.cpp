@@ -2,6 +2,9 @@
 #include "lib.h"
 #include "Physics.h"
 
+const char *Const::szActionTypesAsString[EActionType::Count] = { "EActionType_Idle" , "EActionType_MoveTo", "EActionType_Shoot" };
+const char *Const::szStageSettingFileName = "stageCreator.settings";
+
 CFilePath::CFilePath() {
 	szFilePath[0] = 0;
 	szFileTitle[0] = 0;
@@ -53,7 +56,10 @@ void CUnit::Init(HDC hdc) {
 void CUnit::Update(float fDeltaTime) {
 	CAction curAction = cActionList.GetCurAction();
 	const vector<CSpriteInfo> * spriteInfos = &arAniInfos[(int)curAction.eActionType].SpriteInfos;
-	_cCurSpriteInfo = (*spriteInfos)[_iAniIndex]; // todo : to pointer
+	if (spriteInfos->size() != 0) {
+		_cCurSpriteInfo = (*spriteInfos)[_iAniIndex]; // todo : to pointer
+	}
+
 	bool bEndAni = false;//애니메이션이 끝났는지 여부, 애니가 끝까지 재생되고 _iAniIndex가 0으로 갱신되면 true가 된다.
 
 	// update ani
@@ -82,7 +88,7 @@ void CUnit::Update(float fDeltaTime) {
 			cAction.eActionType = EActionType::EActionType_MoveTo;
 			cAction.sXY = { 1.0, 0.0 };
 			//cAction.sXY = { ohterUnit->sXY.x + cAction.sXY.x * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(),
-			cAction.sXY = { 1800,
+			cAction.sXY = { 800,
 				ohterUnit->sXY.y + cAction.sXY.y * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
 			ohterUnit->cActionList.Clear();
 			ohterUnit->cActionList.AddAction(cAction);
@@ -90,7 +96,7 @@ void CUnit::Update(float fDeltaTime) {
 	}
 
 	// 액션 상태 갱신1
-	if (bEndAni && curAction.bOncePlay) {
+	if (bEndAni && !curAction.bRepeat) {
 		// ani가 끝났고 한번만 재생하는 액션이라면 액션 갱신하고 스프라이트 정보 다시 읽기
 		NextAction();
 		curAction = cActionList.GetCurAction();
@@ -146,7 +152,7 @@ void CUnit::Update(float fDeltaTime) {
 	//}
 }
 void CUnit::Render(HDC hdc) {
-	//if (!_bPlaying) return;
+	//if (!bPlaying) return;
 	// test
 	//fWH g_whBottomWndSize = { 800, 600 };
 	// 화면 정중앙 좌표
@@ -189,30 +195,31 @@ void CUnit::Render(HDC hdc) {
 	//SetROP2(hdc, R2_MERGEPEN   );//OR연산으로 두 그림을 합친다.
 	//SetROP2(hdc, R2_WHITE      );//항상 흰색이다.
 	//SetROP2(hdc, R2_LAST       );
-	//HBRUSH hBrush = CreateSolidBrush(RGB(128, 128, 128));
-	HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 255));
-	//HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-	HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
-	for (size_t i = 0; i < _cCurSpriteInfo.iCollisionCount; i++) {
-		RECT &col = _cCurSpriteInfo.sLocalCollisions[i];
-		CUnit *ohterUnit = Physics::hitTest(*this);
-		if (ohterUnit) {
-			SetROP2(hdc, R2_NOTMASKPEN);//원래의 그림을 반전시키고 AND연산으로 겹치는 부분만 그린다.
+	if (Physics::bEnable) {
+		//HBRUSH hBrush = CreateSolidBrush(RGB(128, 128, 128));
+		HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 255));
+		//HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+		HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
+		for (size_t i = 0; i < _cCurSpriteInfo.iCollisionCount; i++) {
+			CUnit *ohterUnit = Physics::hitTest(*this);
+			if (ohterUnit) {
+				SetROP2(hdc, R2_NOTMASKPEN);//원래의 그림을 반전시키고 AND연산으로 겹치는 부분만 그린다.
+			}
+			else {
+				SetROP2(hdc, R2_MASKPEN);//AND연산으로 겹치는 부분만 그린다.
+			}
+			RECT collision = GetCollision();
+			Rectangle(hdc, collision.left, collision.top, collision.right, collision.bottom);
+			//Rectangle(hdc,
+			//	sXY.x - _cCurSpriteInfo.sPivot.x * fMagnification,
+			//	sXY.y - _cCurSpriteInfo.sPivot.y * fMagnification,
+			//	sXY.x - _cCurSpriteInfo.sPivot.x * fMagnification + col.right * fMagnification,
+			//	sXY.y - _cCurSpriteInfo.sPivot.y * fMagnification + col.bottom * fMagnification);
 		}
-		else {
-			SetROP2(hdc, R2_MASKPEN);//AND연산으로 겹치는 부분만 그린다.
-		}
-		RECT collision = GetCollision();
-		Rectangle(hdc, collision.left, collision.top, collision.right, collision.bottom);
-		//Rectangle(hdc,
-		//	sXY.x - _cCurSpriteInfo.sPivot.x * fMagnification,
-		//	sXY.y - _cCurSpriteInfo.sPivot.y * fMagnification,
-		//	sXY.x - _cCurSpriteInfo.sPivot.x * fMagnification + col.right * fMagnification,
-		//	sXY.y - _cCurSpriteInfo.sPivot.y * fMagnification + col.bottom * fMagnification);
+		SetROP2(hdc, R2_COPYPEN);//default
+		hBrush = (HBRUSH)SelectObject(hdc, hOldBrush);
+		DeleteObject(hBrush);
 	}
-	SetROP2(hdc, R2_COPYPEN);//default
-	hBrush = (HBRUSH)SelectObject(hdc, hOldBrush);
-	DeleteObject(hBrush);
 
 	// test : draw direction
 	float _directionLength = 50;
@@ -410,6 +417,7 @@ void CUnit::LoadAniFile(EActionType eActionType, const char *filePath) {
 void CUnit::NextAction() {
 	cActionList.NextAction();
 	_iAniIndex = 0;
+	_iWaitTimeOnPosition = GetTickCount();
 }
 RECT CUnit::GetCollision() const {
 	RECT collision = _cCurSpriteInfo.sLocalCollisions[0];

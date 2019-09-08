@@ -16,7 +16,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	if (!g_hDlg) return 0;
 
 	g_hCanvas = GetDlgItem(g_hDlg, IDC_PIC1);
-	g_cStageCreator.Init(g_hDlg, g_hCanvas, 1000 / 60, { 800, 600 }, EWindowMode::None);
+	g_cStageCreator.Init(g_hDlg, g_hCanvas, 1000 / 60, { 800, 600 }, EWindowMode::EWindowMode_None);
 	g_cStageCreator.PlayStop(true);
 
 	MSG msg;

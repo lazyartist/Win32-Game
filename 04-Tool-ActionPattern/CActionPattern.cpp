@@ -18,53 +18,47 @@ void CActionPattern::InitImpl() {
 
 	InitUnit();
 
-	IsPlaying = false;
+	//IsPlaying = false;
 }
 void CActionPattern::UpdateLogicImpl() {
-	dlog("CActionPattern::UpdateLogicImpl");
+	_unit.Update(_fDeltaTime);
+	//CAction cAction = cActionList.GetCurAction();
 
-	if (IsPlaying) {
+	//// 다음 지점까지의 거리
+	//SXY distanceXY = cAction.sXY - _unit.sXY;
+	//float distance = distanceXY.distance();
+	//float speed = _unit.fSpeedPerSeconds * _fDeltaTime;
+	//if (distance < speed) speed = distance;
 
-		CAction cAction = cActionList.GetCurAction();
+	//float rad = atan2(distanceXY.y, distanceXY.x);
+	//float speedX = speed * cos(rad);
+	//float speedY = speed * sin(rad);
 
-		// 다음 지점까지의 거리
-		SXY distanceXY = cAction.sXY - _unit.sXY;
-		float distance = distanceXY.distance();
-		float speed = _unit.fSpeedPerSeconds * _fDeltaTime;
-		if (distance < speed) speed = distance;
+	//_unit.sXY.x += speedX;
+	//_unit.sXY.y += speedY;
 
-		float rad = atan2(distanceXY.y, distanceXY.x);
+	//if (sameXY(cAction.sXY, _unit.sXY)) {
+	//	if (cAction.eActionType == EActionType::EActionType_Idle) {
+	//		if (_unitIdleTime == 0) {
+	//			_unitIdleTime = GetTickCount();
+	//			return;
+	//		}
+	//		else {
+	//			if (GetTickCount() - _unitIdleTime >= cAction.iTime) {
+	//				//
+	//			}
+	//			else {
+	//				return;
+	//			}
+	//		}
+	//	}
+	//	else if (cAction.eActionType == EActionType::EActionType_MoveTo) {
+	//		//
+	//	}
 
-		float speedX = speed * cos(rad);
-		float speedY = speed * sin(rad);
-
-		_unit.sXY.x += speedX;
-		_unit.sXY.y += speedY;
-
-		if (sameXY(cAction.sXY, _unit.sXY)) {
-			if (cAction.eActionType == EActionType::EActionType_Idle) {
-				if (_unitIdleTime == 0) {
-					_unitIdleTime = GetTickCount();
-					return;
-				}
-				else {
-					if (GetTickCount() - _unitIdleTime >= cAction.iTime) {
-						//
-					}
-					else {
-						return;
-					}
-				}
-			}
-			else if (cAction.eActionType == EActionType::EActionType_MoveTo) {
-				//
-			}
-
-			_unitIdleTime = 0;
-
-			cActionList.NextAction();
-		}
-	}
+	//	_unitIdleTime = 0;
+	//	cActionList.NextAction();
+	//}
 }
 void CActionPattern::UpdateRenderImpl() {
 	dlog("CActionPattern::UpdateRenderImpl");
@@ -100,22 +94,12 @@ void CActionPattern::DrawAction() {
 	cActionList.RenderActions(_hdcMem);
 }
 void CActionPattern::InitUnit() {
+	_unit.Reset();
 	_unit.fSpeedPerSeconds = 500;
 	_unit.sXY = _xyClientCenter;
 	_unit.sWH = { 30, 30 };
+	//_unit.cActionList.Clear();
+	_unit.cActionList = cActionList;
 
 	iSelectedActionIndex = NoSelectedIndex;
-}
-void CActionPattern::PlayStop(bool isPlay) {
-	if (isPlay) {
-		if (cActionList.cActions.size() == 0) return;
-
-		IsPlaying = true;
-		InitUnit();
-	}
-	else {
-		IsPlaying = false;
-
-	}
-
 }

@@ -10,6 +10,7 @@ CStageCreator::~CStageCreator() {
 }
 void CStageCreator::InitImpl() {
 	hdcBgi = CreateCompatibleDC(_hdcMem);
+	Physics::bEnable = true;
 	Physics::cUnits = &cUnits;
 }
 void CStageCreator::UpdateLogicImpl() {
@@ -139,6 +140,8 @@ void CStageCreator::AddUnit(CFilePath &cFilePath) {
 		cUnit.Init(_hdcMem);
 		cUnit.LoadUnit(&cFilePath);
 		cUnits.push_back(cUnit);
+		// vector가 확장되며 pControlUnit가 댕글링 포인터가 될 가능성이 있으므로 다시 설정해준다.
+		SetControlUnit(iControlUnitIndex);
 		fclose(file);
 	}
 }

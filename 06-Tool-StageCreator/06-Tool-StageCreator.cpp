@@ -23,9 +23,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	GetCurrentDirectory(MAX_PATH, g_szCurDir);
 
 	g_hCanvas = GetDlgItem(g_hDlg, IDC_PIC1);
-	g_cStageCreator.Init(g_hDlg, g_hCanvas, 1000 / 60, { 424*2, 318*2}, EWindowMode::None);
+	g_cStageCreator.Init(g_hDlg, g_hCanvas, 1000 / 60, { 424*2, 318*2}, EWindowMode::EWindowMode_None);
 	g_cStageCreator.PlayStop(true);
-	if (g_cStageCreator.LoadSettings(g_szCurDir, Const::szStageSettingFileName())) {
+	if (g_cStageCreator.LoadSettings(g_szCurDir, Const::szStageSettingFileName)) {
 		g_cStageCreator.LoadStage(g_cStageCreator.cStageFilePath);
 		UpdateUI();
 		UpdateUnitList();
@@ -98,7 +98,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			return (INT_PTR)TRUE;
 		}
 		case IDC_BUTTON3: {//Save settings
-			g_cStageCreator.SaveSettings(g_szCurDir, Const::szStageSettingFileName());
+			g_cStageCreator.SaveSettings(g_szCurDir, Const::szStageSettingFileName);
 			return (INT_PTR)TRUE;
 		}
 		case IDC_BUTTON9: {//Load Background .bmp

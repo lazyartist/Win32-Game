@@ -29,7 +29,7 @@ void CGameFramework::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSi
 	DeleteObject(hBitmap);
 
 	switch (windowMode) {
-	case None:
+	case EWindowMode_None:
 	{
 		// 현재 윈도우를 화면 가운데 위치시킨다.
 		RECT clientRect = {};
@@ -43,10 +43,10 @@ void CGameFramework::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSi
 			clientRect.right - clientRect.left, clientRect.bottom - clientRect.top, SWP_SHOWWINDOW);
 	}
 	break;
-	case Window:
+	case EWindowMode_Window:
 		SetFullScreen(false);
 		break;
-	case FullScreen:
+	case EWindowMode_FullScreen:
 		SetFullScreen(true);
 		break;
 	default:
@@ -68,7 +68,7 @@ bool CGameFramework::UpdateFrame() {
 		_fDeltaTime = (float)_nDeltaTime / 1000;
 		_fpsCount++;
 
-		//if (_bPlaying) {
+		//if (bPlaying) {
 			return true;
 		//}
 	}
@@ -94,17 +94,17 @@ bool CGameFramework::UpdateFrame() {
 	return false;
 }
 void CGameFramework::UpdateLogic() {
-	if (_bPlaying) {
+	if (bPlaying) {
 		UpdateLogicImpl();
 	}
 }
 void CGameFramework::UpdateController() {
-	if (_bPlaying) {
+	if (bPlaying) {
 		UpdateControllerImpl();
 	}
 }
 void CGameFramework::UpdateRender() {
-	//if (!_bPlaying) { return; }
+	//if (!bPlaying) { return; }
 	//dlog("UpdateRender");
 
 	PatBlt(_hdcMem, 0, 0, _whClientSize.w, _whClientSize.h, WHITENESS);
@@ -146,7 +146,7 @@ void CGameFramework::Release() {
 	ReleaseImpl();
 }
 void CGameFramework::PlayStop(bool bPlay) {
-	_bPlaying = bPlay;
+	bPlaying = bPlay;
 }
 void CGameFramework::InitImpl() {
 	//dlog("InitImpl");

@@ -24,6 +24,7 @@ public:
 
 	void SetFullScreen(bool isFullScreen);
 
+	bool bPlaying;
 protected:
 	HWND _hWnd;
 	HWND _hCanvas;
@@ -41,6 +42,5 @@ protected:
 	UINT _fpsPrevCount;
 	UINT _fpsCount;
 	DWORD _prevSecondTime;
-	bool _bPlaying;
 };
 

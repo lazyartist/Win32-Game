@@ -49,7 +49,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// init CGameFramework
 	g_cGameFrameworkTest = new CGameFrameworkTest();
-	g_cGameFrameworkTest->Init(g_hDlg, g_hDlg, nFrameTime, g_whClientSize, EWindowMode::Window);
+	g_cGameFrameworkTest->Init(g_hDlg, g_hDlg, nFrameTime, g_whClientSize, EWindowMode::EWindowMode_Window);
 	//g_cGameFrameworkTest->Init(g_hDlg, nFrameTime, g_whClientSize, true);
 
 	//HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MY03TOOLGAMEFRAMEWORK));

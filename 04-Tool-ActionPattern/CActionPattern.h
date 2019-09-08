@@ -3,8 +3,7 @@
 #include "CGameFramework.h"
 
 class CActionPattern :
-	public CGameFramework
-{
+	public CGameFramework {
 public:
 	CActionPattern();
 	virtual ~CActionPattern();
@@ -18,13 +17,10 @@ public:
 	void DrawAction();
 	void InitUnit();
 
-	void PlayStop(bool isPlay);
-
 	CActionList cActionList;
 	UINT iSelectedActionIndex;
-	bool IsPlaying;
 
-private :
+private:
 	SXY _xyClientCenter;
 	CUnit _unit;
 	DWORD _unitIdleTime = 0;

@@ -14,7 +14,7 @@
 #define nMax_SpriteCount 999
 #define szMax_SpriteCount 3 + 1
 #define szMax_Pos 6
-#define szMax_Action 9 + 1
+#define szMax_Action 99
 #define szMax_PosLine 99
 #define nFrameRate 60 // 모니터 주사율이 60hz인데 60보다 높이면 더 부드럽게 보인다. 왜일까?
 #define nPivotHalfSize 5
@@ -33,6 +33,18 @@
 #define NoSelectedIndex -1
 
 using namespace std;
+
+
+// ===== enum =====
+enum EWindowMode {
+	EWindowMode_None, EWindowMode_Window, EWindowMode_FullScreen
+};
+enum EActionType {
+	EActionType_None = -1,
+	EActionType_Idle = 0, EActionType_MoveTo, EActionType_Shoot,
+	Count
+};
+// ===== enum ===== end
 
 // todo : define을 대체하기
 static class Const {
@@ -54,21 +66,9 @@ public:
 	};
 
 	// string
-	static const char *szStageSettingFileName() {
-		return "stageCreator.settings";
-	}
+	static const char *szActionTypesAsString[EActionType::Count];
+	static const char *szStageSettingFileName;
 };
-
-// ===== enum =====
-enum EWindowMode {
-	None, Window, FullScreen
-};
-enum EActionType {
-	EActionType_None = -1,
-	EActionType_Idle = 0, EActionType_MoveTo, EActionType_Shoot,
-	Count
-};
-// ===== enum ===== end
 // ===== struct =====
 // deprecated
 typedef struct _XY {
@@ -224,7 +224,7 @@ public:
 	SXY sXY;
 	UINT iTime; // milliseconds
 	bool bCancelable;
-	bool bOncePlay;
+	bool bRepeat;
 
 	CAction() {
 	}
@@ -242,7 +242,7 @@ public:
 		cDefaultAction.eActionType = EActionType::EActionType_Idle;
 		cDefaultAction.iTime = UINT_MAX;
 		cDefaultAction.bCancelable = true;
-		cDefaultAction.bOncePlay = false;
+		cDefaultAction.bRepeat = false;
 	}
 	~CActionList() {
 	}
@@ -255,7 +255,9 @@ public:
 		return cActions[0];
 	}
 	void NextAction() {
-		cActions.pop_front();
+		if (cActions.size() != 0) {
+			cActions.pop_front();
+		}
 	}
 	void AddAction(CAction action) {
 		cActions.push_back(action);

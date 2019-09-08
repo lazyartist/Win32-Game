@@ -5,7 +5,6 @@
 #include "Commctrl.h"
 
 HINSTANCE g_hInstance;
-const char *g_szActionTypeAsString[] = { "EActionType_Idle" , "EActionType_MoveTo", "EActionType_Shoot" };
 HWND g_hDlg;
 HWND g_hWndPicture;
 HWND g_hUnitList;
@@ -38,7 +37,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	g_hWndPicture = GetDlgItem(g_hDlg, IDC_PIC1);
-	g_cUnitCreator.Init(g_hDlg, g_hWndPicture, 1000 / 90, { 800, 600 }, EWindowMode::None);
+	g_cUnitCreator.Init(g_hDlg, g_hWndPicture, 1000 / 90, { 800, 600 }, EWindowMode::EWindowMode_None);
 	LoadSettings();
 	UpdateUnitList();
 
@@ -454,7 +453,7 @@ void UpdateActionAniList() {
 		item.iItem = i;
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
 		char itemText[MAX_PATH];
-		strcpy_s(itemText, MAX_PATH, g_szActionTypeAsString[i]);
+		strcpy_s(itemText, MAX_PATH, Const::szActionTypesAsString[i]);
 		item.pszText = itemText;
 		ListView_InsertItem(g_hActionAniList, &item); // 아이템 추가0
 		ListView_SetItemText(g_hActionAniList, i, 1, g_cUnitCreator.cUnit.arAniInfos[i].FileTitle); // 아이템 추가0

@@ -2,6 +2,7 @@
 #include "Physics.h"
 #include "lib.h"
 
+bool Physics::bEnable = false;
 vector<CUnit> *Physics::cUnits;
 
 CUnit * Physics::hitTest(const CUnit &cUnit) {
