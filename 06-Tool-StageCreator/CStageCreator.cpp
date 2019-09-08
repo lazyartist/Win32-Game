@@ -8,7 +8,7 @@ CStageCreator::CStageCreator() {
 CStageCreator::~CStageCreator() {
 }
 void CStageCreator::InitImpl() {
-	//cUnit.Init(_hdcMem);
+	//pUnit.Init(_hdcMem);
 }
 void CStageCreator::UpdateLogicImpl() {
 	for (size_t i = 0; i < cUnits.size(); i++) {
@@ -17,7 +17,9 @@ void CStageCreator::UpdateLogicImpl() {
 	}
 }
 void CStageCreator::UpdateControllerImpl() {
-	//cController.Update(_fDeltaTime, &cUnit);
+	if (pUnit != nullptr) {
+		cController.Update(_fDeltaTime, pUnit);
+	}
 }
 void CStageCreator::UpdateRenderImpl() {
 	for (size_t i = 0; i < cUnits.size(); i++) {
@@ -62,8 +64,8 @@ void CStageCreator::LoadStage(const CFilePath &cFilePath) {
 		//bg bmp path 
 		Func::FGetStr(cBgiFilePath.szFileTitle, Const::szMax_Path, file);
 		Func::FGetStr(cBgiFilePath.szFilePath, Const::szMax_Path, file);
-		//controll unit index
-		iUnitIndex = Func::FGetInt(szBuffer, Const::szMax_Path, file);
+		//controll unit iIndex
+		int iControllUnitIndex = Func::FGetInt(szBuffer, Const::szMax_Path, file);
 		//units
 		int iCount = Func::FGetInt(szBuffer, Const::szMax_Path, file);
 		int iUnitCount = cUnits.size();
@@ -80,6 +82,7 @@ void CStageCreator::LoadStage(const CFilePath &cFilePath) {
 			cUnit.sStartXY.y = Func::FGetFloat(szBuffer, Const::szMax_Path, file);
 			cUnit.Reset();
 		}
+		SetControlUnit(iControllUnitIndex);
 		fclose(file);
 	}
 }
@@ -91,8 +94,8 @@ void CStageCreator::SaveStage(const CFilePath &cFilePath) {
 		//bg bmp path 
 		fprintf_s(file, "%s\n", cBgiFilePath.szFileTitle);
 		fprintf_s(file, "%s\n", cBgiFilePath.szFilePath);
-		//controll unit index
-		fprintf_s(file, "%i\n", iUnitIndex);
+		//controll unit iIndex
+		fprintf_s(file, "%i\n", iControlUnitIndex);
 		//unit count
 		int itemCount = cUnits.size();
 		fprintf_s(file, "%i\n", itemCount);
@@ -126,5 +129,25 @@ void CStageCreator::Reset() {
 	for (size_t i = 0; i < cUnits.size(); i++) {
 		CUnit &cUnit = cUnits[i];
 		cUnit.Reset();
+		//컨트롤유닛은 액션패턴으로 움직이지 않게 제거
+		if (i == iControlUnitIndex) {
+			cUnit.cActionList.Clear();
+		}
 	}
+}
+
+void CStageCreator::SetControlUnit(int iIndex) {
+	if (iIndex < 0 || iIndex >= cUnits.size()) {
+		return;
+	}
+	iControlUnitIndex = iIndex;
+	pUnit = &cUnits[iIndex];
+	SXY sXY = pUnit->sXY;
+	pUnit->Reset();
+	pUnit->cActionList.Clear();
+	pUnit->sXY = sXY; // 컨트롤유닛으로 지정시 현재 위치에 있도록 xy값을 저장했다가 다시 넣어줌
+}
+
+CUnit * CStageCreator::GetControlUnit() {
+	return nullptr;
 }

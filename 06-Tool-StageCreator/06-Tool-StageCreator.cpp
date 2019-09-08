@@ -167,6 +167,9 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 				);
 
 				if (itemIndex != NoSelectedIndex) {
+					g_cStageCreator.SetControlUnit(itemIndex);
+					UpdateUI();
+					UpdateUnitList();
 					//LoadSelectedUnit();
 					//SetFocus(g_hDlg); // 리스트에서 포커스를 제거하기 위해 윈도우에 포커스를 준다.
 					//ListView_SetItemState(pnmhdr->hwndFrom,         // handle to listview
@@ -175,16 +178,16 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 						//LVIS_SELECTED | LVIS_FOCUSED);                      // mask
 				}
 			}
-			else if (pnmhdr->code == LVN_ITEMCHANGED) {
-				UINT itemIndex = ListView_GetNextItem(
-					pnmhdr->hwndFrom, // 윈도우 핸들
-					-1, // 검색을 시작할 인덱스
-					LVNI_SELECTED // 검색 조건
-				);
-				if (itemIndex != NoSelectedIndex) {
-					//LoadSelectedUnit();
-				}
-			}
+			//else if (pnmhdr->code == LVN_ITEMCHANGED) {
+			//	UINT itemIndex = ListView_GetNextItem(
+			//		pnmhdr->hwndFrom, // 윈도우 핸들
+			//		-1, // 검색을 시작할 인덱스
+			//		LVNI_SELECTED // 검색 조건
+			//	);
+			//	if (itemIndex != NoSelectedIndex) {
+			//		//LoadSelectedUnit();
+			//	}
+			//}
 		}
 	}
 	break;
@@ -220,7 +223,7 @@ void UpdateUnitList() {
 		item.iItem = i;
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
 		char itemText[MAX_PATH];
-		if (i == g_cStageCreator.iUnitIndex) {
+		if (i == g_cStageCreator.iControlUnitIndex) {
 			strcpy_s(itemText, MAX_PATH, "player");
 		}
 		else {

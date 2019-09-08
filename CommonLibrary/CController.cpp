@@ -7,8 +7,8 @@ CController::CController() {
 CController::~CController() {
 }
 
-//void CController::Init(CUnit * cUnit) {
-//	this->cUnit = cUnit;
+//void CController::Init(CUnit * pUnit) {
+//	this->pUnit = pUnit;
 //}
 
 void CController::Update(float fDeltaTime, CUnit *cUnit) {

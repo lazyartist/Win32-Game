@@ -23,12 +23,14 @@ public:
 	void AddUnit(CFilePath & cFilePath);
 	void RemoveUnit(int index);
 	void Reset();
+	void SetControlUnit(int index);
+	CUnit* GetControlUnit();
 
 	CFilePath cStageFilePath;
 	CFilePath cBgiFilePath;
 	vector<CUnit> cUnits; // todo : 포인터로 교체
-	int iUnitIndex;
-	CUnit *cUnit;
+	int iControlUnitIndex;
+	CUnit *pUnit = nullptr;
 	CController cController;
 };
 
