@@ -23,7 +23,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	GetCurrentDirectory(MAX_PATH, g_szCurDir);
 
 	g_hCanvas = GetDlgItem(g_hDlg, IDC_PIC1);
-	g_cStageCreator.Init(g_hDlg, g_hCanvas, 1000 / 60, { 800, 600 }, EWindowMode::None);
+	g_cStageCreator.Init(g_hDlg, g_hCanvas, 1000 / 60, { 424*2, 318*2}, EWindowMode::None);
 	g_cStageCreator.PlayStop(false);
 	if (g_cStageCreator.LoadSettings(g_szCurDir, Const::szStageSettingFileName())) {
 		g_cStageCreator.LoadStage(g_cStageCreator.cStageFilePath);
@@ -147,6 +147,14 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			g_cStageCreator.Reset();
 			return (INT_PTR)TRUE;
 		}
+		case IDC_EDIT3:
+		{
+			if (HIWORD(wParam) == EN_CHANGE) {
+				char text[Const::szMax_ItemLine];
+				GetDlgItemText(hDlg, IDC_EDIT3, text, Const::szMax_ItemLine);
+				g_cStageCreator.fBgiMagnification = atof(text);
+			}
+		}
 		default:
 			break;
 		}
@@ -223,6 +231,9 @@ void UpdateUI() {
 	SetDlgItemText(g_hDlg, IDC_EDIT1, g_cStageCreator.cStageFilePath.szFileTitle);
 	//bgi
 	SetDlgItemText(g_hDlg, IDC_EDIT2, g_cStageCreator.cBgiFilePath.szFileTitle);
+	char text[Const::szMax_ItemLine];
+	sprintf_s(text, Const::szMax_ItemLine, "%.2f", g_cStageCreator.fBgiMagnification);
+	SetDlgItemText(g_hDlg, IDC_EDIT3, text);
 }
 void UpdateUnitList() {
 	ListView_DeleteAllItems(g_hUnitList);

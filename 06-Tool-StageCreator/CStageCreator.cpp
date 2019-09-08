@@ -9,7 +9,7 @@ CStageCreator::~CStageCreator() {
 }
 void CStageCreator::InitImpl() {
 	//pUnit.Init(_hdcMem);
-	_hdcBgi = CreateCompatibleDC(_hdcMem);
+	hdcBgi = CreateCompatibleDC(_hdcMem);
 }
 void CStageCreator::UpdateLogicImpl() {
 	for (size_t i = 0; i < cUnits.size(); i++) {
@@ -30,10 +30,10 @@ void CStageCreator::UpdateRenderImpl() {
 	// TransparentBlt를 사용하려면 프로젝트 설정에서 msimg32.lib;를 추가종속성에 받드시 추가해야한다.
 	TransparentBlt(_hdcMem,
 		0, 0,
-		100, 100,
-		_hdcBgi,
+		sBgiHeader.bmWidth * fBgiMagnification, sBgiHeader.bmHeight * fBgiMagnification,
+		hdcBgi,
 		0, 0,
-		100, 100,
+		sBgiHeader.bmWidth, sBgiHeader.bmHeight,
 
 		RGB(255, 0, 0));
 	
@@ -76,10 +76,12 @@ void CStageCreator::LoadStage(const CFilePath &cFilePath) {
 	if (file != nullptr) {
 		cStageFilePath = cFilePath;
 		char szBuffer[Const::szMax_Path] = {};
-		//bg bmp path 
+		//bgi path
 		Func::FGetStr(cBgiFilePath.szFileTitle, Const::szMax_Path, file);
 		Func::FGetStr(cBgiFilePath.szFilePath, Const::szMax_Path, file);
 		LoadBgi(cBgiFilePath);
+		//bgi magnification
+		fBgiMagnification = Func::FGetFloat(szBuffer, Const::szMax_Path, file);
 		//controll unit iIndex
 		int iControllUnitIndex = Func::FGetInt(szBuffer, Const::szMax_Path, file);
 		//units
@@ -107,9 +109,11 @@ void CStageCreator::SaveStage(const CFilePath &cFilePath) {
 	file = _fsopen(cFilePath.szFilePath, "wt", _SH_DENYNO);
 	if (file != nullptr) {
 		cStageFilePath = cFilePath;
-		//bg bmp path 
+		//bgi path
 		fprintf_s(file, "%s\n", cBgiFilePath.szFileTitle);
 		fprintf_s(file, "%s\n", cBgiFilePath.szFilePath);
+		//bgi magnification
+		fprintf_s(file, "%f\n", fBgiMagnification);
 		//controll unit iIndex
 		fprintf_s(file, "%i\n", iControlUnitIndex);
 		//unit count
@@ -174,6 +178,7 @@ void CStageCreator::LoadBgi(CFilePath &cFilePath) {
 	//strcpy_s(szBitmapPath, MAX_PATH, filePath);
 	cBgiFilePath = cFilePath;
 	HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, cFilePath.szFilePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-	SelectObject(_hdcBgi, hBitmap); // HBITMAP은 HDC에 적용되면 다시 사용할 수 없기 때문에 재사용을 위해 HDC에 넣어둔다.
+	SelectObject(hdcBgi, hBitmap); // HBITMAP은 HDC에 적용되면 다시 사용할 수 없기 때문에 재사용을 위해 HDC에 넣어둔다.
+	GetObject(hBitmap, sizeof(BITMAP), &sBgiHeader);//bitmap 정보 읽기
 	DeleteObject(hBitmap);
 }
