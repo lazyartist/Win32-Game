@@ -442,6 +442,7 @@ public:
 	HDC hBitmapDC;
 	UINT _iAniIndex = 0;
 	CSpriteInfo _cCurSpriteInfo;
+	bool bControlled = false;
 
 private:
 	bool _bPatternPlaying = false;
@@ -470,7 +471,7 @@ public:
 	void ClearUnitBitmap();
 	void LoadAniFile(EActionType eActionType, const char *filePath);
 	void NextAction();
-	RECT GetCollision();
+	RECT GetCollision() const;
 };
 // ===== class ===== end
 // ===== function =====

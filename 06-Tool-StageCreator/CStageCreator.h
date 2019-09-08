@@ -35,7 +35,7 @@ public:
 	float fBgiMagnification = 1.0;
 	vector<CUnit> cUnits; // todo : 포인터로 교체
 	int iControlUnitIndex;
-	CUnit *pUnit = nullptr;
+	CUnit *pControlUnit = nullptr;
 	CController cController;
 };
 

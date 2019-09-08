@@ -75,6 +75,20 @@ void CUnit::Update(float fDeltaTime) {
 		}
 	}
 
+	if (this->bControlled) {
+		CUnit *ohterUnit = Physics::hitTest(*this);
+		if (ohterUnit) {
+			CAction cAction;
+			cAction.eActionType = EActionType::EActionType_MoveTo;
+			cAction.sXY = { 1.0, 0.0 };
+			//cAction.sXY = { ohterUnit->sXY.x + cAction.sXY.x * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(),
+			cAction.sXY = { 1800,
+				ohterUnit->sXY.y + cAction.sXY.y * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
+			ohterUnit->cActionList.Clear();
+			ohterUnit->cActionList.AddAction(cAction);
+		}
+	}
+
 	// 액션 상태 갱신1
 	if (bEndAni && curAction.bOncePlay) {
 		// ani가 끝났고 한번만 재생하는 액션이라면 액션 갱신하고 스프라이트 정보 다시 읽기
@@ -181,13 +195,13 @@ void CUnit::Render(HDC hdc) {
 	HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
 	for (size_t i = 0; i < _cCurSpriteInfo.iCollisionCount; i++) {
 		RECT &col = _cCurSpriteInfo.sLocalCollisions[i];
-		//CUnit *ohterUnit = Physics::hitTest(*this);
-		//if (ohterUnit) {
-		//	SetROP2(hdc, R2_NOTMASKPEN);//원래의 그림을 반전시키고 AND연산으로 겹치는 부분만 그린다.
-		//}
-		//else {
-		//	SetROP2(hdc, R2_MASKPEN);//AND연산으로 겹치는 부분만 그린다.
-		//}
+		CUnit *ohterUnit = Physics::hitTest(*this);
+		if (ohterUnit) {
+			SetROP2(hdc, R2_NOTMASKPEN);//원래의 그림을 반전시키고 AND연산으로 겹치는 부분만 그린다.
+		}
+		else {
+			SetROP2(hdc, R2_MASKPEN);//AND연산으로 겹치는 부분만 그린다.
+		}
 		RECT collision = GetCollision();
 		Rectangle(hdc, collision.left, collision.top, collision.right, collision.bottom);
 		//Rectangle(hdc,
@@ -197,6 +211,8 @@ void CUnit::Render(HDC hdc) {
 		//	sXY.y - _cCurSpriteInfo.sPivot.y * fMagnification + col.bottom * fMagnification);
 	}
 	SetROP2(hdc, R2_COPYPEN);//default
+	hBrush = (HBRUSH)SelectObject(hdc, hOldBrush);
+	DeleteObject(hBrush);
 
 	// test : draw direction
 	float _directionLength = 50;
@@ -395,7 +411,7 @@ void CUnit::NextAction() {
 	cActionList.NextAction();
 	_iAniIndex = 0;
 }
-RECT CUnit::GetCollision() {
+RECT CUnit::GetCollision() const {
 	RECT collision = _cCurSpriteInfo.sLocalCollisions[0];
 	RECT globalCollision = {
 		sXY.x - _cCurSpriteInfo.sPivot.x * fMagnification,

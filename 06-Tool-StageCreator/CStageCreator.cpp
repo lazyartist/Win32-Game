@@ -10,7 +10,7 @@ CStageCreator::~CStageCreator() {
 }
 void CStageCreator::InitImpl() {
 	hdcBgi = CreateCompatibleDC(_hdcMem);
-	//Physics::cUnits = &cUnits;
+	Physics::cUnits = &cUnits;
 }
 void CStageCreator::UpdateLogicImpl() {
 	for (size_t i = 0; i < cUnits.size(); i++) {
@@ -19,8 +19,8 @@ void CStageCreator::UpdateLogicImpl() {
 	}
 }
 void CStageCreator::UpdateControllerImpl() {
-	if (pUnit != nullptr) {
-		cController.Update(_fDeltaTime, pUnit);
+	if (pControlUnit != nullptr) {
+		cController.Update(_fDeltaTime, pControlUnit);
 	}
 }
 void CStageCreator::UpdateRenderImpl() {
@@ -160,19 +160,23 @@ void CStageCreator::SetControlUnit(int iIndex) {
 	if (iIndex < 0 || iIndex >= cUnits.size()) {
 		return;
 	}
+	if (pControlUnit) {
+		pControlUnit->bControlled = false;
+	}
 	iControlUnitIndex = iIndex;
-	pUnit = &cUnits[iIndex];
-	SXY sXY = pUnit->sXY;
-	pUnit->Reset();
-	pUnit->cActionList.Clear();
-	pUnit->sXY = sXY; // 컨트롤유닛으로 지정시 현재 위치에 있도록 xy값을 저장했다가 다시 넣어줌
+	pControlUnit = &cUnits[iIndex];
+	SXY sXY = pControlUnit->sXY;
+	pControlUnit->Reset();
+	pControlUnit->cActionList.Clear();
+	pControlUnit->sXY = sXY; // 컨트롤유닛으로 지정시 현재 위치에 있도록 xy값을 저장했다가 다시 넣어줌
+	pControlUnit->bControlled = true;
 }
 CUnit * CStageCreator::GetControlUnit() {
-	return nullptr;
+	return pControlUnit;
 }
 void CStageCreator::SetStartXY() {
-	if (pUnit != nullptr) {
-		pUnit->sStartXY = pUnit->sXY;
+	if (pControlUnit != nullptr) {
+		pControlUnit->sStartXY = pControlUnit->sXY;
 	}
 }
 void CStageCreator::LoadBgi(CFilePath &cFilePath) {
