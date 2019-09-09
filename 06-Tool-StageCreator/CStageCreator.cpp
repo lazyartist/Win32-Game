@@ -26,17 +26,12 @@ void CStageCreator::UpdateControllerImpl() {
 }
 void CStageCreator::UpdateRenderImpl() {
 	//bgi
-	//fWH spriteSize = { _cCurSpriteInfo.sRect.right - _cCurSpriteInfo.sRect.left , _cCurSpriteInfo.sRect.bottom - _cCurSpriteInfo.sRect.top };
-	//UINT w = _cCurSpriteInfo.sRect.right - _cCurSpriteInfo.sRect.left;
-	//UINT h = _cCurSpriteInfo.sRect.bottom - _cCurSpriteInfo.sRect.top;
-	// TransparentBlt를 사용하려면 프로젝트 설정에서 msimg32.lib;를 추가종속성에 받드시 추가해야한다.
 	TransparentBlt(_hdcMem,
 		0, 0,
 		sBgiHeader.bmWidth * fBgiMagnification, sBgiHeader.bmHeight * fBgiMagnification,
 		hdcBgi,
 		0, 0,
 		sBgiHeader.bmWidth, sBgiHeader.bmHeight,
-
 		RGB(255, 0, 0));
 	
 	for (size_t i = 0; i < cUnits.size(); i++) {

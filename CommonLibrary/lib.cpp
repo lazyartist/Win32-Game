@@ -97,14 +97,16 @@ void CUnit::Update(float fDeltaTime) {
 	}
 	//sub unit
 	if (cSubUnit != nullptr) {
-		CAction cAction;
-		cAction.eActionType = EActionType::EActionType_MoveTo;
-		cAction.sXY = { 1.0, 0.0 };
-		//cAction.sXY = { otherUnit->sXY.x + cAction.sXY.x * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(),
-		cAction.sXY = this->sXY;
-		cAction.sXY.Add(100, 0);
-		cSubUnit->cActionList.Clear();
-		cSubUnit->cActionList.AddAction(cAction);
+		if (curAction.eActionType == EActionType::EActionType_MoveTo) {
+			CAction cAction;
+			cAction.eActionType = EActionType::EActionType_MoveTo;
+			cAction.sXY = { 1.0, 0.0 };
+			//cAction.sXY = { otherUnit->sXY.x + cAction.sXY.x * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(),
+			cAction.sXY = this->sXY;
+			cAction.sXY.Add(100, 0);
+			cSubUnit->cActionList.Clear();
+			cSubUnit->cActionList.AddAction(cAction);
+		}
 	}
 	// 액션 상태 갱신1
 	if (bEndAni && !curAction.bRepeat) {
