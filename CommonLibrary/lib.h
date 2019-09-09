@@ -42,7 +42,12 @@ enum EWindowMode {
 enum EActionType {
 	EActionType_None = -1,
 	EActionType_Idle = 0, EActionType_MoveTo, EActionType_Shoot,
-	Count
+	EActionType_Count
+};
+enum EUntiTag{
+	EUntiTag_None = -1,
+	EUntiTag_Unit, EUntiTag_Ball, EUntiTag_Goal,
+	EUntiTag_Count
 };
 // ===== enum ===== end
 
@@ -66,7 +71,7 @@ public:
 	};
 
 	// string
-	static const char *szActionTypesAsString[EActionType::Count];
+	static const char *szActionTypesAsString[EActionType::EActionType_Count];
 	static const char *szStageSettingFileName;
 };
 // ===== struct =====
@@ -425,6 +430,7 @@ struct SAniInfo {
 	vector<CSpriteInfo> SpriteInfos;
 };
 
+class CUnit;
 class CUnit {
 public:
 	const V2 kV2Right = { 1, 0 };
@@ -438,13 +444,14 @@ public:
 	float fSpeedPerSeconds = 10.0;
 	float fMagnification = 1.0;
 	char szBitmapPath[MAX_PATH];
-	SAniInfo arAniInfos[EActionType::Count];
+	SAniInfo arAniInfos[EActionType::EActionType_Count];
 	CActionList cActionList;
 	CActionList cActionListPattern;
 	HDC hBitmapDC;
 	UINT _iAniIndex = 0;
 	CSpriteInfo _cCurSpriteInfo;
 	bool bControlled = false;
+	CUnit *cSubUnit = nullptr;
 
 private:
 	bool _bPatternPlaying = false;

@@ -2,7 +2,7 @@
 #include "lib.h"
 #include "Physics.h"
 
-const char *Const::szActionTypesAsString[EActionType::Count] = { "EActionType_Idle" , "EActionType_MoveTo", "EActionType_Shoot" };
+const char *Const::szActionTypesAsString[EActionType::EActionType_Count] = { "EActionType_Idle" , "EActionType_MoveTo", "EActionType_Shoot" };
 const char *Const::szStageSettingFileName = "stageCreator.settings";
 
 CFilePath::CFilePath() {
@@ -15,7 +15,7 @@ void CFilePath::Clear() {
 }
 
 CUnit::CUnit() {
-	for (size_t i = 0; i < EActionType::Count; i++) {
+	for (size_t i = 0; i < EActionType::EActionType_Count; i++) {
 		arAniInfos[i].FilePath[0] = 0;
 		arAniInfos[i].FileTitle[0] = 0;
 	}
@@ -27,7 +27,7 @@ CUnit& CUnit::operator=(const CUnit& r) {
 
 	memcpy(&this->cFilePath, &r.cFilePath, sizeof(this->cFilePath));
 
-	for (size_t i = 0; i < EActionType::Count; i++) {
+	for (size_t i = 0; i < EActionType::EActionType_Count; i++) {
 		this->arAniInfos[i] = r.arAniInfos[i];
 		this->arAniInfos[i].SpriteInfos = r.arAniInfos[i].SpriteInfos;
 		//memcpy(&this->arAniInfos[i], &r.arAniInfos[i], sizeof(this->arAniInfos[i]));
@@ -80,21 +80,32 @@ void CUnit::Update(float fDeltaTime) {
 			_iAniIndex = 0;
 		}
 	}
-
+	//control unit
 	if (this->bControlled) {
-		CUnit *ohterUnit = Physics::hitTest(*this);
-		if (ohterUnit) {
-			CAction cAction;
-			cAction.eActionType = EActionType::EActionType_MoveTo;
-			cAction.sXY = { 1.0, 0.0 };
-			//cAction.sXY = { ohterUnit->sXY.x + cAction.sXY.x * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(),
-			cAction.sXY = { 800,
-				ohterUnit->sXY.y + cAction.sXY.y * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
-			ohterUnit->cActionList.Clear();
-			ohterUnit->cActionList.AddAction(cAction);
+		CUnit *otherUnit = Physics::hitTest(*this);
+		if (otherUnit) {
+			this->cSubUnit = otherUnit;
+			//CAction cAction;
+			//cAction.eActionType = EActionType::EActionType_MoveTo;
+			//cAction.sXY = { 1.0, 0.0 };
+			////cAction.sXY = { otherUnit->sXY.x + cAction.sXY.x * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(),
+			//cAction.sXY = { 800,
+			//	otherUnit->sXY.y + cAction.sXY.y * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
+			//otherUnit->cActionList.Clear();
+			//otherUnit->cActionList.AddAction(cAction);
 		}
 	}
-
+	//sub unit
+	if (cSubUnit != nullptr) {
+		CAction cAction;
+		cAction.eActionType = EActionType::EActionType_MoveTo;
+		cAction.sXY = { 1.0, 0.0 };
+		//cAction.sXY = { otherUnit->sXY.x + cAction.sXY.x * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(),
+		cAction.sXY = this->sXY;
+		cAction.sXY.Add(100, 0);
+		cSubUnit->cActionList.Clear();
+		cSubUnit->cActionList.AddAction(cAction);
+	}
 	// 액션 상태 갱신1
 	if (bEndAni && !curAction.bRepeat) {
 		// ani가 끝났고 한번만 재생하는 액션이라면 액션 갱신하고 스프라이트 정보 다시 읽기
@@ -144,12 +155,20 @@ void CUnit::Update(float fDeltaTime) {
 			NextAction();
 		}
 	}
-	//else if (curAction.eActionType == EActionType::EActionType_Shoot) {
-	//	vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curAction.eActionType].SpriteInfos;
-	//	if (bEndAni) {
-	//		NextAction();
-	//	}
-	//}
+	else if (curAction.eActionType == EActionType::EActionType_Shoot) {
+		if (this->bControlled && cSubUnit != nullptr) {
+			CAction cAction;
+			cAction.eActionType = EActionType::EActionType_MoveTo;
+			cAction.sXY = {800, this->sXY.y};
+			cSubUnit->cActionList.Clear();
+			cSubUnit->cActionList.AddAction(cAction);
+			cSubUnit = nullptr;
+		}
+		/*vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curAction.eActionType].SpriteInfos;
+		if (bEndAni) {
+			NextAction();
+		}*/
+	}
 }
 void CUnit::Render(HDC hdc) {
 	//if (!bPlaying) return;
@@ -277,7 +296,7 @@ void CUnit::Clear() {
 	float fMagnification = 1.0;
 	//EActionType eCurActionType;
 	szBitmapPath[0] = 0;
-	for (size_t i = 0; i < static_cast<EActionType>(EActionType::Count); i++) {
+	for (size_t i = 0; i < static_cast<EActionType>(EActionType::EActionType_Count); i++) {
 		arAniInfos[i].FilePath[0] = 0;
 		arAniInfos[i].FileTitle[0] = 0;
 		arAniInfos[i].SpriteInfos.clear();
@@ -332,7 +351,7 @@ void CUnit::LoadUnit(CFilePath *cFilePath) {
 	cActionListPattern.LoadActionPatternFile(cActionList.szFilePath);
 	cActionList = cActionListPattern;
 	// load .ani
-	for (size_t i = 0; i < EActionType::Count; i++) {
+	for (size_t i = 0; i < EActionType::EActionType_Count; i++) {
 		LoadAniFile((EActionType)i, arAniInfos[i].FilePath);
 	}
 

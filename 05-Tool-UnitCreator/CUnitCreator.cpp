@@ -135,7 +135,7 @@ void CUnitCreator::LoadUnit(const char *filePath) {
 	cUnit.cActionListPattern.LoadActionPatternFile(cUnit.cActionList.szFilePath);
 	cUnit.cActionList = cUnit.cActionListPattern;
 	// load .ani
-	for (size_t i = 0; i < EActionType::Count; i++) {
+	for (size_t i = 0; i < EActionType::EActionType_Count; i++) {
 		cUnit.LoadAniFile((EActionType)i, cUnit.arAniInfos[i].FilePath);
 	}
 
@@ -156,7 +156,7 @@ void CUnitCreator::SaveUnit(const char *filePath) {
 		// pattern file
 		fprintf_s(file, "%s\n", cUnit.cActionList.szFilePath);
 		// ani files
-		int itemCount = EActionType::Count;
+		int itemCount = EActionType::EActionType_Count;
 		fprintf_s(file, "%d\n", itemCount);
 		for (size_t i = 0; i < itemCount; i++) {
 			fprintf_s(file, "%s\t%s\n", cUnit.arAniInfos[i].FilePath, cUnit.arAniInfos[i].FileTitle);

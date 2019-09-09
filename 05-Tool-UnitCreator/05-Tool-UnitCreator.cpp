@@ -449,7 +449,7 @@ void UpdateActionAniList() {
 	item.mask = LVIF_TEXT;
 	item.state;
 	item.stateMask;
-	for (size_t i = 0; i < EActionType::Count; i++) {
+	for (size_t i = 0; i < EActionType::EActionType_Count; i++) {
 		item.iItem = i;
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
 		char itemText[MAX_PATH];
