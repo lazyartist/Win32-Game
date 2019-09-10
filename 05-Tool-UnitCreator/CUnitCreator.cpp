@@ -80,67 +80,6 @@ void CUnitCreator::SaveSettings(const char *szCurDir, const char *filePath) {
 		fclose(file);
 	}
 }
-void CUnitCreator::LoadUnit(const char *filePath) {
-	FILE *file = nullptr;
-	file = _fsopen(filePath, "rt", _SH_DENYNO);
-	if (file != nullptr) {
-		cUnit.Reset();
-		// name
-		fgets(cUnit.szName, szMax_UnitName, file);
-		RemoveCarriageReturn(cUnit.szName);
-		// fMagnification
-		char szFloat[FLT_MAX_10_EXP];
-		fgets(szFloat, FLT_MAX_10_EXP, file);
-		RemoveCarriageReturn(szFloat);
-		cUnit.fMagnification = atof(szFloat);
-		// fSpeedPerSeconds
-		fgets(szFloat, FLT_MAX_10_EXP, file);
-		RemoveCarriageReturn(szFloat);
-		cUnit.fSpeedPerSeconds = atof(szFloat);
-		// bitmap file path
-		fgets(cUnit.szBitmapPath, MAX_PATH, file);
-		RemoveCarriageReturn(cUnit.szBitmapPath);
-		// pattern file path
-		fgets(cUnit.cActionList.szFilePath, MAX_PATH, file);
-		RemoveCarriageReturn(cUnit.cActionList.szFilePath);
-		// ani files
-		char szItemCount[szMax_PosLine] = {};
-		fgets(szItemCount, szMax_PosLine, file);
-		RemoveCarriageReturn(szItemCount);
-		int itemCount = atoi(szItemCount);
-		char itemLine[szMax_PosLine] = {};
-		for (size_t i = 0; i < itemCount; i++) {
-			// ===== List에 아이템 추가 =====
-			memset(itemLine, 0, szMax_PosLine);
-
-			fgets(itemLine, szMax_PosLine, file);
-			RemoveCarriageReturn(itemLine);
-
-			char *token;
-			char *nextToken;
-			nextToken = itemLine;
-			SAniInfo aniInfo;
-			token = strtok_s(nullptr, "\t", &nextToken);
-			strcpy_s(aniInfo.FilePath, MAX_PATH, token);
-			token = strtok_s(nullptr, "\t", &nextToken);
-			strcpy_s(aniInfo.FileTitle, MAX_PATH, token);
-
-			cUnit.arAniInfos[i] = aniInfo;
-		}
-		fclose(file);
-	}
-	// load bitmap
-	cUnit.LoadUnitBitmap(cUnit.szBitmapPath);
-	// load .usp
-	cUnit.cActionListPattern.LoadActionPatternFile(cUnit.cActionList.szFilePath);
-	cUnit.cActionList = cUnit.cActionListPattern;
-	// load .ani
-	for (size_t i = 0; i < EActionType::EActionType_Count; i++) {
-		cUnit.LoadAniFile((EActionType)i, cUnit.arAniInfos[i].FilePath);
-	}
-
-	cUnit.bInitialized = true;
-}
 void CUnitCreator::SaveUnit(const char *filePath) {
 	FILE *file = nullptr;
 	file = _fsopen(filePath, "wt", _SH_DENYNO);
@@ -155,14 +94,20 @@ void CUnitCreator::SaveUnit(const char *filePath) {
 		fprintf_s(file, "%s\n", cUnit.szBitmapPath);
 		// pattern file
 		fprintf_s(file, "%s\n", cUnit.cActionList.szFilePath);
+		//unit type
+		fprintf_s(file, "%i\n", cUnit.eUnitType);
 		// ani files
 		int itemCount = EActionType::EActionType_Count;
 		fprintf_s(file, "%d\n", itemCount);
 		for (size_t i = 0; i < itemCount; i++) {
-			fprintf_s(file, "%s\t%s\n", cUnit.arAniInfos[i].FilePath, cUnit.arAniInfos[i].FileTitle);
+			fprintf_s(file, "%s\n", cUnit.arAniInfos[i].FileTitle);
+			fprintf_s(file, "%s\n", cUnit.arAniInfos[i].FilePath);
 		}
 		fclose(file);
 	};
+}
+void CUnitCreator::SetUnitType(int index, EUnitType eUnitType) {
+	cUnit.eUnitType = eUnitType;
 }
 void CUnitCreator::AddUnitFilePath(CFilePath & cFilePath) {
 	vecUnitFilePaths.push_back(cFilePath);

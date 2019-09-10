@@ -20,8 +20,8 @@ public:
 	void SaveSettings(const char *szCurDir, const char * filePath);
 	void AddUnitFilePath(CFilePath &cFilePath);
 	void DeleteUnitFilePath(int index);
-	void LoadUnit(const char *filePath);
 	void SaveUnit(const char *filePath);
+	void SetUnitType(int index, EUnitType eUnitType);
 
 	vector<CFilePath> vecUnitFilePaths;
 	CUnit cUnit;

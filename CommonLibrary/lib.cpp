@@ -3,6 +3,8 @@
 #include "Physics.h"
 
 const char *Const::szActionTypesAsString[EActionType::EActionType_Count] = { "EActionType_Idle" , "EActionType_MoveTo", "EActionType_Shoot" };
+const char *Const::szUnitTypesAsString[EUnitType::EUnitType_Count] = { "EUnitType_Unit" , "EUnitType_Ball", "EUnitType_Goal" };
+const char *Const::szControlTypesAsString[EControlType::EControlType_Count] = { "EControlType_Player" , "EControlType_AI", "EControlType_Pattern" };
 const char *Const::szStageSettingFileName = "stageCreator.settings";
 
 CFilePath::CFilePath() {
@@ -81,7 +83,8 @@ void CUnit::Update(float fDeltaTime) {
 		}
 	}
 	//control unit
-	if (this->bControlled) {
+	//if (this->bControlled) {
+	if (this->eControlType == EControlType::EControlType_Player) {
 		CUnit *otherUnit = Physics::hitTest(*this);
 		if (otherUnit) {
 			this->cSubUnit = otherUnit;
@@ -158,10 +161,10 @@ void CUnit::Update(float fDeltaTime) {
 		}
 	}
 	else if (curAction.eActionType == EActionType::EActionType_Shoot) {
-		if (this->bControlled && cSubUnit != nullptr) {
+		if (this->eControlType == EControlType::EControlType_Player && cSubUnit != nullptr) {
 			CAction cAction;
 			cAction.eActionType = EActionType::EActionType_MoveTo;
-			cAction.sXY = {800, this->sXY.y};
+			cAction.sXY = { 800, this->sXY.y };
 			cSubUnit->cActionList.Clear();
 			cSubUnit->cActionList.AddAction(cAction);
 			cSubUnit = nullptr;
@@ -180,7 +183,13 @@ void CUnit::Render(HDC hdc) {
 	//SXY center = { g_whBottomWndSize.w / 2, g_whBottomWndSize.h / 2 };
 
 	// 선택된 스프라이트의 크기
-	fWH spriteSize = { _cCurSpriteInfo.sRect.right - _cCurSpriteInfo.sRect.left , _cCurSpriteInfo.sRect.bottom - _cCurSpriteInfo.sRect.top };
+	fWH spriteSize = { _cCurSpriteInfo.sRect.right - _cCurSpriteInfo.sRect.left, _cCurSpriteInfo.sRect.bottom - _cCurSpriteInfo.sRect.top };
+	if (spriteSize.w >= sBitmapHeader.bmWidth) {
+		spriteSize.w = sBitmapHeader.bmWidth - 1;
+	}
+	if (spriteSize.h >= sBitmapHeader.bmHeight) {
+		spriteSize.h = sBitmapHeader.bmHeight - 1;
+	}
 	UINT w = _cCurSpriteInfo.sRect.right - _cCurSpriteInfo.sRect.left;
 	UINT h = _cCurSpriteInfo.sRect.bottom - _cCurSpriteInfo.sRect.top;
 	// TransparentBlt를 사용하려면 프로젝트 설정에서 msimg32.lib;를 추가종속성에 받드시 추가해야한다.
@@ -273,7 +282,9 @@ void CUnit::Reset() {
 	// 초기 위치 설정
 	cActionList.Init();
 	cActionListPattern.Init();
-	cActionList = cActionListPattern;
+	if (eControlType == EControlType::EControlType_Pattern) {
+		CopyAction();
+	}
 	sXY = sStartXY;
 	//sXY = cAction.sXY;
 	CAction cAction = cActionList.GetCurAction();
@@ -286,6 +297,10 @@ void CUnit::ClearAni() {
 	_iAniIndex = 0;
 	//_iAniTime = 0;
 	_iAniTime = GetTickCount();
+}void CUnit::ClearAction() {
+	cActionList.Clear();
+	ClearAni();
+	//cActionListPattern.Clear();
 }
 void CUnit::Clear() {
 	ClearAni();
@@ -311,38 +326,28 @@ void CUnit::LoadUnit(CFilePath *cFilePath) {
 	FILE *file = nullptr;
 	file = _fsopen(cFilePath->szFilePath, "rt", _SH_DENYNO);
 	if (file != nullptr) {
+		char itemLine[Const::szMax_ItemLine] = {};
+		Reset();
 		this->cFilePath = *cFilePath;
-		char szLine[Const::szMax_ItemLine];
 		// name
 		Func::FGetStr(szName, szMax_UnitName, file);
-		//fMagnification
-		Func::FGetStr(szLine, FLT_MAX_10_EXP, file);
-		fMagnification = atof(szLine);
-		//fSpeedPerSeconds
-		Func::FGetStr(szLine, FLT_MAX_10_EXP, file);
-		fSpeedPerSeconds = atof(szLine);
+		// fMagnification
+		fMagnification = Func::FGetFloat(itemLine, Const::szMax_ItemLine, file);
+		// fSpeedPerSeconds
+		fSpeedPerSeconds = Func::FGetFloat(itemLine, Const::szMax_ItemLine, file);
 		// bitmap file path
-		Func::FGetStr(szBitmapPath, MAX_PATH, file);
+		Func::FGetStr(szBitmapPath, Const::szMax_Path, file);
 		// pattern file path
-		Func::FGetStr(cActionList.szFilePath, MAX_PATH, file);
+		Func::FGetStr(cActionList.szFilePath, Const::szMax_Path, file);
+		// unit type
+		int iUnitType = Func::FGetInt(itemLine, Const::szMax_ItemLine, file);
+		eUnitType = (EUnitType)iUnitType;
 		// ani files
-		Func::FGetStr(szLine, Const::szMax_ItemLine, file);
-		int itemCount = atoi(szLine);
+		int itemCount = Func::FGetInt(itemLine, Const::szMax_ItemLine, file);
 		for (size_t i = 0; i < itemCount; i++) {
-			// ===== List에 아이템 추가 =====
-			memset(szLine, 0, Const::szMax_ItemLine);
-
-			Func::FGetStr(szLine, Const::szMax_ItemLine, file);
-
-			char *token;
-			char *nextToken;
-			nextToken = szLine;
 			SAniInfo aniInfo;
-			token = strtok_s(nullptr, "\t", &nextToken);
-			strcpy_s(aniInfo.FilePath, MAX_PATH, token);
-			token = strtok_s(nullptr, "\t", &nextToken);
-			strcpy_s(aniInfo.FileTitle, MAX_PATH, token);
-
+			Func::FGetStr(aniInfo.FileTitle, Const::szMax_Path, file);
+			Func::FGetStr(aniInfo.FilePath, Const::szMax_Path, file);
 			arAniInfos[i] = aniInfo;
 		}
 		fclose(file);
@@ -351,13 +356,65 @@ void CUnit::LoadUnit(CFilePath *cFilePath) {
 	LoadUnitBitmap(szBitmapPath);
 	// load .usp
 	cActionListPattern.LoadActionPatternFile(cActionList.szFilePath);
-	cActionList = cActionListPattern;
+	if (eControlType == EControlType::EControlType_Pattern) {
+		CopyAction();
+	}
 	// load .ani
 	for (size_t i = 0; i < EActionType::EActionType_Count; i++) {
 		LoadAniFile((EActionType)i, arAniInfos[i].FilePath);
 	}
 
 	bInitialized = true;
+	//FILE *file = nullptr;
+	//file = _fsopen(cFilePath->szFilePath, "rt", _SH_DENYNO);
+	//if (file != nullptr) {
+	//	this->cFilePath = *cFilePath;
+	//	char szLine[Const::szMax_ItemLine];
+	//	// name
+	//	Func::FGetStr(szName, szMax_UnitName, file);
+	//	//fMagnification
+	//	Func::FGetStr(szLine, FLT_MAX_10_EXP, file);
+	//	fMagnification = atof(szLine);
+	//	//fSpeedPerSeconds
+	//	Func::FGetStr(szLine, FLT_MAX_10_EXP, file);
+	//	fSpeedPerSeconds = atof(szLine);
+	//	// bitmap file path
+	//	Func::FGetStr(szBitmapPath, MAX_PATH, file);
+	//	// pattern file path
+	//	Func::FGetStr(cActionList.szFilePath, MAX_PATH, file);
+	//	// ani files
+	//	Func::FGetStr(szLine, Const::szMax_ItemLine, file);
+	//	int itemCount = atoi(szLine);
+	//	for (size_t i = 0; i < itemCount; i++) {
+	//		// ===== List에 아이템 추가 =====
+	//		memset(szLine, 0, Const::szMax_ItemLine);
+
+	//		Func::FGetStr(szLine, Const::szMax_ItemLine, file);
+
+	//		char *token;
+	//		char *nextToken;
+	//		nextToken = szLine;
+	//		SAniInfo aniInfo;
+	//		token = strtok_s(nullptr, "\t", &nextToken);
+	//		strcpy_s(aniInfo.FilePath, MAX_PATH, token);
+	//		token = strtok_s(nullptr, "\t", &nextToken);
+	//		strcpy_s(aniInfo.FileTitle, MAX_PATH, token);
+
+	//		arAniInfos[i] = aniInfo;
+	//	}
+	//	fclose(file);
+	//}
+	//// load bitmap
+	//LoadUnitBitmap(szBitmapPath);
+	//// load .usp
+	//cActionListPattern.LoadActionPatternFile(cActionList.szFilePath);
+	//cActionList = cActionListPattern;
+	//// load .ani
+	//for (size_t i = 0; i < EActionType::EActionType_Count; i++) {
+	//	LoadAniFile((EActionType)i, arAniInfos[i].FilePath);
+	//}
+
+	//bInitialized = true;
 }
 void CUnit::SetName(const char *name) {
 	strcpy_s(szName, szMax_UnitName, name);
@@ -365,6 +422,7 @@ void CUnit::SetName(const char *name) {
 void CUnit::LoadUnitBitmap(const char *filePath) {
 	strcpy_s(szBitmapPath, MAX_PATH, filePath);
 	HBITMAP hBitmap = (HBITMAP)LoadImage(nullptr, filePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	GetObject(hBitmap, sizeof(BITMAP), &sBitmapHeader);
 	SelectObject(hBitmapDC, hBitmap); // HBITMAP은 HDC에 적용되면 다시 사용할 수 없기 때문에 재사용을 위해 HDC에 넣어둔다.
 	DeleteObject(hBitmap);
 }
@@ -439,6 +497,14 @@ void CUnit::NextAction() {
 	cActionList.NextAction();
 	_iAniIndex = 0;
 	_iWaitTimeOnPosition = GetTickCount();
+	
+	if (eControlType == EControlType::EControlType_Pattern && cActionList.cActions.size() == 0) {
+		// 패턴으로 조작하는 유닛은 패턴을 다시 넣어줌
+		CopyAction();
+	}
+}
+void CUnit::CopyAction() {
+	cActionList = cActionListPattern;
 }
 RECT CUnit::GetCollision() const {
 	RECT collision = _cCurSpriteInfo.sLocalCollisions[0];

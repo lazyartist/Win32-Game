@@ -1,14 +1,18 @@
 ﻿#include "stdafx.h"
+#include "Windowsx.h"
 #include "05-Tool-UnitCreator.h"
 #include "CUnitCreator.h"
 #include "lib.h"
 #include "Commctrl.h"
+
+WH g_whClientSize = { 800, 600 };
 
 HINSTANCE g_hInstance;
 HWND g_hDlg;
 HWND g_hWndPicture;
 HWND g_hUnitList;
 HWND g_hActionAniList;
+HWND g_hControlTypeCombo;
 CUnitCreator g_cUnitCreator;
 char g_szCurDir[MAX_PATH] = {}; // 작업 경로, 프로그램 실행 중 파일 대화상자에서 선택한 곳으로 바뀌기 때문에 프로그램 실행과 동시에 저장해둔다.
 
@@ -18,7 +22,6 @@ void LoadSettings();
 void SaveSettings();
 void AddUnit(const char *filePath, const char *fileTitle);
 void DeleteUnit(int index);
-void SaveUnit(const char *filePath);
 void LoadSelectedUnit();
 void UpdateUnitList();
 void UpdateUnitUI();
@@ -37,7 +40,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	}
 
 	g_hWndPicture = GetDlgItem(g_hDlg, IDC_PIC1);
-	g_cUnitCreator.Init(g_hDlg, g_hWndPicture, 1000 / 90, { 800, 600 }, EWindowMode::EWindowMode_None);
+	g_cUnitCreator.Init(g_hDlg, g_hWndPicture, 1000 / 90, g_whClientSize, EWindowMode::EWindowMode_None);
 	LoadSettings();
 	UpdateUnitList();
 
@@ -124,6 +127,13 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
 		);
 		// ===== List 설정 ===== end
+		// ===== ComboBox 설정 =====
+		g_hControlTypeCombo = GetDlgItem(hDlg, IDC_COMBO1);
+		for (size_t i = 0; i < EUnitType::EUnitType_Count; i++) {
+			ComboBox_InsertString(g_hControlTypeCombo, i, Const::szUnitTypesAsString[i]);
+		}
+		ComboBox_SetCurSel(g_hControlTypeCombo, 0);
+		// ===== ComboBox 설정 ===== end
 
 		UpdateActionAniList();
 
@@ -165,17 +175,16 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			}
 		}
 		break;
-		case IDC_BUTTON1: // Add Unit
+		case IDC_BUTTON1: // Load Unit
 		{
-			char filePath[MAX_PATH] = {};
-			char fileTitle[MAX_PATH] = {};
-			if (OpenFileDialog(filePath, fileTitle)) {
-				AddUnit(filePath, fileTitle);
+			CFilePath cFilePath;
+			if (Func::OpenFileDialog(&cFilePath, "Load Unit\0*.unit\0")) {
+				AddUnit(cFilePath.szFilePath, cFilePath.szFileTitle);
 				UpdateUnitList();
 				UpdateUnitUI();
 				UpdateBitmap();
 				UpdateActionAniList();
-			};
+			}
 		}
 		break;
 		case IDC_BUTTON11: // Delete Unit
@@ -196,9 +205,9 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 		case IDC_BUTTON2: // Save Unit
 		{
-			char filePath[MAX_PATH] = {};
-			if (OpenFileDialog(filePath)) {
-				SaveUnit(filePath);
+			CFilePath cFilePath;
+			if (Func::OpenFileDialog(&cFilePath, "Save Unit\0*.unit\0")) {
+				g_cUnitCreator.SaveUnit(cFilePath.szFilePath);
 			}
 		}
 		break;
@@ -214,19 +223,13 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 		case IDC_BUTTON3: // Load .ani
 		{
-			UINT itemIndex = ListView_GetNextItem(
-				g_hActionAniList, // 윈도우 핸들
-				-1, // 검색을 시작할 인덱스
-				LVNI_SELECTED // 검색 조건
-			);
+			UINT itemIndex = ListView_GetNextItem(g_hActionAniList, -1, LVNI_SELECTED);
 			if (itemIndex != NoSelectedIndex) {
-				char filePath[MAX_PATH] = {};
-				char fileTitle[MAX_PATH] = {};
-				if (OpenFileDialog(filePath, fileTitle)) {
-					g_cUnitCreator.cUnit.LoadAniFile((EActionType)itemIndex, filePath);
-
+				CFilePath cFilePath;
+				if (Func::OpenFileDialog(&cFilePath, "Load .ani\0*.ani\0")) {
+					g_cUnitCreator.cUnit.LoadAniFile((EActionType)itemIndex, cFilePath.szFilePath);
 					UpdateActionAniList();
-				};
+				}
 			}
 		}
 		break;
@@ -264,19 +267,23 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		break;
 		case IDC_BUTTON9: // Load Bitmap
 		{
-			char filePath[MAX_PATH] = {};
-			if (OpenFileDialog(filePath)) {
-				g_cUnitCreator.cUnit.LoadUnitBitmap(filePath);
-
+			CFilePath cFilePath;
+			if (Func::OpenFileDialog(&cFilePath, "Save Bitmap\0*.bmp\0")) {
+				g_cUnitCreator.cUnit.LoadUnitBitmap(cFilePath.szFilePath);
 				UpdateBitmap();
 			}
+			//char filePath[MAX_PATH] = {};
+			//if (OpenFileDialog(filePath)) {
+			//	g_cUnitCreator.cUnit.LoadUnitBitmap(filePath);
+
+			//}
 		}
 		break;
 		case IDC_BUTTON6: // Load .usp
 		{
-			char filePath[MAX_PATH] = {};
-			if (OpenFileDialog(filePath)) {
-				g_cUnitCreator.cUnit.cActionListPattern.LoadActionPatternFile(filePath);
+			CFilePath cFilePath;
+			if (Func::OpenFileDialog(&cFilePath, "Load .usp\0*.usp\0")) {
+				g_cUnitCreator.cUnit.cActionListPattern.LoadActionPatternFile(cFilePath.szFilePath);
 				UpdateUnitUI();
 			}
 		}
@@ -300,6 +307,31 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		case IDC_BUTTON13: // Save settings
 		{
 			SaveSettings();
+		}
+		break;
+		case IDC_COMBO1://UnitType
+		{
+			switch (HIWORD(wParam)) // ComboBox의 통지 메시지
+			{
+			case CBN_SELCHANGE: // 사용자가 콤보 리스트에서 아이템 선택
+			{
+				UINT unitTypeIndex = ComboBox_GetCurSel(g_hControlTypeCombo);
+				if (unitTypeIndex != NoSelectedIndex) {
+					g_cUnitCreator.SetUnitType(0, (EUnitType)unitTypeIndex);
+					//UpdateUI();
+					//UpdateUnitList();
+				}
+			}
+			break;
+			//case CBN_EDITUPDATE: // CBN_EDITCHANGE와 다르게 변경된 텍스트가 화면에 출력되기 전에 전달됨
+			case CBN_EDITCHANGE: // 콤보 박스의 텍스트 수정(선택 인덱스가 -1 됨)
+			{
+				//ShowCurrentComboIndex(hWnd);
+			}
+			break;
+			default:
+				break;
+			}
 		}
 		break;
 		default:
@@ -384,14 +416,11 @@ void SaveSettings() {
 	g_cUnitCreator.SaveSettings(g_szCurDir, "settings.cfg");
 }
 void LoadSelectedUnit() {
-	UINT itemIndex = ListView_GetNextItem(
-		g_hUnitList, // 윈도우 핸들
-		-1, // 검색을 시작할 인덱스
-		LVNI_SELECTED // 검색 조건
-	);
+	UINT itemIndex = ListView_GetNextItem(g_hUnitList, -1, LVNI_SELECTED);
 	if (itemIndex != NoSelectedIndex) {
 		CFilePath cFilePath = g_cUnitCreator.vecUnitFilePaths[itemIndex];
-		g_cUnitCreator.LoadUnit(cFilePath.szFilePath);
+		g_cUnitCreator.cUnit.LoadUnit(&cFilePath);
+		g_cUnitCreator.cUnit.sXY = { (float)g_whClientSize.w / 2, (float)g_whClientSize.h / 2 };
 		UpdateUnitUI();
 		UpdateBitmap();
 		UpdateActionAniList();
@@ -405,9 +434,6 @@ void AddUnit(const char *filePath, const char *fileTitle) {
 }
 void DeleteUnit(int index) {
 	g_cUnitCreator.DeleteUnitFilePath(index);
-}
-void SaveUnit(const char *filePath) {
-	g_cUnitCreator.SaveUnit(filePath);
 }
 void UpdateUnitList() {
 	ListView_DeleteAllItems(g_hUnitList);
@@ -436,11 +462,14 @@ void UpdateUnitUI() {
 	SetDlgItemText(g_hDlg, IDC_EDIT3, text);
 	// file title
 	SetDlgItemText(g_hDlg, IDC_EDIT2, g_cUnitCreator.cUnit.cActionListPattern.szFileTitle);
+	//unittype
+	ComboBox_SetCurSel(g_hControlTypeCombo, (int)g_cUnitCreator.cUnit.eUnitType);
 }
 void UpdateBitmap() {
 	HWND hWndPic2 = GetDlgItem(g_hDlg, IDC_PIC2);
 	HDC hdc = GetDC(hWndPic2);
-	TransparentBlt(hdc, 0, 0, 100, 100, g_cUnitCreator.cUnit.hBitmapDC, 0, 0, 100, 100, RGB(255, 0, 0));
+	TransparentBlt(hdc, 0, 0, 100, 100, g_cUnitCreator.cUnit.hBitmapDC, 0, 0,
+		g_cUnitCreator.cUnit.sBitmapHeader.bmWidth, g_cUnitCreator.cUnit.sBitmapHeader.bmHeight, RGB(255, 0, 0));
 }
 void UpdateActionAniList() {
 	ListView_DeleteAllItems(g_hActionAniList);

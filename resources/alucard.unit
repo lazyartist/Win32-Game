@@ -3,7 +3,11 @@ alucard
 200.000000
 X:\StudySources\Win32-Game\resources\castlevania.bmp
 X:\StudySources\Win32-Game\resources\kirby_pattern.usp
+0
 3
-X:\StudySources\Win32-Game\resources\alucard_idle.ani	alucard_idle.ani
-X:\StudySources\Win32-Game\resources\alucard_walk.ani	alucard_walk.ani
-X:\StudySources\Win32-Game\resources\kouki_shoot.ani	kouki_shoot.ani
+kouki_idle.ani
+X:\StudySources\Win32-Game\resources\kouki_idle.ani
+kouki_walk.ani
+X:\StudySources\Win32-Game\resources\kouki_walk.ani
+kouki_shoot.ani
+X:\StudySources\Win32-Game\resources\kouki_shoot.ani

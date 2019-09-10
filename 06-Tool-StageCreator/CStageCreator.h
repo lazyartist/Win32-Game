@@ -24,8 +24,9 @@ public:
 	void RemoveUnit(int index);
 	void Reset();
 	void SetControlUnit(int index);
+	void SetControlType(int index, EControlType eControlType);
 	CUnit* GetControlUnit();
-	void SetStartXY();
+	void SetStartXY(int index);
 	void LoadBgi(CFilePath &cFilePath);
 
 	CFilePath cStageFilePath;

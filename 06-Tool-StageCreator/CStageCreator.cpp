@@ -90,6 +90,7 @@ void CStageCreator::LoadStage(const CFilePath &cFilePath) {
 			}
 			CUnit &cUnit = cUnits[i];
 			cUnit.Init(_hdcMem);
+			cUnit.eControlType = static_cast<EControlType>(Func::FGetInt(szBuffer, Const::szMax_Path, file));
 			Func::FGetStr(cUnit.cFilePath.szFileTitle, Const::szMax_Path, file);
 			Func::FGetStr(cUnit.cFilePath.szFilePath, Const::szMax_Path, file);
 			cUnit.LoadUnit(&cUnit.cFilePath);
@@ -119,10 +120,11 @@ void CStageCreator::SaveStage(const CFilePath &cFilePath) {
 		//units
 		for (size_t i = 0; i < itemCount; i++) {
 			CUnit &cUnit = cUnits[i];
+			fprintf_s(file, "%i\n", cUnit.eControlType);
 			fprintf_s(file, "%s\n", cUnit.cFilePath.szFileTitle);
 			fprintf_s(file, "%s\n", cUnit.cFilePath.szFilePath);
-			fprintf_s(file, "%f\n", cUnit.sXY.x);
-			fprintf_s(file, "%f\n", cUnit.sXY.y);
+			fprintf_s(file, "%f\n", cUnit.sStartXY.x);
+			fprintf_s(file, "%f\n", cUnit.sStartXY.y);
 		}
 		fclose(file);
 	}
@@ -136,7 +138,7 @@ void CStageCreator::AddUnit(CFilePath &cFilePath) {
 		cUnit.LoadUnit(&cFilePath);
 		cUnits.push_back(cUnit);
 		// vector가 확장되며 pControlUnit가 댕글링 포인터가 될 가능성이 있으므로 다시 설정해준다.
-		SetControlUnit(iControlUnitIndex);
+		SetControlType(iControlUnitIndex, cUnit.eControlType);
 		fclose(file);
 	}
 }
@@ -154,28 +156,41 @@ void CStageCreator::Reset() {
 		}
 	}
 }
-void CStageCreator::SetControlUnit(int iIndex) {
-	if (iIndex < 0 || iIndex >= cUnits.size()) {
+void CStageCreator::SetControlUnit(int index) {
+	if (index < 0 || index >= cUnits.size()) {
 		return;
 	}
 	if (pControlUnit) {
-		pControlUnit->bControlled = false;
+		pControlUnit->eControlType = EControlType::EControlType_AI;
 	}
-	iControlUnitIndex = iIndex;
-	pControlUnit = &cUnits[iIndex];
+	iControlUnitIndex = index;
+	pControlUnit = &cUnits[index];
 	SXY sXY = pControlUnit->sXY;
 	pControlUnit->Reset();
 	pControlUnit->cActionList.Clear();
 	pControlUnit->sXY = sXY; // 컨트롤유닛으로 지정시 현재 위치에 있도록 xy값을 저장했다가 다시 넣어줌
-	pControlUnit->bControlled = true;
+	pControlUnit->eControlType = EControlType::EControlType_Player;
+}
+void CStageCreator::SetControlType(int index, EControlType eControlType) {
+	if (index < 0 || index >= cUnits.size()) {
+		return;
+	}
+	CUnit &cUnit = cUnits[index];
+	cUnit.eControlType = eControlType;
+
+	if (cUnit.eControlType == EControlType::EControlType_Player) {
+		SetControlUnit(index);
+	}
 }
 CUnit * CStageCreator::GetControlUnit() {
 	return pControlUnit;
 }
-void CStageCreator::SetStartXY() {
-	if (pControlUnit != nullptr) {
-		pControlUnit->sStartXY = pControlUnit->sXY;
+void CStageCreator::SetStartXY(int index) {
+	if (index < 0 || cUnits.size() <= index) {
+		return;
 	}
+	CUnit &cUnit = cUnits[index];
+	cUnit.sStartXY = cUnit.sXY;
 }
 void CStageCreator::LoadBgi(CFilePath &cFilePath) {
 	//strcpy_s(szBitmapPath, MAX_PATH, filePath);

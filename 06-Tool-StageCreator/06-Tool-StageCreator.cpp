@@ -1,4 +1,5 @@
 ﻿#include "stdafx.h"
+#include "Windowsx.h"
 #include "06-Tool-StageCreator.h"
 #include "CStageCreator.h"
 #include "lib.h"
@@ -10,6 +11,7 @@ HWND g_hCanvas;
 CStageCreator g_cStageCreator;
 char g_szCurDir[MAX_PATH] = {}; // 작업 경로, 프로그램 실행 중 파일 대화상자에서 선택한 곳으로 바뀌기 때문에 프로그램 실행과 동시에 저장해둔다.
 HWND g_hUnitList;
+HWND g_hControlTypeCombo;
 
 INT_PTR CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
 void UpdateUI();
@@ -23,7 +25,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	GetCurrentDirectory(MAX_PATH, g_szCurDir);
 
 	g_hCanvas = GetDlgItem(g_hDlg, IDC_PIC1);
-	g_cStageCreator.Init(g_hDlg, g_hCanvas, 1000 / 60, { 424*2, 318*2}, EWindowMode::EWindowMode_None);
+	g_cStageCreator.Init(g_hDlg, g_hCanvas, 1000 / 60, { 424 * 2, 318 * 2 }, EWindowMode::EWindowMode_None);
 	g_cStageCreator.PlayStop(true);
 	if (g_cStageCreator.LoadSettings(g_szCurDir, Const::szStageSettingFileName)) {
 		g_cStageCreator.LoadStage(g_cStageCreator.cStageFilePath);
@@ -55,21 +57,25 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 		g_hUnitList = GetDlgItem(hDlg, IDC_LIST1);
 		// ===== List 설정 =====
 		//g_hUnitList
-		char szColumnName0[Const::szMax_ListColumnName] = "player";
-		char szColumnName1[Const::szMax_ListColumnName] = ".unit FileTitle";
-		char szColumnName2[Const::szMax_ListColumnName] = "startXY";
+		char szColumnName0[Const::szMax_ListColumnName] = "eControlType";
+		char szColumnName1[Const::szMax_ListColumnName] = "eUnitType";
+		char szColumnName2[Const::szMax_ListColumnName] = "FileTitle";
+		char szColumnName3[Const::szMax_ListColumnName] = "startXY";
 		LVCOLUMN column = {};
 		column.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
 		column.fmt = LVCFMT_LEFT;
-		column.cx = 50;
+		column.cx = 120;
 		column.pszText = szColumnName0;
 		ListView_InsertColumn(g_hUnitList, 0, &column);
-		column.cx = 150;
+		//column.cx = 150;
 		column.pszText = szColumnName1;
 		ListView_InsertColumn(g_hUnitList, 1, &column);
-		column.cx = 150;
+		////column.cx = 150;
 		column.pszText = szColumnName2;
 		ListView_InsertColumn(g_hUnitList, 2, &column);
+		//column.cx = 150;
+		column.pszText = szColumnName3;
+		ListView_InsertColumn(g_hUnitList, 3, &column);
 		// 줄 전체가 클릭되도록 설정(기본값은 첫 번째 서브아이템의 텍스트 영역만 선택됨)
 		ListView_SetExtendedListViewStyle(
 			g_hUnitList,
@@ -77,6 +83,13 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			| LVS_EX_GRIDLINES // 서브아이템 사이에 그리드 라인을 넣는다.
 		);
 		// ===== List 설정 ===== end
+		// ===== ComboBox 설정 =====
+		g_hControlTypeCombo = GetDlgItem(hDlg, IDC_COMBO1);
+		for (size_t i = 0; i < EUnitType::EUnitType_Count; i++) {
+			ComboBox_InsertString(g_hControlTypeCombo, i, Const::szControlTypesAsString[i]);
+		}
+		ComboBox_SetCurSel(g_hControlTypeCombo, 0);
+		// ===== ComboBox 설정 ===== end
 		return (INT_PTR)TRUE;
 	}
 	case WM_COMMAND: {
@@ -130,9 +143,24 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			return (INT_PTR)TRUE;
 		}
 		case IDC_BUTTON5: {//Set current position to StartXY
-			g_cStageCreator.SetStartXY();
-			UpdateUI();
-			UpdateUnitList();
+			UINT itemIndex = ListView_GetNextItem(g_hUnitList/*윈도우핸들*/, -1/*검색시작인덱스*/, LVNI_SELECTED/*검색조건*/);
+			if (itemIndex != NoSelectedIndex) {
+				g_cStageCreator.SetStartXY(itemIndex);
+				UpdateUI();
+				UpdateUnitList();
+			}
+			return (INT_PTR)TRUE;
+		}
+		case IDC_BUTTON11: {//Set ControlType
+			UINT unitIndex = ListView_GetNextItem(g_hUnitList/*윈도우핸들*/, -1/*검색시작인덱스*/, LVNI_SELECTED/*검색조건*/);
+			if (unitIndex != NoSelectedIndex) {
+				UINT controlTypeIndex = ComboBox_GetCurSel(g_hControlTypeCombo);
+				if (controlTypeIndex != NoSelectedIndex) {
+					g_cStageCreator.SetControlType(unitIndex, (EControlType)controlTypeIndex);
+					UpdateUI();
+					UpdateUnitList();
+				}
+			}
 			return (INT_PTR)TRUE;
 		}
 		case IDC_BUTTON6: {//Play
@@ -178,36 +206,15 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			pnmhdr->idFrom; // 컨트롤 아이디
 			pnmhdr->code; // 통지 코드
 
-			if (pnmhdr->code == NM_CLICK) {
-				// 클릭된 아이템 인덱스 알아내기
-				UINT itemIndex = ListView_GetNextItem(
-					pnmhdr->hwndFrom, // 윈도우 핸들
-					-1, // 검색을 시작할 인덱스
-					LVNI_SELECTED // 검색 조건
-				);
-
+			if (pnmhdr->code == NM_CLICK || pnmhdr->code == LVN_ITEMCHANGED) {
+				// 선택된 아이템 인덱스 알아내기
+				UINT itemIndex = ListView_GetNextItem(pnmhdr->hwndFrom/*윈도우핸들*/, -1/*검색시작인덱스*/, LVNI_SELECTED/*검색조건*/);
 				if (itemIndex != NoSelectedIndex) {
-					g_cStageCreator.SetControlUnit(itemIndex);
-					UpdateUI();
-					UpdateUnitList();
-					//LoadSelectedUnit();
-					//SetFocus(g_hDlg); // 리스트에서 포커스를 제거하기 위해 윈도우에 포커스를 준다.
-					//ListView_SetItemState(pnmhdr->hwndFrom,         // handle to listview
-						//-1,         // index to listview item
-						//0, // item state
-						//LVIS_SELECTED | LVIS_FOCUSED);                      // mask
+					//g_cStageCreator.SetControlType(unitIndex);
+					//UpdateUI();
+					//UpdateUnitList();
 				}
 			}
-			//else if (pnmhdr->code == LVN_ITEMCHANGED) {
-			//	UINT itemIndex = ListView_GetNextItem(
-			//		pnmhdr->hwndFrom, // 윈도우 핸들
-			//		-1, // 검색을 시작할 인덱스
-			//		LVNI_SELECTED // 검색 조건
-			//	);
-			//	if (itemIndex != NoSelectedIndex) {
-			//		//LoadSelectedUnit();
-			//	}
-			//}
 		}
 	}
 	break;
@@ -237,7 +244,6 @@ void UpdateUI() {
 }
 void UpdateUnitList() {
 	ListView_DeleteAllItems(g_hUnitList);
-
 	LVITEM item = {};
 	item.mask = LVIF_TEXT;
 	item.state;
@@ -245,20 +251,17 @@ void UpdateUnitList() {
 	int iCount = g_cStageCreator.cUnits.size();
 	for (size_t i = 0; i < iCount; i++) {
 		CUnit &cUnit = g_cStageCreator.cUnits[i];
+		char itemText[Const::szMax_ItemLine] = {};
 		item.iItem = i;
 		item.iSubItem = 0; // 아이템을 처음 추가하므로 0번째 서브아이템을 선택한다.
-		char itemText[MAX_PATH];
-		if (i == g_cStageCreator.iControlUnitIndex) {
-			strcpy_s(itemText, MAX_PATH, "player");
-		}
-		else {
-			strcpy_s(itemText, MAX_PATH, "");
-		}
 		item.pszText = itemText;
 		ListView_InsertItem(g_hUnitList, &item);
-		ListView_SetItemText(g_hUnitList, i, 1, cUnit.cFilePath.szFileTitle);
-		char text[Const::szMax_ItemLine];
-		sprintf_s(text, Const::szMax_ItemLine, "%.1f, %.1f", cUnit.sStartXY.x, cUnit.sStartXY.y);
-		ListView_SetItemText(g_hUnitList, i, 2, text);
+		strcpy_s(itemText, MAX_PATH, Const::szControlTypesAsString[cUnit.eControlType]);
+		ListView_SetItemText(g_hUnitList, i, 0, itemText);
+		strcpy_s(itemText, MAX_PATH, Const::szUnitTypesAsString[cUnit.eUnitType]);
+		ListView_SetItemText(g_hUnitList, i, 1, itemText);
+		ListView_SetItemText(g_hUnitList, i, 2, cUnit.cFilePath.szFileTitle);
+		sprintf_s(itemText, Const::szMax_ItemLine, "%.1f, %.1f", cUnit.sStartXY.x, cUnit.sStartXY.y);
+		ListView_SetItemText(g_hUnitList, i, 3, itemText);
 	}
 }

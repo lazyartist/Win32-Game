@@ -44,10 +44,15 @@ enum EActionType {
 	EActionType_Idle = 0, EActionType_MoveTo, EActionType_Shoot,
 	EActionType_Count
 };
-enum EUntiTag{
-	EUntiTag_None = -1,
-	EUntiTag_Unit, EUntiTag_Ball, EUntiTag_Goal,
-	EUntiTag_Count
+enum EUnitType {
+	EUnitType_None = -1,
+	EUnitType_Unit, EUnitType_Ball, EUnitType_Goal,
+	EUnitType_Count
+};
+enum EControlType {
+	EControlType_None = -1,
+	EControlType_Player, EControlType_AI, EControlType_Pattern,
+	EControlType_Count
 };
 // ===== enum ===== end
 
@@ -72,6 +77,8 @@ public:
 
 	// string
 	static const char *szActionTypesAsString[EActionType::EActionType_Count];
+	static const char *szUnitTypesAsString[EUnitType::EUnitType_Count];
+	static const char *szControlTypesAsString[EControlType::EControlType_Count];
 	static const char *szStageSettingFileName;
 };
 // ===== struct =====
@@ -430,12 +437,13 @@ struct SAniInfo {
 	vector<CSpriteInfo> SpriteInfos;
 };
 
-class CUnit;
 class CUnit {
 public:
 	const V2 kV2Right = { 1, 0 };
 
 	CFilePath cFilePath;
+	EUnitType eUnitType = EUnitType::EUnitType_Unit;
+	EControlType eControlType = EControlType::EControlType_Pattern;
 	bool bInitialized = false;
 	char szName[szMax_UnitName];
 	SXY sStartXY = { 0.0, 0.0 };
@@ -448,9 +456,10 @@ public:
 	CActionList cActionList;
 	CActionList cActionListPattern;
 	HDC hBitmapDC;
+	BITMAP sBitmapHeader;
 	UINT _iAniIndex = 0;
 	CSpriteInfo _cCurSpriteInfo;
-	bool bControlled = false;
+	//bool bControlled = false;
 	CUnit *cSubUnit = nullptr;
 
 private:
@@ -473,6 +482,7 @@ public:
 	void Render(HDC hdc);
 	void Reset();
 	void ClearAni();
+	void ClearAction();
 	void Clear();
 	void LoadUnit(CFilePath *cFilePath);
 	void SetName(const char *name);
@@ -480,6 +490,7 @@ public:
 	void ClearUnitBitmap();
 	void LoadAniFile(EActionType eActionType, const char *filePath);
 	void NextAction();
+	void CopyAction();
 	RECT GetCollision() const;
 };
 // ===== class ===== end
