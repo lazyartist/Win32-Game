@@ -56,11 +56,17 @@ void CUnit::Init(HDC hdc) {
 	hBitmapDC = CreateCompatibleDC(hdc);
 }
 void CUnit::Update(float fDeltaTime) {
-	CAction curAction = cActionList.GetCurAction();
-	const vector<CSpriteInfo> * spriteInfos = &arAniInfos[(int)curAction.eActionType].SpriteInfos;
+	CAction *curAction = &cActionList.GetCurAction();
+	if (curAction->IsDone()) {
+		NextAction();
+		curAction = &cActionList.GetCurAction();
+	}
+
+	const vector<CSpriteInfo> * spriteInfos = &arAniInfos[(int)curAction->eActionType].SpriteInfos;
 	if (spriteInfos->size() != 0) {
 		_cCurSpriteInfo = (*spriteInfos)[_iAniIndex]; // todo : to pointer
 	}
+
 
 	bool bEndAni = false;//애니메이션이 끝났는지 여부, 애니가 끝까지 재생되고 _iAniIndex가 0으로 갱신되면 true가 된다.
 
@@ -83,53 +89,41 @@ void CUnit::Update(float fDeltaTime) {
 		}
 	}
 	//control unit
-	//if (this->bControlled) {
 	if (this->eControlType == EControlType::EControlType_Player) {
 		CUnit *otherUnit = Physics::hitTest(*this);
 		if (otherUnit) {
 			this->cSubUnit = otherUnit;
-			//CAction cAction;
-			//cAction.eActionType = EActionType::EActionType_MoveTo;
-			//cAction.sXY = { 1.0, 0.0 };
-			////cAction.sXY = { otherUnit->sXY.x + cAction.sXY.x * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(),
-			//cAction.sXY = { 800,
-			//	otherUnit->sXY.y + cAction.sXY.y * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
-			//otherUnit->cActionList.Clear();
-			//otherUnit->cActionList.AddAction(cAction);
 		}
 	}
 	//sub unit
 	if (cSubUnit != nullptr) {
-		if (curAction.eActionType == EActionType::EActionType_MoveTo) {
+		if (curAction->eActionType == EActionType::EActionType_MoveTo) {
 			CAction cAction;
-			cAction.eActionType = EActionType::EActionType_MoveTo;
-			cAction.sXY = { 1.0, 0.0 };
-			//cAction.sXY = { otherUnit->sXY.x + cAction.sXY.x * this->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(),
 			cAction.sXY = this->sXY;
 			cAction.sXY.Add(100, 0);
-			cSubUnit->cActionList.Clear();
-			cSubUnit->cActionList.AddAction(cAction);
+			CActionFactory::MoveTo(*cSubUnit, &cAction, fDeltaTime, false); // 이동 목표지점은 방향이 아니라 절대 좌표이다.
+			cSubUnit->AddAction(cAction);
 		}
 	}
 	// 액션 상태 갱신1
-	if (bEndAni && !curAction.bRepeat) {
+	if (bEndAni && !curAction->bRepeat) {
 		// ani가 끝났고 한번만 재생하는 액션이라면 액션 갱신하고 스프라이트 정보 다시 읽기
-		NextAction();
-		curAction = cActionList.GetCurAction();
-		spriteInfos = &arAniInfos[(int)curAction.eActionType].SpriteInfos;
+		curAction->Done();
+		curAction = &cActionList.GetCurAction();
+		spriteInfos = &arAniInfos[(int)curAction->eActionType].SpriteInfos;
 		_cCurSpriteInfo = (*spriteInfos)[_iAniIndex];
 	}
 	// 액션 상태 갱신2
-	if (curAction.eActionType == EActionType::EActionType_Idle) {
+	if (curAction->eActionType == EActionType::EActionType_Idle) {
 		if (_iWaitTimeOnPosition == 0) {
 			_iWaitTimeOnPosition = GetTickCount();
 			//return;
 		}
 		else {
-			if (curAction.iTime != INT_MAX && GetTickCount() - _iWaitTimeOnPosition >= curAction.iTime) {
+			if (curAction->iTime != INT_MAX && GetTickCount() - _iWaitTimeOnPosition >= curAction->iTime) {
 				// end wait
 				_iWaitTimeOnPosition = 0;
-				NextAction();
+				curAction->Done();
 			}
 			else {
 				// wait
@@ -137,9 +131,9 @@ void CUnit::Update(float fDeltaTime) {
 			}
 		}
 	}
-	else if (curAction.eActionType == EActionType::EActionType_MoveTo) {
+	else if (curAction->eActionType == EActionType::EActionType_MoveTo) {
 		// 다음 지점까지의 거리
-		SXY distanceXY = curAction.sXY - sXY;
+		SXY distanceXY = curAction->sXY - sXY;
 		float distance = distanceXY.distance();
 		float speed = fSpeedPerSeconds * fDeltaTime;
 
@@ -156,23 +150,18 @@ void CUnit::Update(float fDeltaTime) {
 		sXY.x += speedX;
 		sXY.y += speedY;
 
-		if (sameXY(curAction.sXY, sXY)) {
-			NextAction();
+		if (sameXY(curAction->sXY, sXY)) {
+			curAction->Done();
 		}
 	}
-	else if (curAction.eActionType == EActionType::EActionType_Shoot) {
+	else if (curAction->eActionType == EActionType::EActionType_Shoot) {
 		if (this->eControlType == EControlType::EControlType_Player && cSubUnit != nullptr) {
 			CAction cAction;
-			cAction.eActionType = EActionType::EActionType_MoveTo;
-			cAction.sXY = { 800, this->sXY.y };
-			cSubUnit->cActionList.Clear();
-			cSubUnit->cActionList.AddAction(cAction);
+			cAction.sXY = { 700, this->sXY.y };
+			CActionFactory::MoveTo(*cSubUnit, &cAction, fDeltaTime, false); // 이동 목표지점은 방향이 아니라 절대 좌표이다.
+			cSubUnit->AddAction(cAction);
 			cSubUnit = nullptr;
 		}
-		/*vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curAction.eActionType].SpriteInfos;
-		if (bEndAni) {
-			NextAction();
-		}*/
 	}
 }
 void CUnit::Render(HDC hdc) {
@@ -365,56 +354,6 @@ void CUnit::LoadUnit(CFilePath *cFilePath) {
 	}
 
 	bInitialized = true;
-	//FILE *file = nullptr;
-	//file = _fsopen(cFilePath->szFilePath, "rt", _SH_DENYNO);
-	//if (file != nullptr) {
-	//	this->cFilePath = *cFilePath;
-	//	char szLine[Const::szMax_ItemLine];
-	//	// name
-	//	Func::FGetStr(szName, szMax_UnitName, file);
-	//	//fMagnification
-	//	Func::FGetStr(szLine, FLT_MAX_10_EXP, file);
-	//	fMagnification = atof(szLine);
-	//	//fSpeedPerSeconds
-	//	Func::FGetStr(szLine, FLT_MAX_10_EXP, file);
-	//	fSpeedPerSeconds = atof(szLine);
-	//	// bitmap file path
-	//	Func::FGetStr(szBitmapPath, MAX_PATH, file);
-	//	// pattern file path
-	//	Func::FGetStr(cActionList.szFilePath, MAX_PATH, file);
-	//	// ani files
-	//	Func::FGetStr(szLine, Const::szMax_ItemLine, file);
-	//	int itemCount = atoi(szLine);
-	//	for (size_t i = 0; i < itemCount; i++) {
-	//		// ===== List에 아이템 추가 =====
-	//		memset(szLine, 0, Const::szMax_ItemLine);
-
-	//		Func::FGetStr(szLine, Const::szMax_ItemLine, file);
-
-	//		char *token;
-	//		char *nextToken;
-	//		nextToken = szLine;
-	//		SAniInfo aniInfo;
-	//		token = strtok_s(nullptr, "\t", &nextToken);
-	//		strcpy_s(aniInfo.FilePath, MAX_PATH, token);
-	//		token = strtok_s(nullptr, "\t", &nextToken);
-	//		strcpy_s(aniInfo.FileTitle, MAX_PATH, token);
-
-	//		arAniInfos[i] = aniInfo;
-	//	}
-	//	fclose(file);
-	//}
-	//// load bitmap
-	//LoadUnitBitmap(szBitmapPath);
-	//// load .usp
-	//cActionListPattern.LoadActionPatternFile(cActionList.szFilePath);
-	//cActionList = cActionListPattern;
-	//// load .ani
-	//for (size_t i = 0; i < EActionType::EActionType_Count; i++) {
-	//	LoadAniFile((EActionType)i, arAniInfos[i].FilePath);
-	//}
-
-	//bInitialized = true;
 }
 void CUnit::SetName(const char *name) {
 	strcpy_s(szName, szMax_UnitName, name);
@@ -497,7 +436,7 @@ void CUnit::NextAction() {
 	cActionList.NextAction();
 	_iAniIndex = 0;
 	_iWaitTimeOnPosition = GetTickCount();
-	
+
 	if (eControlType == EControlType::EControlType_Pattern && cActionList.cActions.size() == 0) {
 		// 패턴으로 조작하는 유닛은 패턴을 다시 넣어줌
 		CopyAction();
@@ -514,4 +453,42 @@ RECT CUnit::GetCollision() const {
 		sXY.x - _cCurSpriteInfo.sPivot.x * fMagnification + collision.right * fMagnification,
 		sXY.y - _cCurSpriteInfo.sPivot.y * fMagnification + collision.bottom * fMagnification };
 	return globalCollision;
+}
+void CUnit::AddAction(const CAction &cAction) {
+	CAction cCurAction = cActionList.GetCurAction();
+	if (cAction.eActionType == EActionType::EActionType_MoveTo) {
+		if (cCurAction.eActionType != EActionType::EActionType_MoveTo) {
+			ClearAni(); //현재 이동중이라면 애니메이션을 초기화하지 않고 연속 재생한다.
+		}
+		cActionList.Clear();
+		cActionList.AddAction(cAction);
+	}
+	else if (cAction.eActionType == EActionType::EActionType_Shoot) {
+		ClearAni();
+		cActionList.Clear();
+		cActionList.AddAction(cAction);
+	}
+
+	//CAction cNoneAction;
+	//cNoneAction.eActionType == EActionType::EActionType_None;
+	//cActionList.AddAction(cNoneAction);
+}
+void CActionFactory::MoveTo(const CUnit &cUnit, CAction *cAction, float fDeltaTime, bool bDirection) {
+	cAction->eActionType = EActionType::EActionType_MoveTo;
+	//방향이라면 유닛의 스피드로 이동목표지점을 계산한다.
+	if (bDirection) {
+		// 이동 거리로 x, y값을 계산(이렇게 하지 않으면 x, y를 동시에 움직일 경우 더 많은 거리를 이동한다)
+		float _fDirectionRadian = atan2(cAction->sXY.y, cAction->sXY.x);
+		cAction->sXY = { cos(_fDirectionRadian) , sin(_fDirectionRadian) }; // 각도로 x, y 좌표를 얻었으므로 정규화 되어있다.
+		cAction->sXY = { cAction->sXY.x * cUnit.fSpeedPerSeconds * fDeltaTime, cAction->sXY.y * cUnit.fSpeedPerSeconds * fDeltaTime };
+		//cAction->sXY = { cAction->sXY.x * cUnit.fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(), cAction->sXY.y * cUnit.fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
+		cAction->sXY.Add(cUnit.sXY.x, cUnit.sXY.y);
+	}
+	cAction->bCancelable = true;
+	cAction->bRepeat = true;
+}
+void CActionFactory::Shoot(const CUnit &cUnit, CAction *cAction) {
+	cAction->eActionType = EActionType::EActionType_Shoot;
+	cAction->bCancelable = false;
+	cAction->bRepeat = false;
 }

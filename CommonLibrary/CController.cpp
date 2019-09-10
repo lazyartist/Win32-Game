@@ -40,25 +40,13 @@ void CController::Update(float fDeltaTime, CUnit *cUnit) {
 		cAction.eActionType = EActionType::EActionType_Shoot;
 	}
 
-	if (cAction.eActionType == EActionType::EActionType_MoveTo) {
-		// 이동 거리로 x, y값을 계산(이렇게 하지 않으면 x, y를 동시에 움직일 경우 더 많은 거리를 이동한다)
-		float _fDirectionRadian = atan2(cAction.sXY.y, cAction.sXY.x);
-		cAction.sXY = { cos(_fDirectionRadian) , sin(_fDirectionRadian) }; // 각도로 x, y 좌표를 얻었으므로 정규화 되어있다.
-		cAction.sXY = { cAction.sXY.x * cUnit->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(), cAction.sXY.y * cUnit->fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
-		cAction.sXY.Add(cUnit->sXY.x, cUnit->sXY.y);
-		cAction.bCancelable = true;
-		cAction.bRepeat = false;
-		if (cCurAction.eActionType != EActionType::EActionType_MoveTo) {
-			cUnit->ClearAni(); //현재 이동중이라면 애니메이션을 초기화하지 않고 연속 재생한다.
+	if (cAction.eActionType != EActionType::EActionType_None) {
+		if (cAction.eActionType == EActionType::EActionType_MoveTo) {
+			CActionFactory::MoveTo(*cUnit, &cAction, fDeltaTime, true);
 		}
-		cUnit->cActionList.Clear();
-		cUnit->cActionList.cActions.push_back(cAction);
-	}
-	else if (cAction.eActionType == EActionType::EActionType_Shoot) {
-		cAction.bCancelable = false;
-		cAction.bRepeat = false;
-		cUnit->ClearAni();
-		cUnit->cActionList.Clear();
-		cUnit->cActionList.cActions.push_back(cAction);
+		else if (cAction.eActionType == EActionType::EActionType_Shoot) {
+			CActionFactory::Shoot(*cUnit, &cAction);
+		}
+		cUnit->AddAction(cAction);
 	}
 }

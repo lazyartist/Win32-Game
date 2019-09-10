@@ -130,6 +130,7 @@ void dlog(float i, float ii, float iii, float iiii);
 // ===== inline function ===== end
 
 // ===== class ===== 
+class CUnit;
 class CFilePath {
 public:
 	char szFileTitle[Const::szMax_Path];
@@ -238,10 +239,21 @@ public:
 	bool bCancelable;
 	bool bRepeat;
 
-	CAction() {
+	CAction() {}
+	void Done() {
+		this->bDone = true;
 	}
+	bool IsDone() {
+		return this->bDone;
+	}
+private:
+	bool bDone = false;
 };
-
+class CActionFactory {
+public:
+	static void MoveTo(const CUnit & cUnit, CAction *cAction, float fDeltaTime, bool bDirection);
+	static void Shoot(const CUnit &cUnit, CAction *cAction);
+};
 class CActionList {
 public:
 	CAction cDefaultAction;
@@ -254,7 +266,7 @@ public:
 		cDefaultAction.eActionType = EActionType::EActionType_Idle;
 		cDefaultAction.iTime = UINT_MAX;
 		cDefaultAction.bCancelable = true;
-		cDefaultAction.bRepeat = false;
+		cDefaultAction.bRepeat = true;
 	}
 	~CActionList() {
 	}
@@ -492,6 +504,7 @@ public:
 	void NextAction();
 	void CopyAction();
 	RECT GetCollision() const;
+	void AddAction(const CAction &cAction);
 };
 // ===== class ===== end
 // ===== function =====
@@ -583,6 +596,7 @@ inline bool operator==(SXY xy1, SXY xy2) {
 }
 inline bool sameXY(SXY xy1, SXY xy2) {
 	return (abs(xy1.x - xy2.x) < 0.1) && (abs(xy1.y - xy2.y) < 0.1);
+	//return (abs(xy1.x - xy2.x) < 0.0001) && (abs(xy1.y - xy2.y) < 0.0001);
 }
 // ===== operation overloading ===== end
 // ===== log =====

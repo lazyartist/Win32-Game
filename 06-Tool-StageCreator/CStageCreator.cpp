@@ -33,7 +33,7 @@ void CStageCreator::UpdateRenderImpl() {
 		0, 0,
 		sBgiHeader.bmWidth, sBgiHeader.bmHeight,
 		RGB(255, 0, 0));
-	
+
 	for (size_t i = 0; i < cUnits.size(); i++) {
 		CUnit &cUnit = cUnits[i];
 		cUnit.cActionList.RenderActions(_hdcMem);
@@ -133,13 +133,20 @@ void CStageCreator::AddUnit(CFilePath &cFilePath) {
 	FILE *file = nullptr;
 	file = _fsopen(cFilePath.szFilePath, "rt", _SH_DENYNO);
 	if (file != nullptr) {
-		CUnit cUnit;
-		cUnit.Init(_hdcMem);
-		cUnit.LoadUnit(&cFilePath);
-		cUnits.push_back(cUnit);
+		{
+			CUnit cUnit;
+			cUnit.Init(_hdcMem);
+			cUnit.LoadUnit(&cFilePath);
+			cUnits.push_back(cUnit);
+			fclose(file);
+		}
 		// vector가 확장되며 pControlUnit가 댕글링 포인터가 될 가능성이 있으므로 다시 설정해준다.
-		SetControlType(iControlUnitIndex, cUnit.eControlType);
-		fclose(file);
+		for (size_t i = 0; i < cUnits.size(); i++) {
+			CUnit cUnit = cUnits[i];
+			if (cUnit.eControlType == EControlType::EControlType_Player) {
+				SetControlUnit(i);
+			}
+		}
 	}
 }
 void CStageCreator::RemoveUnit(int index) {
@@ -162,6 +169,7 @@ void CStageCreator::SetControlUnit(int index) {
 	}
 	if (pControlUnit) {
 		pControlUnit->eControlType = EControlType::EControlType_AI;
+		pControlUnit->cSubUnit = nullptr;
 	}
 	iControlUnitIndex = index;
 	pControlUnit = &cUnits[index];
