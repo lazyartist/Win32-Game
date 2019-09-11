@@ -2,7 +2,7 @@
 #include "lib.h"
 #include "Physics.h"
 
-const char *Const::szActionTypesAsString[EActionType::EActionType_Count] = { "EActionType_Idle" , "EActionType_MoveTo", "EActionType_Shoot" };
+const char *Const::szActionTypesAsString[EActionType::EActionType_Count] = { "EActionType_Idle" , "EActionType_MoveTo", "EActionType_Shoot", "EActionType_Win", "EActionType_Lose" };
 const char *Const::szUnitTypesAsString[EUnitType::EUnitType_Count] = { "EUnitType_Unit" , "EUnitType_Ball", "EUnitType_Goal" };
 const char *Const::szControlTypesAsString[EControlType::EControlType_Count] = { "EControlType_Player" , "EControlType_AI", "EControlType_Pattern" };
 const char *Const::szStageSettingFileName = "stageCreator.settings";
@@ -57,16 +57,24 @@ void CUnit::Init(HDC hdc) {
 }
 void CUnit::Update(float fDeltaTime) {
 	CAction *curAction = &cActionList.GetCurAction();
-	if (curAction->IsDone()) {
+	
+
+	if (curAction->bStopEnd && curAction->IsDone()) {
+		// 현재 액션 애니메이션 끝에서 멈추기, 애니메이션의 마지막 프레임을 보여줌
+		const vector<CSpriteInfo> *spriteInfos = &arAniInfos[(int)curAction->eActionType].SpriteInfos;
+		_iAniIndex = spriteInfos->size() - 1;
+		_cCurSpriteInfo = (*spriteInfos)[_iAniIndex];
+		return;
+	}
+	else if (!curAction->bStopEnd && curAction->IsDone()) {
 		NextAction();
 		curAction = &cActionList.GetCurAction();
 	}
 
-	const vector<CSpriteInfo> * spriteInfos = &arAniInfos[(int)curAction->eActionType].SpriteInfos;
+	const vector<CSpriteInfo> *spriteInfos = &arAniInfos[(int)curAction->eActionType].SpriteInfos;
 	if (spriteInfos->size() != 0) {
 		_cCurSpriteInfo = (*spriteInfos)[_iAniIndex]; // todo : to pointer
 	}
-
 
 	bool bEndAni = false;//애니메이션이 끝났는지 여부, 애니가 끝까지 재생되고 _iAniIndex가 0으로 갱신되면 true가 된다.
 
@@ -99,8 +107,8 @@ void CUnit::Update(float fDeltaTime) {
 	if (cSubUnit != nullptr) {
 		if (curAction->eActionType == EActionType::EActionType_MoveTo) {
 			CAction cAction;
-			cAction.sXY = this->sXY;
-			cAction.sXY.Add(100, 0);
+			cAction.sXY = curAction->sXY;
+			cAction.sXY.Add(_cCurSpriteInfo.sRect.right - _cCurSpriteInfo.sRect.left + 20, 0);
 			CActionFactory::MoveTo(*cSubUnit, &cAction, fDeltaTime, false); // 이동 목표지점은 방향이 아니라 절대 좌표이다.
 			cSubUnit->AddAction(cAction);
 		}
@@ -157,7 +165,7 @@ void CUnit::Update(float fDeltaTime) {
 	else if (curAction->eActionType == EActionType::EActionType_Shoot) {
 		if (this->eControlType == EControlType::EControlType_Player && cSubUnit != nullptr) {
 			CAction cAction;
-			cAction.sXY = { 700, this->sXY.y };
+			cAction.sXY = { 800, this->sXY.y };
 			CActionFactory::MoveTo(*cSubUnit, &cAction, fDeltaTime, false); // 이동 목표지점은 방향이 아니라 절대 좌표이다.
 			cSubUnit->AddAction(cAction);
 			cSubUnit = nullptr;
@@ -272,6 +280,7 @@ void CUnit::Reset() {
 	_iAniTime = GetTickCount();
 	// 초기 위치 설정
 	cActionList.Init();
+	cActionList.Clear();
 	cActionListPattern.Init();
 	if (eControlType == EControlType::EControlType_Pattern) {
 		CopyAction();
@@ -470,6 +479,11 @@ void CUnit::AddAction(const CAction &cAction) {
 		cActionList.Clear();
 		cActionList.AddAction(cAction);
 	}
+	else {
+		ClearAni();
+		cActionList.Clear();
+		cActionList.AddAction(cAction);
+	}
 
 	//CAction cNoneAction;
 	//cNoneAction.eActionType == EActionType::EActionType_None;
@@ -493,4 +507,16 @@ void CActionFactory::Shoot(const CUnit &cUnit, CAction *cAction) {
 	cAction->eActionType = EActionType::EActionType_Shoot;
 	cAction->bCancelable = false;
 	cAction->bRepeat = false;
+}
+void CActionFactory::Win(const CUnit &cUnit, CAction *cAction) {
+	cAction->eActionType = EActionType::EActionType_Win;
+	cAction->bCancelable = false;
+	cAction->bRepeat = true;
+	cAction->bStopEnd = false;
+}
+void CActionFactory::Lose(const CUnit &cUnit, CAction *cAction) {
+	cAction->eActionType = EActionType::EActionType_Lose;
+	cAction->bCancelable = false;
+	cAction->bRepeat = false;
+	cAction->bStopEnd = true;
 }

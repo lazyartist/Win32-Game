@@ -36,8 +36,14 @@ void CController::Update(float fDeltaTime, CUnit *cUnit) {
 		cAction.eActionType = EActionType::EActionType_MoveTo;
 		cAction.sXY.Add(0, 1);
 	}
-	if (GetAsyncKeyState('A') & 0x8000) {
+	if (GetAsyncKeyState('S') & 0x8000) {
 		cAction.eActionType = EActionType::EActionType_Shoot;
+	}
+	if (GetAsyncKeyState('W') & 0x8000) {
+		cAction.eActionType = EActionType::EActionType_Win;
+	}
+	if (GetAsyncKeyState('L') & 0x8000) {
+		cAction.eActionType = EActionType::EActionType_Lose;
 	}
 
 	if (cAction.eActionType != EActionType::EActionType_None) {
@@ -46,6 +52,12 @@ void CController::Update(float fDeltaTime, CUnit *cUnit) {
 		}
 		else if (cAction.eActionType == EActionType::EActionType_Shoot) {
 			CActionFactory::Shoot(*cUnit, &cAction);
+		}
+		else if (cAction.eActionType == EActionType::EActionType_Win) {
+			CActionFactory::Win(*cUnit, &cAction);
+		}
+		else if (cAction.eActionType == EActionType::EActionType_Lose) {
+			CActionFactory::Lose(*cUnit, &cAction);
 		}
 		cUnit->AddAction(cAction);
 	}

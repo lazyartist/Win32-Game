@@ -14,9 +14,46 @@ void CStageCreator::InitImpl() {
 	Physics::cUnits = &cUnits;
 }
 void CStageCreator::UpdateLogicImpl() {
+
+	CUnit *cBallUnit = nullptr;
+	CUnit *cGoalUnit = nullptr;
 	for (size_t i = 0; i < cUnits.size(); i++) {
-		CUnit &cUnit = cUnits[i];
-		cUnit.Update(_fDeltaTime);
+		CUnit *cUnit = &cUnits[i];
+		cUnit->Update(_fDeltaTime);
+		if (cBallUnit == nullptr && cUnit->eUnitType == EUnitType::EUnitType_Ball) {
+			cBallUnit = cUnit;
+		}
+		if (cGoalUnit == nullptr && cUnit->eUnitType == EUnitType::EUnitType_Goal) {
+			cGoalUnit = cUnit;
+		}
+	}
+
+	if (eStageEndType == EStageEndType::EStageEndType_None) {
+		RECT intersectRect;
+		//win
+		if (IntersectRect(&intersectRect, &cBallUnit->GetCollision(), &cGoalUnit->GetCollision()) != 0) {
+			eStageEndType = EStageEndType::EStageEndType_Win;
+			for (size_t i = 0; i < cUnits.size(); i++) {
+				CUnit *cUnit = &cUnits[i];
+				cUnit->Update(_fDeltaTime);
+				if (pControlUnit == cUnit) {
+					CAction cAction;
+					CActionFactory::Win(*cUnit, &cAction);
+					cUnit->AddAction(cAction);
+				}
+				else if (cUnit->eUnitType == EUnitType::EUnitType_Unit) {
+					CAction cAction;
+					CActionFactory::Lose(*cUnit, &cAction);
+					cUnit->AddAction(cAction);
+				}
+				else if (cUnit->eUnitType == EUnitType::EUnitType_Goal) {
+					cUnit->ClearAction();
+				}
+				else if (cUnit->eUnitType == EUnitType::EUnitType_Ball) {
+					cUnit->ClearAction();
+				}
+			}
+		}
 	}
 }
 void CStageCreator::UpdateControllerImpl() {
@@ -154,6 +191,7 @@ void CStageCreator::RemoveUnit(int index) {
 	cUnits.erase(iter + index);
 }
 void CStageCreator::Reset() {
+	eStageEndType = EStageEndType::EStageEndType_None;
 	for (size_t i = 0; i < cUnits.size(); i++) {
 		CUnit &cUnit = cUnits[i];
 		cUnit.Reset();

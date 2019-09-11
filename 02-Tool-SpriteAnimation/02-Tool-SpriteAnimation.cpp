@@ -1148,45 +1148,50 @@ INT_PTR CALLBACK RightDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPa
 
 		case IDC_BUTTON15: // Load ani file
 		{
-			// 빈문자열로 만들어야 파일 다이얼로그가 열린다.
-			g_szAniFilePath[0] = 0;
+			//// 빈문자열로 만들어야 파일 다이얼로그가 열린다.
+			//g_szAniFilePath[0] = 0;
 
-			// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
-			//static char lpstrFile[MAX_PATH];
-			// static 또는 전역변수로 선언하지 않아도 다이얼로그가 열림(강의에서는 필요하다고 함)
-			static char lpstrFileTitle[MAX_PATH] = {};
+			//// static 또는 전역변수로 선언하지 않으면 다이얼로그가 열리지 않음
+			////static char lpstrFile[MAX_PATH];
+			//// static 또는 전역변수로 선언하지 않아도 다이얼로그가 열림(강의에서는 필요하다고 함)
+			//static char lpstrFileTitle[MAX_PATH] = {};
 
-			OPENFILENAME ofn = { 0, };
-			ofn.lStructSize = sizeof(OPENFILENAME);
-			ofn.hwndOwner = nullptr;
-			//ofn.hwndOwner = hDlg;
-			ofn.lpstrFilter = "Every File(*.*)\0*.*\0";
-			ofn.lpstrFile = g_szAniFilePath;
-			//ofn.lpstrFile = lpstrFile;
-			ofn.lpstrFileTitle = lpstrFileTitle;
-			ofn.nMaxFile = MAX_PATH;
-			ofn.nMaxFileTitle = MAX_PATH;
-			ofn.lpstrTitle = "title";
+			//OPENFILENAME ofn = { 0, };
+			//ofn.lStructSize = sizeof(OPENFILENAME);
+			//ofn.hwndOwner = nullptr;
+			////ofn.hwndOwner = hDlg;
+			//ofn.lpstrFilter = "Every File(*.*)\0*.*\0";
+			//ofn.lpstrFile = g_szAniFilePath;
+			////ofn.lpstrFile = lpstrFile;
+			//ofn.lpstrFileTitle = lpstrFileTitle;
+			//ofn.nMaxFile = MAX_PATH;
+			//ofn.nMaxFileTitle = MAX_PATH;
+			//ofn.lpstrTitle = "title";
 
-			// 현재 실행파일의 경로
-			char defaultPath[MAX_PATH];
-			GetModuleFileName(nullptr, defaultPath, MAX_PATH);
+			//// 현재 실행파일의 경로
+			//char defaultPath[MAX_PATH];
+			//GetModuleFileName(nullptr, defaultPath, MAX_PATH);
 
-			// 기본 폴더 지정
-			ofn.lpstrInitialDir = defaultPath;
-			//ofn.lpstrInitialDir = "C:\\";
+			//// 기본 폴더 지정
+			//ofn.lpstrInitialDir = defaultPath;
+			////ofn.lpstrInitialDir = "C:\\";
 
-			if (GetOpenFileName(&ofn)) {
-				// 경로 확인용
-				//char szResult[MAX_PATH];
-				//sprintf_s(szResult, "Path: %s\n%s", ofn.lpstrFile, ofn.lpstrFileTitle);
-				//MessageBox(hDlg, szResult, NULL, MB_OK);
+			//if (GetOpenFileName(&ofn)) {
+			//	// 경로 확인용
+			//	//char szResult[MAX_PATH];
+			//	//sprintf_s(szResult, "Path: %s\n%s", ofn.lpstrFile, ofn.lpstrFileTitle);
+			//	//MessageBox(hDlg, szResult, NULL, MB_OK);
 
-				//LoadAniFile(ofn.lpstrFileTitle);
-				LoadAniFile(ofn.lpstrFile);
+			//	//LoadAniFile(ofn.lpstrFileTitle);
+			//	LoadAniFile(ofn.lpstrFile);
+			//	LoadSpriteForMainWnd();
+
+			//};
+			CFilePath cFilePath;
+			if (Func::OpenFileDialog(&cFilePath, "Load .ani\0*.ani\0")) {
+				LoadAniFile(cFilePath.szFilePath);
 				LoadSpriteForMainWnd();
-
-			};
+			}
 
 		}
 		break;

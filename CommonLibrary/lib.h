@@ -41,7 +41,7 @@ enum EWindowMode {
 };
 enum EActionType {
 	EActionType_None = -1,
-	EActionType_Idle = 0, EActionType_MoveTo, EActionType_Shoot,
+	EActionType_Idle = 0, EActionType_MoveTo, EActionType_Shoot, EActionType_Win, EActionType_Lose,
 	EActionType_Count
 };
 enum EUnitType {
@@ -53,6 +53,11 @@ enum EControlType {
 	EControlType_None = -1,
 	EControlType_Player, EControlType_AI, EControlType_Pattern,
 	EControlType_Count
+};
+enum EStageEndType{
+	EStageEndType_None = -1,
+	EStageEndType_Win, EStageEndType_Lose,
+	EStageEndType_Count
 };
 // ===== enum ===== end
 
@@ -238,6 +243,7 @@ public:
 	UINT iTime; // milliseconds
 	bool bCancelable;
 	bool bRepeat;
+	bool bStopEnd = false;
 
 	CAction() {}
 	void Done() {
@@ -253,6 +259,8 @@ class CActionFactory {
 public:
 	static void MoveTo(const CUnit & cUnit, CAction *cAction, float fDeltaTime, bool bDirection);
 	static void Shoot(const CUnit &cUnit, CAction *cAction);
+	static void Win(const CUnit &cUnit, CAction *cAction);
+	static void Lose(const CUnit &cUnit, CAction *cAction);
 };
 class CActionList {
 public:

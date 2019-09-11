@@ -2,7 +2,7 @@ soccer-field.bmp
 X:\StudySources\Win32-Game\resources\soccer-field.bmp
 2.000000
 1
-4
+5
 1
 ball.unit
 X:\StudySources\Win32-Game\resources\ball.unit
@@ -23,3 +23,8 @@ goal.unit
 X:\StudySources\Win32-Game\resources\goal.unit
 703.876892
 191.988098
+1
+zangief.unit
+X:\StudySources\Win32-Game\resources\zangief.unit
+642.894409
+307.493530

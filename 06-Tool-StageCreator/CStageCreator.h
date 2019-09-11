@@ -38,5 +38,6 @@ public:
 	int iControlUnitIndex;
 	CUnit *pControlUnit = nullptr;
 	CController cController;
+	EStageEndType eStageEndType = EStageEndType::EStageEndType_None;
 };
 
