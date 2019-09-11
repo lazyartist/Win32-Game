@@ -54,7 +54,7 @@ enum EControlType {
 	EControlType_Player, EControlType_AI, EControlType_Pattern,
 	EControlType_Count
 };
-enum EStageEndType{
+enum EStageEndType {
 	EStageEndType_None = -1,
 	EStageEndType_Win, EStageEndType_Lose,
 	EStageEndType_Count
@@ -186,6 +186,18 @@ public:
 	XY sPivot;
 	vector<RECT> sLocalCollisions;
 	UINT iCollisionCount;
+
+	CSpriteInfo& operator=(const CSpriteInfo& r) {
+		iTime = r.iTime;
+		memcpy(&this->ariCoordinates, &r.ariCoordinates, sizeof(this->ariCoordinates));
+		sRect = r.sRect;
+		sPivot = r.sPivot;
+		sLocalCollisions = r.sLocalCollisions;
+		//sLocalCollisions.resize(r.sLocalCollisions.size());
+		//std::copy(r.sLocalCollisions.begin(), r.sLocalCollisions.end(), sLocalCollisions.begin());
+		iCollisionCount = r.iCollisionCount;
+		return (*this);
+	}
 
 	void SetCoordinates(INT coordinates[], UINT count) {
 		memcpy(ariCoordinates, coordinates, count);

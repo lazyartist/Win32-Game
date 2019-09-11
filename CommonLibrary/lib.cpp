@@ -22,29 +22,46 @@ CUnit::CUnit() {
 		arAniInfos[i].FileTitle[0] = 0;
 	}
 }
-CUnit::~CUnit() {}
+CUnit::~CUnit() {
+	int a = 1;
+	a = 2;
+}
 CUnit& CUnit::operator=(const CUnit& r) {
 	//포인터 또는 가변길이로 인해 객체의 데이터가 메모리상 일직선이 아닐 경우 일괄적으로 memcpy를 사용하면 안되고 개별 복사해줘야한다.
 	//memcpy(this, &r, sizeof(*this));
 
+	//CFilePath cFilePath;
 	memcpy(&this->cFilePath, &r.cFilePath, sizeof(this->cFilePath));
-
+	eUnitType = r.eUnitType;
+	eControlType = r.eControlType;
+	bInitialized = r.bInitialized;
+	strcpy_s(szName, szMax_UnitName, r.szName);
+	sStartXY = r.sStartXY;
+	sXY = r.sXY;
+	sWH = r.sWH;
+	fSpeedPerSeconds = r.fSpeedPerSeconds;
+	fMagnification = r.fMagnification;
+	strcpy_s(szBitmapPath, MAX_PATH, r.szBitmapPath);
 	for (size_t i = 0; i < EActionType::EActionType_Count; i++) {
 		this->arAniInfos[i] = r.arAniInfos[i];
 		this->arAniInfos[i].SpriteInfos = r.arAniInfos[i].SpriteInfos;
-		//memcpy(&this->arAniInfos[i], &r.arAniInfos[i], sizeof(this->arAniInfos[i]));
 	}
+	//vector를 복사하는데 memcpy는 절대 사용하지 말자. 배열은 괜찮다.
+	//memcpy(&this->arAniInfos, &r.arAniInfos, sizeof(this->arAniInfos));
 	this->cActionList = r.cActionList;
-	//memcpy(&this->cActionList, &r.cActionList, sizeof(this->cActionList));
-	this->cActionList.cActions = r.cActionList.cActions;
-
 	this->cActionListPattern = r.cActionListPattern;
-	//memcpy(&this->cActionListPattern, &r.cActionListPattern, sizeof(this->cActionListPattern));
-	this->cActionListPattern.cActions = r.cActionListPattern.cActions;
-
+	hBitmapDC = r.hBitmapDC;
+	sBitmapHeader = r.sBitmapHeader;
+	_iAniIndex = r._iAniIndex;
 	this->_cCurSpriteInfo = r._cCurSpriteInfo;
-	//memcpy(&this->_cCurSpriteInfo, &r._cCurSpriteInfo, sizeof(this->_cCurSpriteInfo));
-	this->_cCurSpriteInfo.sLocalCollisions = r._cCurSpriteInfo.sLocalCollisions;
+	cSubUnit = r.cSubUnit;
+
+	_bPatternPlaying = r._bPatternPlaying;
+	_fDirectionRadian = r._fDirectionRadian;
+	_v2NormalDirection = r._v2NormalDirection;
+	_fDirectionWithCosRight = r._fDirectionWithCosRight;
+	_iAniTime = r._iAniTime;
+	_iWaitTimeOnPosition = r._iWaitTimeOnPosition;
 
 	return (*this);
 }

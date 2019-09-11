@@ -22,6 +22,7 @@ public:
 	void SaveStage(const CFilePath &cFilePath);
 	void AddUnit(CFilePath & cFilePath);
 	void RemoveUnit(int index);
+	void UpdateControlUnit();
 	void Reset();
 	void SetControlUnit(int index);
 	void SetControlType(int index, EControlType eControlType);

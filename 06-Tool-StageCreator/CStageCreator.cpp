@@ -31,7 +31,7 @@ void CStageCreator::UpdateLogicImpl() {
 	if (eStageEndType == EStageEndType::EStageEndType_None) {
 		RECT intersectRect;
 		//win
-		if (IntersectRect(&intersectRect, &cBallUnit->GetCollision(), &cGoalUnit->GetCollision()) != 0) {
+		if (cBallUnit && cGoalUnit && IntersectRect(&intersectRect, &cBallUnit->GetCollision(), &cGoalUnit->GetCollision()) != 0) {
 			eStageEndType = EStageEndType::EStageEndType_Win;
 			for (size_t i = 0; i < cUnits.size(); i++) {
 				CUnit *cUnit = &cUnits[i];
@@ -178,17 +178,21 @@ void CStageCreator::AddUnit(CFilePath &cFilePath) {
 			fclose(file);
 		}
 		// vector가 확장되며 pControlUnit가 댕글링 포인터가 될 가능성이 있으므로 다시 설정해준다.
-		for (size_t i = 0; i < cUnits.size(); i++) {
-			CUnit cUnit = cUnits[i];
-			if (cUnit.eControlType == EControlType::EControlType_Player) {
-				SetControlUnit(i);
-			}
-		}
+		UpdateControlUnit();
 	}
 }
 void CStageCreator::RemoveUnit(int index) {
 	auto iter = cUnits.begin();
 	cUnits.erase(iter + index);
+	UpdateControlUnit();
+}
+void CStageCreator::UpdateControlUnit() {
+	for (size_t i = 0; i < cUnits.size(); i++) {
+		CUnit &cUnit = cUnits[i];
+		if (cUnit.eControlType == EControlType::EControlType_Player) {
+			SetControlUnit(i);
+		}
+	}
 }
 void CStageCreator::Reset() {
 	eStageEndType = EStageEndType::EStageEndType_None;
