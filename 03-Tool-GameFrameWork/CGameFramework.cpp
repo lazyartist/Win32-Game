@@ -22,6 +22,7 @@ void CGameFramework::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSi
 	_hdc = GetDC(_hCanvas);
 	_hdcMem = CreateCompatibleDC(_hdc);
 	_hClientAreaPen = CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
+	SetBkMode(_hdcMem, TRANSPARENT);//텍스트 출력시 배경을 투명하게 한다.
 	// CreateCompatibleBitmap에 원본 DC인 _hdc를 전달해야한다.
 	// _hdcMem은 아주작고 기본적인 비트맵만 있기 때문에 CreateCompatibleBitmap에 _hdcMem을 전달하면 이와 동일한 비트맵을 생성하기 때문이다. 컬러적용도 안된다.
 	HBITMAP hBitmap = CreateCompatibleBitmap(_hdc, _whClientSize.w, _whClientSize.h);
@@ -116,19 +117,16 @@ void CGameFramework::UpdateRender() {
 	//_itoa_s(_fps, szFps, nStrLen_FPS, 10);
 	//RECT rectFps = { 0, 0, 100, 100 };
 	//DrawText(_hdcMem, szFps, strlen(szFps), &rectFps, DT_LEFT);
-
 	//// draw fps count
 	//char szFpsPrevCount[nStrLen_FPS];
 	//_itoa_s(_fpsPrevCount, szFpsPrevCount, nStrLen_FPS, 10);
 	//RECT rectFpsCount = { 0, 100, 100, 200 };
 	//DrawText(_hdcMem, szFpsPrevCount, strlen(szFpsPrevCount), &rectFpsCount, DT_LEFT);
-
 	// draw _nDeltaTime
 	char szNDeltaTime[nStrLen_FPS];
 	_itoa_s(_nDeltaTime, szNDeltaTime, nStrLen_FPS, 10);
 	RECT rectNDeltaTime = { _whClientSize.w - 20, 0, _whClientSize.w, 20 };
 	DrawText(_hdcMem, szNDeltaTime, strlen(szNDeltaTime), &rectNDeltaTime, DT_LEFT);
-
 	// 클라이언트 영역이 지정한데로 설정됐는지 우하단에 점을 찍어 확인
 	SelectObject(_hdcMem, _hClientAreaPen);
 	MoveToEx(_hdcMem, _whClientSize.w - 2, _whClientSize.h - 2, nullptr);

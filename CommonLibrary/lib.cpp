@@ -245,25 +245,27 @@ void CUnit::Render(HDC hdc) {
 	SXY _directionXY = { _directionLength * _v2NormalDirection.x, _directionLength * _v2NormalDirection.y };
 	MoveToEx(hdc, sXY.x, sXY.y, nullptr);
 	LineTo(hdc, sXY.x + _directionXY.x, sXY.y + _directionXY.y);
-	// test : text radian
-	char szDirection[FLT_MAX_10_EXP];
-	sprintf_s(szDirection, FLT_MAX_10_EXP, "%f", _fDirectionRadian);
-	TextOut(hdc, 0, 0, szDirection, FLT_MAX_10_EXP);
-	// test : text direction
-	sprintf_s(szDirection, FLT_MAX_10_EXP, "%f", _fDirectionWithCosRight);
-	TextOut(hdc, 0, 100, szDirection, FLT_MAX_10_EXP);
-	if (_fDirectionWithCosRight > 0) {
-		sprintf_s(szDirection, FLT_MAX_10_EXP, "%s", "right");
-	}
-	else {
-		sprintf_s(szDirection, FLT_MAX_10_EXP, "%s", "left");
-	}
-	TextOut(hdc, 0, 200, szDirection, FLT_MAX_10_EXP);
+	char szText[FLT_MAX_10_EXP] = {};
+	//// test : text radian
+	//sprintf_s(szText, FLT_MAX_10_EXP, "%f", _fDirectionRadian);
+	//TextOut(hdc, 0, 0, szText, strlen(szText));
+	//// test : text direction
+	//sprintf_s(szText, FLT_MAX_10_EXP, "%f", _fDirectionWithCosRight);
+	//TextOut(hdc, 0, 100, szText, strlen(szText));
+	//if (_fDirectionWithCosRight > 0) {
+	//	sprintf_s(szText, FLT_MAX_10_EXP, "%s", "right");
+	//}
+	//else {
+	//	sprintf_s(szText, FLT_MAX_10_EXP, "%s", "left");
+	//}
+	//TextOut(hdc, 0, 200, szText, strlen(szText));
 	// test : text _iAniIndex
 	CAction curAction = cActionList.GetCurAction();
 	vector<CSpriteInfo> &spriteInfos = arAniInfos[(int)curAction.eActionType].SpriteInfos;
-	sprintf_s(szDirection, FLT_MAX_10_EXP, "%d/%d", _iAniIndex, spriteInfos.size());
-	TextOut(hdc, sXY.x, sXY.y + 2, szDirection, FLT_MAX_10_EXP);
+	sprintf_s(szText, FLT_MAX_10_EXP, "%d/%d", _iAniIndex, spriteInfos.size());
+	TextOut(hdc, sXY.x, sXY.y + 2, szText, strlen(szText));
+	//RECT rectText = { sXY.x, sXY.y , sXY.x + 100, sXY.y + 100 };
+	//DrawText(hdc, szText, strlen(szText), &rectText, DT_LEFT);
 }
 void CUnit::Reset() {
 	_iAniIndex = 0;
