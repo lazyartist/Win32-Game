@@ -56,7 +56,7 @@ void CPhysicsTester::UpdateLogicImpl() {
 	//dlog("UpdateLogicImpl");
 }
 void CPhysicsTester::UpdateControllerImpl() {
-	cController.Update(_fDeltaTime, cControlUnit);
+	cController.UpdatePhysics(_fDeltaTime, cControlUnit);
 	//dlog("UpdateControllerImpl");
 }
 void CPhysicsTester::UpdateRenderImpl() {
@@ -65,12 +65,6 @@ void CPhysicsTester::UpdateRenderImpl() {
 	HPEN hOldPen = (HPEN)SelectObject(_hdcMem, hPen);
 	for (size_t i = 0; i < Physics::pUnits->size(); i++) {
 		CUnit *cUnit = (*Physics::pUnits)[i];
-		//if (cUnit->eUnitType == EUnitType::EUnitType_Unit) {
-		//	Ellipse(_hdcMem, cUnit->sXY.x, cUnit->sXY.y - cUnit->sWH.h, cUnit->sXY.x + cUnit->sWH.w, cUnit->sXY.y);
-		//}
-		//else {
-		//	Rectangle(_hdcMem, cUnit->sXY.x, cUnit->sXY.y - cUnit->sWH.h, cUnit->sXY.x + cUnit->sWH.w, cUnit->sXY.y);
-		//}
 		Rectangle(_hdcMem, cUnit->sXY.x, cUnit->sXY.y - cUnit->sWH.h, cUnit->sXY.x + cUnit->sWH.w, cUnit->sXY.y);
 
 		DeleteObject(SelectObject(_hdcMem, hOldPen));

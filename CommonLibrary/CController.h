@@ -6,8 +6,8 @@ class CController {
 public:
 	CController();
 	~CController();
-	//void Init(CUnit *cControlUnit);
 	void Update(float fDeltaTime, CUnit *cUnit);
+	void UpdatePhysics(float fDeltaTime, CUnit *cUnit);
 
 	CUnit *cUnit;
 };
