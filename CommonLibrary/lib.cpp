@@ -97,7 +97,7 @@ void CUnit::Update(float fDeltaTime) {
 
 	// update ani
 	// 경과 시간을 보고 _iAniIndex를 갱신
-	time_t time = GetTickCount();
+	time_t time = Func::GetTick();
 	if (time - _iAniTime >= _cCurSpriteInfo.iTime) {
 		_iAniTime = time;
 		size_t size = spriteInfos->size();
@@ -141,11 +141,11 @@ void CUnit::Update(float fDeltaTime) {
 	// 액션 상태 갱신2
 	if (curAction->eActionType == EActionType::EActionType_Idle) {
 		if (_iWaitTimeOnPosition == 0) {
-			_iWaitTimeOnPosition = GetTickCount();
+			_iWaitTimeOnPosition = Func::GetTick();
 			//return;
 		}
 		else {
-			if (curAction->iTime != INT_MAX && GetTickCount() - _iWaitTimeOnPosition >= curAction->iTime) {
+			if (curAction->iTime != INT_MAX && Func::GetTick() - _iWaitTimeOnPosition >= curAction->iTime) {
 				// end wait
 				_iWaitTimeOnPosition = 0;
 				curAction->Done();
@@ -294,7 +294,7 @@ void CUnit::Render(HDC hdc) {
 }
 void CUnit::Reset() {
 	_iAniIndex = 0;
-	_iAniTime = GetTickCount();
+	_iAniTime = Func::GetTick();
 	// 초기 위치 설정
 	cActionList.Init();
 	cActionList.Clear();
@@ -313,7 +313,7 @@ void CUnit::Reset() {
 void CUnit::ClearAni() {
 	_iAniIndex = 0;
 	//_iAniTime = 0;
-	_iAniTime = GetTickCount();
+	_iAniTime = Func::GetTick();
 }void CUnit::ClearAction() {
 	cActionList.Clear();
 	ClearAni();
@@ -463,7 +463,7 @@ void CUnit::LoadAniFile(EActionType eActionType, const char *filePath) {
 void CUnit::NextAction() {
 	cActionList.NextAction();
 	_iAniIndex = 0;
-	_iWaitTimeOnPosition = GetTickCount();
+	_iWaitTimeOnPosition = Func::GetTick();
 
 	if (eControlType == EControlType::EControlType_Pattern && cActionList.cActions.size() == 0) {
 		// 패턴으로 조작하는 유닛은 패턴을 다시 넣어줌

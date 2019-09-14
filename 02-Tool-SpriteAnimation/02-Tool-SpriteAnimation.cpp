@@ -751,7 +751,7 @@ LRESULT CALLBACK BottomWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 
 	case WM_TIMER:
 	{
-		DWORD g_nAniTime = GetTickCount();
+		DWORD g_nAniTime = Func::GetTick();
 
 		if (!g_bAniPlay || (g_nAniTime - g_nAniPrevTime) < g_SpriteInfo.iTime) {
 			break;

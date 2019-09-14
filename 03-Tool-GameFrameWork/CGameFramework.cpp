@@ -3,11 +3,14 @@
 #include "lib.h"
 #include "common.h"
 
+
 CGameFramework::CGameFramework() {
 	dlog("CGameFramework");
+	timeBeginPeriod(1);
 }
 CGameFramework::~CGameFramework() {
 	dlog("~CGameFramework");
+	timeEndPeriod(1);
 }
 void CGameFramework::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSize, EWindowMode windowMode) {
 	_hWnd = hWnd;
@@ -15,8 +18,8 @@ void CGameFramework::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSi
 	_frameTime = frameTime;
 	_whClientSize = whClientSize;
 
-	_prevFrameTime = GetTickCount();
-	_prevSecondTime = GetTickCount();
+	_prevFrameTime = Func::GetTick();
+	_prevSecondTime = Func::GetTick();
 	_fps = 0;
 	_fpsPrevCount = 0;
 	_hdc = GetDC(_hCanvas);
@@ -57,7 +60,7 @@ void CGameFramework::Init(HWND hWnd, HWND hCanvas, UINT frameTime, WH whClientSi
 	InitImpl();
 }
 bool CGameFramework::UpdateFrame() {
-	DWORD time = GetTickCount();
+	DWORD time = Func::GetTick();
 	DWORD nDeltaTime = time - _prevFrameTime;
 	if (nDeltaTime >= _frameTime) {
 		_fps = 1000 / nDeltaTime;
@@ -78,6 +81,8 @@ bool CGameFramework::UpdateFrame() {
 	// imac 2019, i5-8500 기준 1초에 4000번 정도 호출된다.
 	// GetTickCount()로 찍어봤을 때 같은 시간이 상당히 많이 찍히고 16밀리초 후에 다시 많이 찍히는 걸로 봐서
 	// 대략 1/60초에 한번씩 실행권을 넘겨받는듯 하다.
+	// 아니다!! GetTickCount의 해상도가 11~16ms이기 때문이다.
+	// timeGetTime()을 사용하면 해결 할 수 있다.
 	//_fpsCount++;
 
 	if (time - _prevSecondTime >= 1000) {

@@ -8,6 +8,8 @@
 #include "function.h"
 #define _USE_MATH_DEFINES // math.h를 사용하기 위해 필요
 #include <math.h>
+#include <mmsystem.h>
+#pragma comment(lib,"winmm")
 //#include "Physics.h"
 
 // ===== define =====
@@ -176,6 +178,9 @@ public:
 	static void RemoveCarriageReturn(char *sz) {
 		// \n은 줄바꿈을 지정하는 문자이므로 순수 문자만 얻기 위해 제거한다.
 		sz[strcspn(sz, "\n")] = 0; // strcspn()으로 "\n"의 위치를 찾고 그 위치에 0을 넣어준다.
+	}
+	static DWORD GetTick() {
+		return timeGetTime();
 	}
 };
 class CSpriteInfo {

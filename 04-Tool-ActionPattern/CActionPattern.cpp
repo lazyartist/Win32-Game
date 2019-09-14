@@ -22,43 +22,6 @@ void CActionPattern::InitImpl() {
 }
 void CActionPattern::UpdateLogicImpl() {
 	_unit.Update(_fDeltaTime);
-	//CAction cAction = cActionList.GetCurAction();
-
-	//// 다음 지점까지의 거리
-	//SXY distanceXY = cAction.sXY - _unit.sXY;
-	//float distance = distanceXY.distance();
-	//float speed = _unit.fSpeedPerSeconds * _fDeltaTime;
-	//if (distance < speed) speed = distance;
-
-	//float rad = atan2(distanceXY.y, distanceXY.x);
-	//float speedX = speed * cos(rad);
-	//float speedY = speed * sin(rad);
-
-	//_unit.sXY.x += speedX;
-	//_unit.sXY.y += speedY;
-
-	//if (sameXY(cAction.sXY, _unit.sXY)) {
-	//	if (cAction.eActionType == EActionType::EActionType_Idle) {
-	//		if (_unitIdleTime == 0) {
-	//			_unitIdleTime = GetTickCount();
-	//			return;
-	//		}
-	//		else {
-	//			if (GetTickCount() - _unitIdleTime >= cAction.iTime) {
-	//				//
-	//			}
-	//			else {
-	//				return;
-	//			}
-	//		}
-	//	}
-	//	else if (cAction.eActionType == EActionType::EActionType_MoveTo) {
-	//		//
-	//	}
-
-	//	_unitIdleTime = 0;
-	//	cActionList.NextAction();
-	//}
 }
 void CActionPattern::UpdateRenderImpl() {
 	dlog("CActionPattern::UpdateRenderImpl");
