@@ -177,7 +177,7 @@ void CStageCreator::AddUnit(CFilePath &cFilePath) {
 			cUnits.push_back(cUnit);
 			fclose(file);
 		}
-		// vector가 확장되며 pControlUnit가 댕글링 포인터가 될 가능성이 있으므로 다시 설정해준다.
+		// vector가 확장되며 cControlUnit가 댕글링 포인터가 될 가능성이 있으므로 다시 설정해준다.
 		UpdateControlUnit();
 	}
 }

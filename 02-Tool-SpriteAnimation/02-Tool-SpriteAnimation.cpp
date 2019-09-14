@@ -1570,7 +1570,7 @@ void LoadSpriteForMainWnd() {
 	// load bitmap
 	HBITMAP hBitmapSrc = (HBITMAP)LoadImage(nullptr, g_szSpriteFilePath, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 	if (hBitmapSrc == nullptr) {
-		dlog("err", GetLastError());
+		dlog("err", (int)GetLastError());
 	}
 
 	GetObject(hBitmapSrc, sizeof(BITMAP), &g_bitmapSrcHeader);

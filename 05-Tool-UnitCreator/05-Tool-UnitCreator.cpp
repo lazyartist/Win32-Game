@@ -274,7 +274,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
 			}
 			//char filePath[MAX_PATH] = {};
 			//if (OpenFileDialog(filePath)) {
-			//	g_cUnitCreator.cUnit.LoadUnitBitmap(filePath);
+			//	g_cUnitCreator.cControlUnit.LoadUnitBitmap(filePath);
 
 			//}
 		}

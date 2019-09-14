@@ -3,7 +3,7 @@
 #include "Physics.h"
 
 const char *Const::szActionTypesAsString[EActionType::EActionType_Count] = { "EActionType_Idle" , "EActionType_MoveTo", "EActionType_Shoot", "EActionType_Win", "EActionType_Lose" };
-const char *Const::szUnitTypesAsString[EUnitType::EUnitType_Count] = { "EUnitType_Unit" , "EUnitType_Ball", "EUnitType_Goal" };
+const char *Const::szUnitTypesAsString[EUnitType::EUnitType_Count] = { "EUnitType_Unit" , "EUnitType_Ball", "EUnitType_Goal", "EUnitType_Ground" };
 const char *Const::szControlTypesAsString[EControlType::EControlType_Count] = { "EControlType_Player" , "EControlType_AI", "EControlType_Pattern" };
 const char *Const::szStageSettingFileName = "stageCreator.settings";
 
@@ -74,7 +74,7 @@ void CUnit::Init(HDC hdc) {
 }
 void CUnit::Update(float fDeltaTime) {
 	CAction *curAction = &cActionList.GetCurAction();
-	
+
 
 	if (curAction->bStopEnd && curAction->IsDone()) {
 		// 현재 액션 애니메이션 끝에서 멈추기, 애니메이션의 마지막 프레임을 보여줌
@@ -115,7 +115,7 @@ void CUnit::Update(float fDeltaTime) {
 	}
 	//control unit
 	if (this->eControlType == EControlType::EControlType_Player) {
-		CUnit *otherUnit = Physics::hitTest(*this);
+		CUnit *otherUnit = Physics::TestCollision(*this);
 		if (otherUnit) {
 			this->cSubUnit = otherUnit;
 		}
@@ -168,7 +168,7 @@ void CUnit::Update(float fDeltaTime) {
 
 		_fDirectionRadian = atan2(distanceXY.y, distanceXY.x);
 		_v2NormalDirection = { cos(_fDirectionRadian) , sin(_fDirectionRadian) }; // 각도로 x, y 좌표를 얻었으므로 정규화 되어있다.
-		_fDirectionWithCosRight = _v2NormalDirection.x * kV2Right.x + _v2NormalDirection.y * kV2Right.y;
+		_fDirectionWithCosRight = _v2NormalDirection.x * kV2Right.x + _v2NormalDirection.y * kV2Right.y;//오른쪽 벡터와 내적하여 오른쪽을 향하는지(>0), 왼쪽을 향하는지(<0) 저장한다.
 
 		float speedX = speed * _v2NormalDirection.x;
 		float speedY = speed * _v2NormalDirection.y;
@@ -187,6 +187,37 @@ void CUnit::Update(float fDeltaTime) {
 			cSubUnit->AddAction(cAction);
 			cSubUnit = nullptr;
 		}
+	}
+	else if (curAction->eActionType == EActionType::EActionType_Physics_Move) {
+		//sXY.Add(fSpeedPerSeconds * curAction->sXY.x * fDeltaTime, fSpeedPerSeconds * curAction->sXY.y * fDeltaTime);
+		////감속
+		//curAction->sXY.Add(curAction->sXY.x * -3 * fDeltaTime, curAction->sXY.y * -3 * fDeltaTime);
+		//if (abs(curAction->sXY.x) < 0.1 && abs(curAction->sXY.y) < 0.1) {
+		//	curAction->Done();
+		//}
+
+		//sAccel = { fSpeedPerSeconds * curAction->sXY.x, fSpeedPerSeconds * curAction->sXY.y };
+		float x = sAccel.x + fSpeedPerSeconds * curAction->sXY.x;
+		float y = sAccel.y + fJumpSpeedPerSeconds * curAction->sXY.y;
+		if (abs(x) > fSpeedPerSeconds) {
+			x = fSpeedPerSeconds * x / abs(x);
+		}
+		if (abs(y) > fJumpSpeedPerSeconds) {
+			y = fJumpSpeedPerSeconds * y / abs(y);
+		}
+		//if (y > fSpeedPerSeconds) {
+		//	y = fSpeedPerSeconds;
+		//}
+		sAccel = { x,y };
+		curAction->Done();
+
+		//if (this->eControlType == EControlType::EControlType_Player && cSubUnit != nullptr) {
+		//	CAction cAction;
+		//	cAction.sXY = { 800, this->sXY.y };
+		//	CActionFactory::MoveTo(*cSubUnit, &cAction, fDeltaTime, false); // 이동 목표지점은 방향이 아니라 절대 좌표이다.
+		//	cSubUnit->AddAction(cAction);
+		//	cSubUnit = nullptr;
+		//}
 	}
 }
 void CUnit::Render(HDC hdc) {
@@ -245,7 +276,7 @@ void CUnit::Render(HDC hdc) {
 		//HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
 		HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hBrush);
 		for (size_t i = 0; i < _cCurSpriteInfo.iCollisionCount; i++) {
-			CUnit *ohterUnit = Physics::hitTest(*this);
+			CUnit *ohterUnit = Physics::TestCollision(*this);
 			if (ohterUnit) {
 				SetROP2(hdc, R2_NOTMASKPEN);//원래의 그림을 반전시키고 AND연산으로 겹치는 부분만 그린다.
 			}
@@ -514,7 +545,7 @@ void CActionFactory::MoveTo(const CUnit &cUnit, CAction *cAction, float fDeltaTi
 		float _fDirectionRadian = atan2(cAction->sXY.y, cAction->sXY.x);
 		cAction->sXY = { cos(_fDirectionRadian) , sin(_fDirectionRadian) }; // 각도로 x, y 좌표를 얻었으므로 정규화 되어있다.
 		cAction->sXY = { cAction->sXY.x * cUnit.fSpeedPerSeconds * fDeltaTime, cAction->sXY.y * cUnit.fSpeedPerSeconds * fDeltaTime };
-		//cAction->sXY = { cAction->sXY.x * cUnit.fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(), cAction->sXY.y * cUnit.fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
+		//cAction->sXY = { cAction->sXY.x * cControlUnit.fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification(), cAction->sXY.y * cControlUnit.fSpeedPerSeconds * fDeltaTime * Const::fSpeedPerFrameMagnification() };
 		cAction->sXY.Add(cUnit.sXY.x, cUnit.sXY.y);
 	}
 	cAction->bCancelable = true;
@@ -536,4 +567,10 @@ void CActionFactory::Lose(const CUnit &cUnit, CAction *cAction) {
 	cAction->bCancelable = false;
 	cAction->bRepeat = false;
 	cAction->bStopEnd = true;
+}
+void CActionFactory::PhysicsMove(const CUnit &cUnit, CAction *cAction) {
+	cAction->eActionType = EActionType::EActionType_Physics_Move;
+	cAction->bCancelable = true;
+	cAction->bRepeat = false;
+	cAction->bStopEnd = false;
 }

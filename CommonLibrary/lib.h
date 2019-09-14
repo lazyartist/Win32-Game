@@ -44,11 +44,12 @@ enum EWindowMode {
 enum EActionType {
 	EActionType_None = -1,
 	EActionType_Idle = 0, EActionType_MoveTo, EActionType_Shoot, EActionType_Win, EActionType_Lose,
+	EActionType_Physics_Move,
 	EActionType_Count
 };
 enum EUnitType {
 	EUnitType_None = -1,
-	EUnitType_Unit, EUnitType_Ball, EUnitType_Goal,
+	EUnitType_Unit, EUnitType_Ball, EUnitType_Goal, EUnitType_Ground,
 	EUnitType_Count
 };
 enum EControlType {
@@ -80,6 +81,20 @@ public:
 	//const static int fSpeedPerFrameMagnification = 2;
 	static float fSpeedPerFrameMagnification() {
 		return 2.0;
+	};
+	static float fGravity() {
+		return 800.0;
+		//return 10.0;
+		//return 9.8;
+	};
+	static float fPI() {
+		return 3.14159265359;
+	};
+	static float fPI14() {
+		return 3.14159265359 / 4;
+	};
+	static float fPI34() {
+		return 3.14159265359 * 3 / 4;
 	};
 
 	// string
@@ -278,6 +293,7 @@ public:
 	static void Shoot(const CUnit &cUnit, CAction *cAction);
 	static void Win(const CUnit &cUnit, CAction *cAction);
 	static void Lose(const CUnit &cUnit, CAction *cAction);
+	static void PhysicsMove(const CUnit &cUnit, CAction *cAction);
 };
 class CActionList {
 public:
@@ -485,8 +501,11 @@ public:
 	char szName[szMax_UnitName];
 	SXY sStartXY = { 0.0, 0.0 };
 	SXY sXY = { 0.0, 0.0 };
+	SXY sAccel = { 0.0, 0.0 };
 	WH sWH;
+	bool bGround = false;
 	float fSpeedPerSeconds = 10.0;
+	float fJumpSpeedPerSeconds = 10.0;
 	float fMagnification = 1.0;
 	char szBitmapPath[MAX_PATH];
 	SAniInfo arAniInfos[EActionType::EActionType_Count];
@@ -719,6 +738,9 @@ inline void dlog(int i, int ii) {
 };
 inline void dlog(int i, int ii, int iii) {
 	_dlog("", 3, i, ii, iii);
+};
+inline void dlog(LPCSTR title, float i) {
+	_dlog(title, 1, i);
 };
 inline void dlog(float i) {
 	_dlog("", 1, i);
